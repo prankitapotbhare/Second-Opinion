@@ -19,7 +19,7 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
   const [hoveredItem, setHoveredItem] = useState(null);
   const [isClosing, setIsClosing] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
-  const [isMenuHovered, setIsMenuHovered] = useState(false);
+  const [isTabSwitching, setIsTabSwitching] = useState(false);
   
   const navItems = [
     { step: 1, label: 'Personal Information', icon: faUserMd },
@@ -35,6 +35,15 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
       onToggle(false);
       setIsClosing(false);
     }, 300);
+  };
+
+  // Handle tab switching without transitions
+  const handleTabSwitch = (step) => {
+    setActiveStep(step);
+    // For mobile view, close the sidebar after tab selection
+    if (window.innerWidth < 768 && onToggle) {
+      onToggle(false);
+    }
   };
 
   // Render the sidebar container with backdrop
@@ -67,7 +76,7 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
     <div 
       className={`w-full md:w-72 bg-white border-r border-gray-200 h-screen min-h-screen
                 overflow-y-auto flex flex-col transition-all duration-300 ease-in-out
-                ${isClosing ? 'opacity-0 translate-x-[-10px]' : 'opacity-100 translate-x-0'}
+                ${isClosing && !isTabSwitching ? 'opacity-0 translate-x-[-10px]' : 'opacity-100 translate-x-0'}
                 shadow-lg md:shadow-md hover:md:shadow-lg`}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
@@ -113,10 +122,7 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
           {navItems.map((item) => (
             <li key={item.step} className="px-2">
               <button
-                onClick={() => {
-                  setActiveStep(item.step);
-                  if (onToggle) handleClose();
-                }}
+                onClick={() => handleTabSwitch(item.step)}
                 onMouseEnter={() => setHoveredItem(item.step)}
                 onMouseLeave={() => setHoveredItem(null)}
                 className={`w-full flex items-center px-5 py-3.5 text-sm rounded-xl transition-all duration-300 ease-in-out ${
