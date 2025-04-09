@@ -1,11 +1,15 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { departments } from "../../data/staticData";
+import { useOnClickOutside } from "../../hooks/useOnClickOutside";
 
 export default function HeroSection() {
   const [location, setLocation] = useState("");
   const [department, setDepartment] = useState("");
   const [showDepartments, setShowDepartments] = useState(false);
+  const departmentRef = useRef();
+
+  useOnClickOutside(departmentRef, () => setShowDepartments(false));
 
   return (
     <section className="bg-gradient-to-r from-green-100 to-white py-24 min-h-[500px] flex items-center">
@@ -33,7 +37,7 @@ export default function HeroSection() {
             />
           </div>
           <div className="flex-1 relative">
-            <div className="relative">
+            <div className="relative" ref={departmentRef}>
               <div
                 className="w-full flex items-center justify-between pl-4 pr-3 py-3 bg-white rounded-lg shadow-md cursor-pointer"
                 onClick={() => setShowDepartments(!showDepartments)}
