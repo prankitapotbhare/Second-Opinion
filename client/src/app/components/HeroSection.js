@@ -8,7 +8,7 @@ export default function HeroSection() {
   const [showDepartments, setShowDepartments] = useState(false);
 
   return (
-    <section className="bg-gradient-to-r from-green-50 to-white py-24 min-h-[500px] flex items-center">
+    <section className="bg-gradient-to-r from-green-100 to-white py-24 min-h-[500px] flex items-center">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-16">
           <h1 className="text-4xl font-bold text-gray-800 mb-4 max-w-2xl mx-auto">
@@ -26,7 +26,7 @@ export default function HeroSection() {
             </div>
             <input
               type="text"
-              className="w-full pl-10 pr-4 py-3 border-none rounded-lg shadow-md focus:ring-2 focus:ring-green-500 focus:outline-none text-sm"
+              className="w-full bg-white pl-10 pr-4 py-3 border-none rounded-lg shadow-md focus:ring-2 focus:ring-green-500 focus:outline-none text-sm"
               placeholder="Enter your city or pin code"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
