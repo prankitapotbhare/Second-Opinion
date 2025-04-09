@@ -25,7 +25,7 @@ export default function Navbar() {
   }, [pathname]);
 
   return (
-    <nav className="bg-white shadow-md py-4 px-6" role="navigation">
+    <nav className="bg-white py-4 px-6 sticky top-0 z-50 shadow-sm" role="navigation">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <Link href="/" className="flex items-center">
           <span className="text-green-600 font-bold text-2xl">Second Opinion</span>
