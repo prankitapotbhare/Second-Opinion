@@ -14,13 +14,13 @@ const ProgressBar = ({ activeStep }) => {
   ];
 
   return (
-    <div className="mb-8">
-      <div className="flex items-center">
+    <div className="mb-8 overflow-x-auto">
+      <div className="flex items-center min-w-max">
         {steps.map((step, index) => (
           <React.Fragment key={step.number}>
             <div className="flex flex-col items-center">
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${
                   step.number < activeStep
                     ? "bg-indigo-600 text-white"
                     : step.number === activeStep
@@ -29,9 +29,9 @@ const ProgressBar = ({ activeStep }) => {
                 }`}
               >
                 {step.number < activeStep ? (
-                  <FontAwesomeIcon icon={faCheck} />
+                  <FontAwesomeIcon icon={faCheck} className="text-xs sm:text-sm" />
                 ) : (
-                  <span>{step.number}</span>
+                  <span className="text-xs sm:text-sm">{step.number}</span>
                 )}
               </div>
               <span
@@ -46,7 +46,8 @@ const ProgressBar = ({ activeStep }) => {
             </div>
             {index < steps.length - 1 && (
               <div
-                className={`flex-1 h-1 mx-2 ${step.number < activeStep ? "bg-indigo-600" : "bg-gray-300"}`}
+                className={`flex-1 h-1 mx-1 sm:mx-2 ${step.number < activeStep ? "bg-indigo-600" : "bg-gray-300"}`}
+                style={{ minWidth: '20px' }}
               ></div>
             )}
           </React.Fragment>

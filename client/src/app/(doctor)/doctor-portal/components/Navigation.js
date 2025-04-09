@@ -1,6 +1,8 @@
 "use client";
 
 import React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowLeft, faArrowRight, faCheck } from '@fortawesome/free-solid-svg-icons';
 
 const Navigation = ({ activeStep, setActiveStep }) => {
   const handleSubmit = () => {
@@ -9,17 +11,17 @@ const Navigation = ({ activeStep, setActiveStep }) => {
   };
 
   return (
-    <div className="flex justify-between">
+    <div className="flex flex-col sm:flex-row justify-between gap-4 sm:gap-0">
       <button
         onClick={() => setActiveStep((prev) => Math.max(prev - 1, 1))}
         disabled={activeStep === 1}
-        className={`px-6 py-3 rounded-md text-sm font-medium !rounded-button whitespace-nowrap ${
+        className={`px-4 sm:px-6 py-3 rounded-md text-sm font-medium !rounded-button whitespace-nowrap ${
           activeStep === 1
             ? "bg-gray-100 text-gray-400 cursor-not-allowed"
             : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer"
         }`}
       >
-        <i className="fas fa-arrow-left mr-2"></i> Previous
+        <FontAwesomeIcon icon={faArrowLeft} className="mr-2" /> Previous
       </button>
       <button
         onClick={() => {
@@ -29,15 +31,15 @@ const Navigation = ({ activeStep, setActiveStep }) => {
             handleSubmit();
           }
         }}
-        className="px-6 py-3 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 !rounded-button whitespace-nowrap cursor-pointer"
+        className="px-4 sm:px-6 py-3 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 !rounded-button whitespace-nowrap cursor-pointer"
       >
         {activeStep < 5 ? (
           <>
-            Next <i className="fas fa-arrow-right ml-2"></i>
+            Next <FontAwesomeIcon icon={faArrowRight} className="ml-2" />
           </>
         ) : (
           <>
-            Submit <i className="fas fa-check ml-2"></i>
+            Submit <FontAwesomeIcon icon={faCheck} className="ml-2" />
           </>
         )}
       </button>
@@ -45,4 +47,4 @@ const Navigation = ({ activeStep, setActiveStep }) => {
   );
 };
 
-export default Navigation; 
+export default Navigation;
