@@ -17,7 +17,10 @@ export default function NotFound() {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          router.push('/');
+          // Schedule the navigation outside of the render cycle
+          setTimeout(() => {
+            router.push('/');
+          }, 0);
           return 0;
         }
         return prev - 1;
