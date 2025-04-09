@@ -149,16 +149,16 @@ export default function Navbar() {
                 role="menu"
               >
                 <Link
-                  href="/register/user"
-                  className={`block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 ${isActive('/register/user') ? 'bg-green-50 text-green-600' : ''}`}
+                  href="/signup/user"
+                  className={`block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 ${isActive('/signup/user') ? 'bg-green-50 text-green-600' : ''}`}
                   role="menuitem"
                   onClick={() => setIsSignUpOpen(false)}
                 >
                   User Sign-Up
                 </Link>
                 <Link
-                  href="/register/doctor"
-                  className={`block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 ${isActive('/register/doctor') ? 'bg-green-50 text-green-600' : ''}`}
+                  href="/signup/doctor"
+                  className={`block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 ${isActive('/signup/doctor') ? 'bg-green-50 text-green-600' : ''}`}
                   role="menuitem"
                   onClick={() => setIsSignUpOpen(false)}
                 >
