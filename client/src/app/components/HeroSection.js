@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { departments } from "../../data/staticData";
 import { useOnClickOutside } from "../../hooks/useOnClickOutside";
 
@@ -7,9 +7,46 @@ export default function HeroSection() {
   const [location, setLocation] = useState("");
   const [department, setDepartment] = useState("");
   const [showDepartments, setShowDepartments] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const departmentRef = useRef();
 
   useOnClickOutside(departmentRef, () => setShowDepartments(false));
+  
+  // Set mounted to true after component mounts
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // If not mounted yet, return a placeholder with the same structure
+  if (!mounted) {
+    return (
+      <section className="bg-gradient-to-r from-green-100 to-white py-24 min-h-[500px] flex items-center">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h1 className="text-4xl font-bold text-gray-800 mb-4 max-w-2xl mx-auto">
+              Get Trusted Medical Second Opinions from Verified Experts
+            </h1>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Connect with specialized doctors for reliable second opinions on your
+              diagnosis and treatment plans.
+            </p>
+          </div>
+          <div className="max-w-3xl mx-auto flex flex-col md:flex-row gap-4">
+            {/* Placeholder elements with same structure but no interactivity */}
+            <div className="flex-1 relative">
+              <div className="w-full bg-white pl-10 pr-4 py-3 border-none rounded-lg shadow-md h-[42px]"></div>
+            </div>
+            <div className="flex-1 relative">
+              <div className="w-full pl-4 pr-3 py-3 bg-white rounded-lg shadow-md h-[42px]"></div>
+            </div>
+            <div className="bg-green-600 text-white font-medium py-3 px-6 rounded-lg shadow-md !rounded-button whitespace-nowrap">
+              Find Doctors
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="bg-gradient-to-r from-green-100 to-white py-24 min-h-[500px] flex items-center">

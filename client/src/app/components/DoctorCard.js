@@ -1,4 +1,13 @@
+"use client";
+import { useState, useEffect } from "react";
+
 export default function DoctorCard({ doctor }) {
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <div className="min-w-[280px] bg-white rounded-xl shadow-md overflow-hidden flex flex-col">
       <div className="h-64 overflow-hidden">
@@ -20,9 +29,15 @@ export default function DoctorCard({ doctor }) {
           <i className="fas fa-clock text-green-600 mr-1"></i> {doctor.experience}
           experience
         </p>
-        <button className="mt-auto bg-white border border-green-600 text-green-600 hover:bg-green-50 font-medium py-2 px-4 rounded-lg !rounded-button whitespace-nowrap cursor-pointer">
-          Request Consultation
-        </button>
+        {mounted ? (
+          <button className="mt-auto bg-white border border-green-600 text-green-600 hover:bg-green-50 font-medium py-2 px-4 rounded-lg !rounded-button whitespace-nowrap cursor-pointer">
+            Request Consultation
+          </button>
+        ) : (
+          <div className="mt-auto bg-white border border-green-600 text-green-600 font-medium py-2 px-4 rounded-lg !rounded-button whitespace-nowrap">
+            Request Consultation
+          </div>
+        )}
       </div>
     </div>
   );
