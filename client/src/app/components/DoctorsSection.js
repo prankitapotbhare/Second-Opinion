@@ -1,4 +1,4 @@
-import { doctors } from "../data/staticData";
+import { doctors } from "../../data/staticData";
 import DoctorCard from "./DoctorCard";
 
 export default function DoctorsSection() {

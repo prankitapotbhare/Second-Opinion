@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { departments } from "../data/staticData";
+import { departments } from "../../data/staticData";
 
 export default function HeroSection() {
   const [location, setLocation] = useState("");
