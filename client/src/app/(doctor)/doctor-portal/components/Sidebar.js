@@ -61,7 +61,7 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
       
       {/* Sidebar container with slide animation */}
       <div 
-        className={`md:w-72 w-[100%] max-w-xs h-full bg-white md:bg-transparent relative z-30 shadow-xl md:shadow-none
+        className={`md:w-72 w-[100%] max-w-xs h-auto min-h-screen bg-white md:bg-transparent relative z-30 shadow-xl md:shadow-none
                    transition-transform duration-300 ease-out ${
                      isOpen && !isClosing ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
                    }`}
@@ -74,7 +74,7 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
   // Render the actual sidebar content
   const renderSidebarContent = () => (
     <div 
-      className={`w-full md:w-72 bg-white border-r border-gray-200 h-screen min-h-screen
+      className={`w-full md:w-72 bg-white border-r border-gray-200 h-auto min-h-screen md:h-full
                 overflow-y-auto flex flex-col transition-all duration-300 ease-in-out
                 ${isClosing && !isTabSwitching ? 'opacity-0 translate-x-[-10px]' : 'opacity-100 translate-x-0'}
                 shadow-lg md:shadow-md hover:md:shadow-lg`}
