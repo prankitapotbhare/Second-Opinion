@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { faqs } from "../../data/staticData";
+import { faqs } from "@/data/staticData";
 
 export default function FAQSection() {
   const [activeQuestion, setActiveQuestion] = useState(null);

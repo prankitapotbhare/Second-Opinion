@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { departments } from "../../data/staticData";
-import { useOnClickOutside } from "../../hooks/useOnClickOutside";
+import { departments } from "@/data/staticData";
+import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 
 export default function HeroSection() {
   const [location, setLocation] = useState("");
