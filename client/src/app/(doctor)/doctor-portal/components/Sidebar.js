@@ -18,6 +18,7 @@ import {
 const Sidebar = ({ activeStep, setActiveStep, onClose }) => {
   const [hoveredItem, setHoveredItem] = useState(null);
   const [isClosing, setIsClosing] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
   
   const navItems = [
     { step: 1, label: 'Personal Information', icon: faUserMd },
@@ -36,14 +37,18 @@ const Sidebar = ({ activeStep, setActiveStep, onClose }) => {
   };
 
   return (
-    <div className={`w-full md:w-64 bg-white border-r border-gray-200 md:h-screen md:min-h-screen 
-                    overflow-y-auto flex flex-col h-full transition-all duration-300 ease-in-out
-                    ${isClosing ? 'opacity-0 translate-x-[-10px]' : 'opacity-100 translate-x-0'}
-                    shadow-lg md:shadow-md hover:md:shadow-lg`}>
+    <div 
+      className={`w-full md:w-64 bg-white border-r border-gray-200 md:h-screen md:min-h-screen 
+                overflow-y-auto flex flex-col h-full transition-all duration-300 ease-in-out
+                ${isClosing ? 'opacity-0 translate-x-[-10px]' : 'opacity-100 translate-x-0'}
+                shadow-lg md:shadow-md hover:md:shadow-lg`}
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+    >
       {/* Mobile header with close button */}
       <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-blue-50">
         <div className="flex items-center">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-md transform transition-transform duration-300 hover:scale-105">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-md transform transition-all duration-300 hover:scale-105">
             <FontAwesomeIcon icon={faStethoscope} className="text-lg" />
           </div>
           <h1 className="ml-3 text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-600">Doctor Portal</h1>
@@ -51,13 +56,16 @@ const Sidebar = ({ activeStep, setActiveStep, onClose }) => {
         {onClose && (
           <button 
             onClick={handleClose} 
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-white text-gray-600 hover:bg-gray-100 shadow-sm transition-all duration-300 hover:shadow-md hover:text-indigo-600"
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-white text-gray-600 hover:bg-gray-100 shadow-sm transition-all duration-300 hover:shadow-md hover:text-indigo-600 overflow-hidden"
             aria-label="Close menu"
+            onMouseEnter={() => setIsHovering(true)}
+            onMouseLeave={() => setIsHovering(false)}
           >
-            <div className="relative w-6 h-6 flex items-center justify-center overflow-hidden">
+            <div className="relative w-6 h-6 flex items-center justify-center">
               <FontAwesomeIcon 
                 icon={faTimes} 
                 className="absolute transition-all duration-300 transform rotate-0 hover:rotate-90"
+                style={{ opacity: 1 }}
               />
             </div>
           </button>
@@ -67,10 +75,10 @@ const Sidebar = ({ activeStep, setActiveStep, onClose }) => {
       {/* Desktop header */}
       <div className="hidden md:flex p-6 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-blue-50">
         <div className="flex items-center">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-md transform transition-transform duration-300 hover:scale-105">
-            <FontAwesomeIcon icon={faStethoscope} className="text-lg" />
+          <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-md transform transition-all duration-500 ${isHovering ? 'scale-110' : 'scale-100'}`}>
+            <FontAwesomeIcon icon={faStethoscope} className={`text-lg transition-all duration-500 ${isHovering ? 'rotate-12' : 'rotate-0'}`} />
           </div>
-          <h1 className="ml-3 text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-600">Doctor Portal</h1>
+          <h1 className="ml-3 text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-600 transition-all duration-300">Doctor Portal</h1>
         </div>
       </div>
       
@@ -103,11 +111,13 @@ const Sidebar = ({ activeStep, setActiveStep, onClose }) => {
                     icon={item.icon}
                     className={`transition-all duration-300 ${
                       hoveredItem === item.step && activeStep !== item.step ? "scale-110" : ""
-                    }`}
+                    } ${activeStep === item.step ? "animate-pulse-subtle" : ""}`}
                     fixedWidth
                   />
                 </div>
-                <span className="transition-all duration-300">{item.label}</span>
+                <span className={`transition-all duration-300 ${
+                  hoveredItem === item.step && activeStep !== item.step ? "translate-x-1" : "translate-x-0"
+                }`}>{item.label}</span>
                 {activeStep === item.step ? (
                   <span className="ml-auto w-1.5 h-6 rounded-full bg-gradient-to-b from-indigo-500 to-blue-600 animate-pulse"></span>
                 ) : (
@@ -126,11 +136,11 @@ const Sidebar = ({ activeStep, setActiveStep, onClose }) => {
       
       {/* Help section - now consistent across all screen sizes */}
       <div className="border-t border-gray-200 p-4 md:p-6 mt-auto">
-        <button className="w-full flex items-center justify-center md:justify-start py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-600 font-medium transition-all duration-300 hover:shadow-md active:scale-95">
-          <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center mr-2">
-            <FontAwesomeIcon icon={faQuestionCircle} className="text-indigo-600" />
+        <button className="w-full flex items-center justify-center md:justify-start py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-600 font-medium transition-all duration-300 hover:shadow-md active:scale-95 hover:bg-gradient-to-r hover:from-indigo-100 hover:to-blue-100">
+          <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center mr-2 transition-all duration-300 group-hover:bg-indigo-200">
+            <FontAwesomeIcon icon={faQuestionCircle} className="text-indigo-600 transition-all duration-300 hover:scale-110" />
           </div>
-          <span>Need Help?</span>
+          <span className="transition-transform duration-300 hover:translate-x-1">Need Help?</span>
         </button>
       </div>
       
@@ -142,7 +152,7 @@ const Sidebar = ({ activeStep, setActiveStep, onClose }) => {
         </div>
         <div className="mt-2 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full transition-all duration-500 ease-out"
+            className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full transition-all duration-700 ease-out"
             style={{ width: `${Math.min(activeStep * 20, 100)}%` }}
           ></div>
         </div>
