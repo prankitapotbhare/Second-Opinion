@@ -1,14 +1,24 @@
 "use client";
 
 import React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faUserMd, 
+  faBriefcaseMedical, 
+  faGraduationCap, 
+  faCalendarAlt, 
+  faInfoCircle, 
+  faStethoscope, 
+  faQuestionCircle 
+} from '@fortawesome/free-solid-svg-icons';
 
 const Sidebar = ({ activeStep, setActiveStep }) => {
   const navItems = [
-    { step: 1, label: 'Personal Information', icon: 'fas fa-user-md' },
-    { step: 2, label: 'Professional Details', icon: 'fas fa-briefcase-medical' },
-    { step: 3, label: 'Educational Background', icon: 'fas fa-graduation-cap' },
-    { step: 4, label: 'Consultation Details', icon: 'fas fa-calendar-alt' },
-    { step: 5, label: 'Other Information', icon: 'fas fa-info-circle' },
+    { step: 1, label: 'Personal Information', icon: faUserMd },
+    { step: 2, label: 'Professional Details', icon: faBriefcaseMedical },
+    { step: 3, label: 'Educational Background', icon: faGraduationCap },
+    { step: 4, label: 'Consultation Details', icon: faCalendarAlt },
+    { step: 5, label: 'Other Information', icon: faInfoCircle },
   ];
 
   return (
@@ -16,7 +26,7 @@ const Sidebar = ({ activeStep, setActiveStep }) => {
       <div className="p-6">
         <div className="flex items-center">
           <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white">
-            <i className="fas fa-stethoscope"></i>
+            <FontAwesomeIcon icon={faStethoscope} />
           </div>
           <h1 className="ml-3 text-xl font-bold">Doctor Portal</h1>
         </div>
@@ -33,11 +43,12 @@ const Sidebar = ({ activeStep, setActiveStep }) => {
                     : "text-gray-600 hover:bg-gray-50"
                 }`}
               >
-                <i
-                  className={`${item.icon} mr-3 ${
+                <FontAwesomeIcon
+                  icon={item.icon}
+                  className={`mr-3 ${
                     activeStep === item.step ? "text-indigo-600" : "text-gray-400"
                   }`}
-                ></i>
+                />
                 <span>{item.label}</span>
               </button>
             </li>
@@ -46,7 +57,7 @@ const Sidebar = ({ activeStep, setActiveStep }) => {
       </nav>
       <div className="absolute bottom-0 w-64 p-6 border-t border-gray-200">
         <div className="flex items-center text-sm text-gray-500">
-          <i className="fas fa-question-circle mr-2"></i>
+          <FontAwesomeIcon icon={faQuestionCircle} className="mr-2" />
           <span>Need help? Contact support</span>
         </div>
       </div>
