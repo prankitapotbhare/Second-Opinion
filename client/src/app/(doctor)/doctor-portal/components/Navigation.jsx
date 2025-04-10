@@ -4,12 +4,7 @@ import React from 'react';
 // Replace FontAwesome with React Icons
 import { FaArrowLeft, FaArrowRight, FaCheck } from 'react-icons/fa';
 
-const Navigation = ({ activeStep, setActiveStep }) => {
-  const handleSubmit = () => {
-    // Submit form
-    alert("Form submitted successfully!");
-  };
-
+const Navigation = ({ activeStep, setActiveStep, onSubmit }) => {
   return (
     <div className="flex flex-col sm:flex-row justify-between gap-4 sm:gap-0">
       <button
@@ -28,7 +23,9 @@ const Navigation = ({ activeStep, setActiveStep }) => {
           if (activeStep < 5) {
             setActiveStep((prev) => prev + 1);
           } else {
-            handleSubmit();
+            if (typeof onSubmit === 'function') {
+              onSubmit();
+            }
           }
         }}
         className="px-4 sm:px-6 py-3 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 !rounded-button whitespace-nowrap cursor-pointer"

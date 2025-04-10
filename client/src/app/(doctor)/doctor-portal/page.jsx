@@ -9,6 +9,7 @@ import ProfessionalDetailsForm from "./components/ProfessionalDetailsForm";
 import EducationalBackgroundForm from "./components/EducationalBackgroundForm";
 import ConsultationDetailsForm from "./components/ConsultationDetailsForm";
 import OtherInformationForm from "./components/OtherInformationForm";
+import SubmissionMessage from "./components/SubmissionMessage";
 
 // Replace FontAwesome with React Icons
 import { FaStethoscope } from 'react-icons/fa';
@@ -27,6 +28,8 @@ const DoctorPortal = () => {
     chat: false,
     writtenReport: false,
   });
+  // Add state for submission message
+  const [showSubmissionMessage, setShowSubmissionMessage] = useState(false);
 
   // Handlers
   const handleImageUpload = (e) => {
@@ -56,6 +59,12 @@ const DoctorPortal = () => {
       ...prev,
       [mode]: !prev[mode],
     }));
+  };
+
+  // Add submit handler to show the submission message
+  const handleSubmit = () => {
+    console.log("Form submitted!");
+    setShowSubmissionMessage(true);
   };
 
   // Render the current step form
@@ -94,7 +103,7 @@ const DoctorPortal = () => {
           />
         );
       default:
-        return null;
+        return <PersonalInfoForm />;
     }
   };
 
@@ -138,10 +147,18 @@ const DoctorPortal = () => {
             <div className="bg-white rounded-xl shadow-sm p-6 md:p-8 mb-6 transition-all duration-300 hover:shadow-md">
               {renderStepContent()}
             </div>
-            <Navigation activeStep={activeStep} setActiveStep={setActiveStep} />
+            <Navigation activeStep={activeStep} setActiveStep={setActiveStep} onSubmit={handleSubmit}/>
           </div>
         </div>
       </div>
+
+      {/* Add SubmissionMessage component */}
+      <SubmissionMessage
+        show={showSubmissionMessage}
+        type="success"
+        message="Your profile has been submitted successfully! We will review your information and get back to you soon."
+        onClose={() => setShowSubmissionMessage(false)}
+      />
     </div>
   );
 };
