@@ -48,7 +48,7 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
 
   // Render the sidebar container with backdrop
   const renderSidebarContainer = () => (
-    <div className={`fixed inset-0 z-20 md:relative transition-all duration-300 ease-in-out ${
+    <div className={`fixed inset-0 z-20 md:h-screen md:relative transition-all duration-300 ease-in-out ${
       isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto'
     }`}>
       {/* Backdrop overlay with blur effect */}
@@ -61,7 +61,7 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
       
       {/* Sidebar container with slide animation */}
       <div 
-        className={`md:w-72 w-[100%] max-w-xs h-auto min-h-screen bg-white md:bg-transparent relative z-30 shadow-xl md:shadow-none
+        className={`md:w-72 w-full max-w-xs h-full fixed inset-y-0 left-0 md:h-screen md:relative bg-white md:bg-transparent z-30 shadow-xl md:shadow-none
                    transition-transform duration-300 ease-out ${
                      isOpen && !isClosing ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
                    }`}
@@ -74,8 +74,8 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
   // Render the actual sidebar content
   const renderSidebarContent = () => (
     <div 
-      className={`w-full md:w-74 bg-white border-r border-gray-200 h-auto min-h-screen md:h-full
-                overflow-y-auto flex flex-col transition-all duration-300 ease-in-out
+      className={`w-full md:w-74 bg-white border-r border-gray-200 flex flex-col h-full fixed inset-y-0 left-0 md:relative md:h-screen
+                overflow-y-auto transition-all duration-300 ease-in-out
                 ${isClosing && !isTabSwitching ? 'opacity-0 translate-x-[-10px]' : 'opacity-100 translate-x-0'}
                 shadow-lg md:shadow-md hover:md:shadow-lg`}
       onMouseEnter={() => setIsHovering(true)}
