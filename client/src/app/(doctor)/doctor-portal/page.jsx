@@ -1,6 +1,7 @@
 // The exported code uses Tailwind CSS. Install Tailwind CSS in your dev environment to ensure all styles work.
 "use client";
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Sidebar from "./components/Sidebar";
 import ProgressBar from "./components/ProgressBar";
 import Navigation from "./components/Navigation";
@@ -15,6 +16,8 @@ import SubmissionMessage from "./components/SubmissionMessage";
 import { FaStethoscope } from 'react-icons/fa';
 
 const DoctorPortal = () => {
+  const router = useRouter();
+  
   // State management
   const [activeStep, setActiveStep] = useState(1);
   const [governmentDocument, setGovernmentDocument] = useState(null);
@@ -30,6 +33,7 @@ const DoctorPortal = () => {
   });
   // Add state for submission message
   const [showSubmissionMessage, setShowSubmissionMessage] = useState(false);
+  const [formSubmitted, setFormSubmitted] = useState(false);
 
   // Handlers
   const handleImageUpload = (e) => {
@@ -61,11 +65,32 @@ const DoctorPortal = () => {
     }));
   };
 
-  // Add submit handler to show the submission message
-  const handleSubmit = () => {
+  // Improved submit handler
+  const handleSubmit = useCallback(() => {
     console.log("Form submitted!");
+    
+    // Here you would typically send the form data to your API
+    // For now, we'll just simulate a successful submission
+    
+    // Mark form as submitted to prevent duplicate submissions
+    setFormSubmitted(true);
+    
+    // Show the submission message
     setShowSubmissionMessage(true);
-  };
+  }, []);
+
+  // Handle message close with direct navigation if needed
+  const handleMessageClose = useCallback(() => {
+    setShowSubmissionMessage(false);
+    
+    // If form was successfully submitted, we could navigate directly here too
+    if (formSubmitted) {
+      // This is a fallback in case the redirect in SubmissionMessage fails
+      setTimeout(() => {
+        router.push("/doctor-dashboard");
+      }, 200);
+    }
+  }, [formSubmitted, router]);
 
   // Render the current step form
   const renderStepContent = () => {
@@ -152,13 +177,14 @@ const DoctorPortal = () => {
         </div>
       </div>
 
-      {/* Add SubmissionMessage component */}
+      {/* Add redirectPath prop to SubmissionMessage */}
       <SubmissionMessage
         show={showSubmissionMessage}
         type="success"
         message="Your profile has been submitted successfully! We will review your information and get back to you soon."
-        onClose={() => setShowSubmissionMessage(false)}
+        onClose={handleMessageClose}
         redirectPath="/doctor-dashboard"
+        autoClose={false} // Disable auto-close to let user read the message
       />
     </div>
   );

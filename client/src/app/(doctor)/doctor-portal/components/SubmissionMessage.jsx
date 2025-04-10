@@ -16,6 +16,7 @@ const SubmissionMessage = ({
   const router = useRouter();
 
   useEffect(() => {
+    // Handle auto-close with redirect
     if (show && autoClose) {
       const timer = setTimeout(() => {
         handleClose();
@@ -28,11 +29,9 @@ const SubmissionMessage = ({
   const handleClose = () => {
     if (onClose) onClose();
     
-    // If redirectPath is provided, navigate to that path after closing
+    // If redirectPath is provided, navigate to that path
     if (redirectPath) {
-      setTimeout(() => {
         router.push(redirectPath);
-      }, 300); // Small delay to ensure the modal closes smoothly
     }
   };
 
@@ -57,7 +56,7 @@ const SubmissionMessage = ({
             onClick={handleClose}
             className="px-6 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors"
           >
-            Close
+            {redirectPath ? 'Continue to Dashboard' : 'Close'}
           </button>
         </div>
       </div>
