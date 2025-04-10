@@ -18,7 +18,6 @@ const PersonalInfoForm = ({
         <h2 className="text-xl font-semibold">Personal Information</h2>
         <div className="text-green-500 flex items-center">
           <i className="fas fa-check-circle mr-2"></i>
-          <span>Changes saved</span>
         </div>
       </div>
       <p className="text-gray-500">
