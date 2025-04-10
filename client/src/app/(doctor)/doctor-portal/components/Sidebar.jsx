@@ -162,16 +162,6 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
         </ul>
       </nav>
       
-      {/* Help section */}
-      <div className="border-t border-gray-200 p-4 md:p-6 mt-auto">
-        <button className="w-full flex items-center justify-center md:justify-start py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-600 font-medium transition-all duration-300 hover:shadow-md active:scale-95 hover:bg-gradient-to-r hover:from-indigo-100 hover:to-blue-100">
-          <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center mr-2 transition-all duration-300 group-hover:bg-indigo-200">
-            <FaQuestionCircle className="text-indigo-600 transition-all duration-300 hover:scale-110" />
-          </div>
-          <span className="transition-transform duration-300 hover:translate-x-1">Need Help?</span>
-        </button>
-      </div>
-      
       {/* Progress indicator at bottom */}
       <div className="p-4 border-t border-gray-200 bg-white">
         <div className="flex justify-between items-center text-xs text-gray-500">
