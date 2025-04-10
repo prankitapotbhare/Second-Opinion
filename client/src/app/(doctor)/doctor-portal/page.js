@@ -10,8 +10,8 @@ import EducationalBackgroundForm from "./components/EducationalBackgroundForm";
 import ConsultationDetailsForm from "./components/ConsultationDetailsForm";
 import OtherInformationForm from "./components/OtherInformationForm";
 
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faStethoscope } from '@fortawesome/free-solid-svg-icons';
+// Replace FontAwesome with React Icons
+import { FaStethoscope } from 'react-icons/fa';
 
 const DoctorPortal = () => {
   // State management
@@ -111,7 +111,7 @@ const DoctorPortal = () => {
           />
           <div className="flex items-center">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-md">
-              <FontAwesomeIcon icon={faStethoscope} className="text-lg" />
+              <FaStethoscope className="text-lg" />
             </div>
             <h1 className="ml-3 text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-600">Doctor Portal</h1>
           </div>

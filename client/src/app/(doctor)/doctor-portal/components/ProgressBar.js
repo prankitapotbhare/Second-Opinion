@@ -1,8 +1,8 @@
 "use client";
 
 import React from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheck } from '@fortawesome/free-solid-svg-icons';
+// Replace FontAwesome with React Icons
+import { FaCheck } from 'react-icons/fa';
 
 const ProgressBar = ({ activeStep }) => {
   const steps = [
@@ -29,7 +29,7 @@ const ProgressBar = ({ activeStep }) => {
                 }`}
               >
                 {step.number < activeStep ? (
-                  <FontAwesomeIcon icon={faCheck} className="text-xs sm:text-sm" />
+                  <FaCheck className="text-xs sm:text-sm" />
                 ) : (
                   <span className="text-xs sm:text-sm">{step.number}</span>
                 )}

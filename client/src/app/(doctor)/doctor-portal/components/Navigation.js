@@ -1,8 +1,8 @@
 "use client";
 
 import React from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faArrowRight, faCheck } from '@fortawesome/free-solid-svg-icons';
+// Replace FontAwesome with React Icons
+import { FaArrowLeft, FaArrowRight, FaCheck } from 'react-icons/fa';
 
 const Navigation = ({ activeStep, setActiveStep }) => {
   const handleSubmit = () => {
@@ -21,7 +21,7 @@ const Navigation = ({ activeStep, setActiveStep }) => {
             : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer"
         }`}
       >
-        <FontAwesomeIcon icon={faArrowLeft} className="mr-2" /> Previous
+        <FaArrowLeft className="mr-2 inline" /> Previous
       </button>
       <button
         onClick={() => {
@@ -35,11 +35,11 @@ const Navigation = ({ activeStep, setActiveStep }) => {
       >
         {activeStep < 5 ? (
           <>
-            Next <FontAwesomeIcon icon={faArrowRight} className="ml-2" />
+            Next <FaArrowRight className="ml-2 inline" />
           </>
         ) : (
           <>
-            Submit <FontAwesomeIcon icon={faCheck} className="ml-2" />
+            Submit <FaCheck className="ml-2 inline" />
           </>
         )}
       </button>
