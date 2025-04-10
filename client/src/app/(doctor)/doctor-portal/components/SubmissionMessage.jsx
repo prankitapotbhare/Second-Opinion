@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { useRouter } from 'next/navigation';
 
 const SubmissionMessage = ({ 
   show, 
@@ -9,17 +10,31 @@ const SubmissionMessage = ({
   message, 
   onClose,
   autoClose = true,
-  autoCloseTime = 5000 
+  autoCloseTime = 5000,
+  redirectPath = null
 }) => {
+  const router = useRouter();
+
   useEffect(() => {
     if (show && autoClose) {
       const timer = setTimeout(() => {
-        if (onClose) onClose();
+        handleClose();
       }, autoCloseTime);
       
       return () => clearTimeout(timer);
     }
-  }, [show, onClose, autoClose, autoCloseTime]);
+  }, [show, autoClose, autoCloseTime]);
+
+  const handleClose = () => {
+    if (onClose) onClose();
+    
+    // If redirectPath is provided, navigate to that path after closing
+    if (redirectPath) {
+      setTimeout(() => {
+        router.push(redirectPath);
+      }, 300); // Small delay to ensure the modal closes smoothly
+    }
+  };
 
   if (!show) return null;
 
@@ -39,7 +54,7 @@ const SubmissionMessage = ({
         <p className="text-gray-600 text-center mb-6">{message}</p>
         <div className="flex justify-center">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="px-6 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors"
           >
             Close

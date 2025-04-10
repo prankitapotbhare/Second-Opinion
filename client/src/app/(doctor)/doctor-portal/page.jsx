@@ -158,6 +158,7 @@ const DoctorPortal = () => {
         type="success"
         message="Your profile has been submitted successfully! We will review your information and get back to you soon."
         onClose={() => setShowSubmissionMessage(false)}
+        redirectPath="/doctor-dashboard"
       />
     </div>
   );
