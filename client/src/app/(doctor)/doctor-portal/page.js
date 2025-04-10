@@ -133,7 +133,7 @@ const DoctorPortal = () => {
 
         {/* Main content - added flex-grow to ensure it takes full height */}
         <div className="flex-1 flex flex-col md:ml-0 mt-20 md:mt-0">
-          <div className="p-6 md:p-8 max-w-4xl mx-auto w-full">
+          <div className="p-6 md:p-8 max-w-6xl mx-auto w-full">
             <ProgressBar activeStep={activeStep} />
             <div className="bg-white rounded-xl shadow-sm p-6 md:p-8 mb-6 transition-all duration-300 hover:shadow-md">
               {renderStepContent()}
