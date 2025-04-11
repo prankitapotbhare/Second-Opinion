@@ -22,13 +22,13 @@ const ConsultationDetailsForm = ({ consultationModes, handleConsultationModeChan
                   <input
                     id="writtenReport"
                     type="checkbox"
-                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
                     checked={consultationModes.writtenReport}
                     onChange={() => handleConsultationModeChange("writtenReport")}
                   />
                   <label
                     htmlFor="writtenReport"
-                    className="ml-2 block text-sm text-gray-700"
+                    className="ml-2 block text-sm text-gray-700 cursor-pointer"
                   >
                     Written Report
                   </label>

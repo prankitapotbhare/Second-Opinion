@@ -70,7 +70,7 @@ const DoctorDashboard = () => {
             </div>
             <button 
               onClick={() => setShowWelcome(false)}
-              className="ml-auto text-green-500 hover:text-green-700"
+              className="ml-auto text-green-500 hover:text-green-700 cursor-pointer"
             >
               &times;
             </button>
@@ -88,11 +88,11 @@ const DoctorDashboard = () => {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <button className="text-gray-500 hover:text-gray-700">
+            <button className="text-gray-500 hover:text-gray-700 cursor-pointer">
               <FaCog className="text-xl" />
             </button>
             <button 
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 hover:text-gray-700 cursor-pointer"
               onClick={() => router.push('/')}
             >
               <FaSignOutAlt className="text-xl" />
@@ -125,7 +125,7 @@ const DoctorDashboard = () => {
           <div className="flex border-b">
             <button
               onClick={() => setActiveTab("overview")}
-              className={`px-6 py-3 text-sm font-medium ${
+              className={`px-6 py-3 text-sm font-medium cursor-pointer ${
                 activeTab === "overview"
                   ? "border-b-2 border-indigo-600 text-indigo-600"
                   : "text-gray-500 hover:text-gray-700"
@@ -135,7 +135,7 @@ const DoctorDashboard = () => {
             </button>
             <button
               onClick={() => setActiveTab("profile")}
-              className={`px-6 py-3 text-sm font-medium ${
+              className={`px-6 py-3 text-sm font-medium cursor-pointer ${
                 activeTab === "profile"
                   ? "border-b-2 border-indigo-600 text-indigo-600"
                   : "text-gray-500 hover:text-gray-700"

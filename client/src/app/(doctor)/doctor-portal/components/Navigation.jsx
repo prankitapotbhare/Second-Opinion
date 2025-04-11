@@ -29,10 +29,10 @@ const Navigation = ({ activeStep, setActiveStep, onSubmit, isSubmitting = false 
           }
         }}
         disabled={isSubmitting}
-        className={`px-4 sm:px-6 py-3 rounded-md text-sm font-medium !rounded-button whitespace-nowrap cursor-pointer
+        className={`px-4 sm:px-6 py-3 rounded-md text-sm font-medium !rounded-button whitespace-nowrap
           ${isSubmitting 
             ? "bg-indigo-400 cursor-not-allowed" 
-            : "bg-indigo-600 hover:bg-indigo-700 text-white"}`}
+            : "bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"}`}
       >
         {activeStep < 5 ? (
           <>

@@ -40,7 +40,7 @@ const OtherInformationForm = ({ governmentDocument, handleDocumentUpload }) => {
                       <button
                         type="button"
                         onClick={() => handleDocumentUpload(null)}
-                        className="ml-auto text-gray-400 hover:text-gray-600"
+                        className="ml-auto text-gray-400 hover:text-gray-600 cursor-pointer"
                       >
                         <i className="fas fa-times"></i>
                       </button>
@@ -116,4 +116,4 @@ const OtherInformationForm = ({ governmentDocument, handleDocumentUpload }) => {
   );
 };
 
-export default OtherInformationForm; 
+export default OtherInformationForm;

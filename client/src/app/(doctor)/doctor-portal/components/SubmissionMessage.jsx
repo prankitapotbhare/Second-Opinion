@@ -54,7 +54,7 @@ const SubmissionMessage = ({
         <div className="flex justify-center">
           <button
             onClick={handleClose}
-            className="px-6 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors"
+            className="px-6 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors cursor-pointer"
           >
             {redirectPath ? 'Continue to Dashboard' : 'Close'}
           </button>

@@ -91,7 +91,7 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
         </div>
         <button 
           onClick={handleClose} 
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-white text-gray-600 hover:bg-gray-100 shadow-sm transition-all duration-300 hover:shadow-md hover:text-indigo-600 overflow-hidden"
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-white text-gray-600 hover:bg-gray-100 shadow-sm transition-all duration-300 hover:shadow-md hover:text-indigo-600 overflow-hidden cursor-pointer"
           aria-label="Close menu"
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
@@ -124,7 +124,7 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
                 onClick={() => handleTabSwitch(item.step)}
                 onMouseEnter={() => setHoveredItem(item.step)}
                 onMouseLeave={() => setHoveredItem(null)}
-                className={`w-full flex items-center px-5 py-3.5 text-sm rounded-xl transition-all duration-300 ease-in-out ${
+                className={`w-full flex items-center px-5 py-3.5 text-sm rounded-xl transition-all duration-300 ease-in-out cursor-pointer ${
                   activeStep === item.step
                     ? "bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-600 font-medium shadow-sm"
                     : "text-gray-600 hover:bg-gray-50 hover:shadow-sm"
@@ -192,7 +192,7 @@ Sidebar.MobileMenuButton = ({ isOpen, onToggle, isMenuHovered, setIsMenuHovered 
       onClick={() => onToggle(!isOpen)}
       onMouseEnter={() => setIsMenuHovered(true)}
       onMouseLeave={() => setIsMenuHovered(false)}
-      className="w-10 h-10 flex items-center justify-center rounded-full bg-white text-gray-600 hover:bg-gray-100 shadow-sm transition-all duration-300 hover:shadow-md hover:text-indigo-600 overflow-hidden"
+      className="w-10 h-10 flex items-center justify-center rounded-full bg-white text-gray-600 hover:bg-gray-100 shadow-sm transition-all duration-300 hover:shadow-md hover:text-indigo-600 overflow-hidden cursor-pointer"
       aria-label={isOpen ? "Close menu" : "Open menu"}
     >
       <div className="relative w-6 h-6 flex items-center justify-center">
