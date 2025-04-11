@@ -1,6 +1,7 @@
 // The exported code uses Tailwind CSS. Install Tailwind CSS in your dev environment to ensure all styles work.
 "use client";
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Sidebar from "./components/Sidebar";
 import ProgressBar from "./components/ProgressBar";
 import Navigation from "./components/Navigation";
@@ -9,11 +10,14 @@ import ProfessionalDetailsForm from "./components/ProfessionalDetailsForm";
 import EducationalBackgroundForm from "./components/EducationalBackgroundForm";
 import ConsultationDetailsForm from "./components/ConsultationDetailsForm";
 import OtherInformationForm from "./components/OtherInformationForm";
+import SubmissionMessage from "./components/SubmissionMessage";
 
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faStethoscope } from '@fortawesome/free-solid-svg-icons';
+// Replace FontAwesome with React Icons
+import { FaStethoscope } from 'react-icons/fa';
 
 const DoctorPortal = () => {
+  const router = useRouter();
+  
   // State management
   const [activeStep, setActiveStep] = useState(1);
   const [governmentDocument, setGovernmentDocument] = useState(null);
@@ -27,6 +31,9 @@ const DoctorPortal = () => {
     chat: false,
     writtenReport: false,
   });
+  // Add state for submission message
+  const [showSubmissionMessage, setShowSubmissionMessage] = useState(false);
+  const [formSubmitted, setFormSubmitted] = useState(false);
 
   // Handlers
   const handleImageUpload = (e) => {
@@ -57,6 +64,33 @@ const DoctorPortal = () => {
       [mode]: !prev[mode],
     }));
   };
+
+  // Improved submit handler
+  const handleSubmit = useCallback(() => {
+    console.log("Form submitted!");
+    
+    // Here you would typically send the form data to your API
+    // For now, we'll just simulate a successful submission
+    
+    // Mark form as submitted to prevent duplicate submissions
+    setFormSubmitted(true);
+    
+    // Show the submission message
+    setShowSubmissionMessage(true);
+  }, []);
+
+  // Handle message close with direct navigation if needed
+  const handleMessageClose = useCallback(() => {
+    setShowSubmissionMessage(false);
+    
+    // If form was successfully submitted, we could navigate directly here too
+    if (formSubmitted) {
+      // This is a fallback in case the redirect in SubmissionMessage fails
+      setTimeout(() => {
+        router.push("/doctor-dashboard");
+      }, 200);
+    }
+  }, [formSubmitted, router]);
 
   // Render the current step form
   const renderStepContent = () => {
@@ -94,7 +128,7 @@ const DoctorPortal = () => {
           />
         );
       default:
-        return null;
+        return <PersonalInfoForm />;
     }
   };
 
@@ -111,7 +145,7 @@ const DoctorPortal = () => {
           />
           <div className="flex items-center">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-md">
-              <FontAwesomeIcon icon={faStethoscope} className="text-lg" />
+              <FaStethoscope className="text-lg" />
             </div>
             <h1 className="ml-3 text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-600">Doctor Portal</h1>
           </div>
@@ -133,15 +167,25 @@ const DoctorPortal = () => {
 
         {/* Main content - added flex-grow to ensure it takes full height */}
         <div className="flex-1 flex flex-col md:ml-0 mt-20 md:mt-0">
-          <div className="p-6 md:p-8 max-w-4xl mx-auto w-full">
+          <div className="p-6 md:p-8 max-w-6xl mx-auto w-full">
             <ProgressBar activeStep={activeStep} />
             <div className="bg-white rounded-xl shadow-sm p-6 md:p-8 mb-6 transition-all duration-300 hover:shadow-md">
               {renderStepContent()}
             </div>
-            <Navigation activeStep={activeStep} setActiveStep={setActiveStep} />
+            <Navigation activeStep={activeStep} setActiveStep={setActiveStep} onSubmit={handleSubmit}/>
           </div>
         </div>
       </div>
+
+      {/* Add redirectPath prop to SubmissionMessage */}
+      <SubmissionMessage
+        show={showSubmissionMessage}
+        type="success"
+        message="Your profile has been submitted successfully! We will review your information and get back to you soon."
+        onClose={handleMessageClose}
+        redirectPath="/doctor-dashboard"
+        autoClose={false} // Disable auto-close to let user read the message
+      />
     </div>
   );
 };

@@ -20,65 +20,20 @@ const ConsultationDetailsForm = ({ consultationModes, handleConsultationModeChan
               <div className="space-y-3">
                 <div className="flex items-center">
                   <input
-                    id="video"
-                    type="checkbox"
-                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                    checked={consultationModes.video}
-                    onChange={() => handleConsultationModeChange("video")}
-                  />
-                  <label
-                    htmlFor="video"
-                    className="ml-2 block text-sm text-gray-700"
-                  >
-                    Video Consultation
-                  </label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    id="chat"
-                    type="checkbox"
-                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                    checked={consultationModes.chat}
-                    onChange={() => handleConsultationModeChange("chat")}
-                  />
-                  <label
-                    htmlFor="chat"
-                    className="ml-2 block text-sm text-gray-700"
-                  >
-                    Chat Consultation
-                  </label>
-                </div>
-                <div className="flex items-center">
-                  <input
                     id="writtenReport"
                     type="checkbox"
-                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
                     checked={consultationModes.writtenReport}
                     onChange={() => handleConsultationModeChange("writtenReport")}
                   />
                   <label
                     htmlFor="writtenReport"
-                    className="ml-2 block text-sm text-gray-700"
+                    className="ml-2 block text-sm text-gray-700 cursor-pointer"
                   >
                     Written Report
                   </label>
                 </div>
               </div>
-            </div>
-            <div className="mb-6">
-              <label
-                htmlFor="consultationFee"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Consultation Fee (USD){" "}
-                <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="consultationFee"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="100"
-              />
             </div>
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -193,4 +148,4 @@ const ConsultationDetailsForm = ({ consultationModes, handleConsultationModeChan
   );
 };
 
-export default ConsultationDetailsForm; 
+export default ConsultationDetailsForm;

@@ -1,19 +1,19 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+// Replace FontAwesome with React Icons
 import { 
-  faUserMd, 
-  faBriefcaseMedical, 
-  faGraduationCap, 
-  faCalendarAlt, 
-  faInfoCircle, 
-  faStethoscope, 
-  faQuestionCircle,
-  faTimes,
-  faChevronRight,
-  faBars
-} from '@fortawesome/free-solid-svg-icons';
+  FaUserMd, 
+  FaBriefcaseMedical, 
+  FaGraduationCap, 
+  FaCalendarAlt, 
+  FaInfoCircle, 
+  FaStethoscope, 
+  FaQuestionCircle,
+  FaTimes,
+  FaChevronRight,
+  FaBars
+} from 'react-icons/fa';
 
 const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
   const [hoveredItem, setHoveredItem] = useState(null);
@@ -22,11 +22,11 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
   const [isTabSwitching, setIsTabSwitching] = useState(false);
   
   const navItems = [
-    { step: 1, label: 'Personal Information', icon: faUserMd },
-    { step: 2, label: 'Professional Details', icon: faBriefcaseMedical },
-    { step: 3, label: 'Educational Background', icon: faGraduationCap },
-    { step: 4, label: 'Consultation Details', icon: faCalendarAlt },
-    { step: 5, label: 'Other Information', icon: faInfoCircle },
+    { step: 1, label: 'Personal Information', icon: FaUserMd },
+    { step: 2, label: 'Professional Details', icon: FaBriefcaseMedical },
+    { step: 3, label: 'Educational Background', icon: FaGraduationCap },
+    { step: 4, label: 'Consultation Details', icon: FaCalendarAlt },
+    { step: 5, label: 'Other Information', icon: FaInfoCircle },
   ];
 
   const handleClose = () => {
@@ -48,7 +48,7 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
 
   // Render the sidebar container with backdrop
   const renderSidebarContainer = () => (
-    <div className={`fixed inset-0 z-20 md:relative transition-all duration-300 ease-in-out ${
+    <div className={`fixed inset-0 z-20 md:h-screen md:relative transition-all duration-300 ease-in-out ${
       isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto'
     }`}>
       {/* Backdrop overlay with blur effect */}
@@ -61,7 +61,7 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
       
       {/* Sidebar container with slide animation */}
       <div 
-        className={`md:w-72 w-[100%] max-w-xs h-auto min-h-screen bg-white md:bg-transparent relative z-30 shadow-xl md:shadow-none
+        className={`md:w-72 w-full max-w-xs h-full fixed inset-y-0 left-0 md:h-screen md:relative bg-white md:bg-transparent z-30 shadow-xl md:shadow-none
                    transition-transform duration-300 ease-out ${
                      isOpen && !isClosing ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
                    }`}
@@ -74,8 +74,8 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
   // Render the actual sidebar content
   const renderSidebarContent = () => (
     <div 
-      className={`w-full md:w-72 bg-white border-r border-gray-200 h-auto min-h-screen md:h-full
-                overflow-y-auto flex flex-col transition-all duration-300 ease-in-out
+      className={`w-full md:w-74 bg-white border-r border-gray-200 flex flex-col h-full fixed inset-y-0 left-0 md:relative md:h-screen
+                overflow-y-auto transition-all duration-300 ease-in-out
                 ${isClosing && !isTabSwitching ? 'opacity-0 translate-x-[-10px]' : 'opacity-100 translate-x-0'}
                 shadow-lg md:shadow-md hover:md:shadow-lg`}
       onMouseEnter={() => setIsHovering(true)}
@@ -85,20 +85,19 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
       <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-blue-50">
         <div className="flex items-center">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-md transform transition-all duration-300 hover:scale-105">
-            <FontAwesomeIcon icon={faStethoscope} className="text-lg" />
+            <FaStethoscope className="text-lg" />
           </div>
           <h1 className="ml-3 text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-600">Doctor Portal</h1>
         </div>
         <button 
           onClick={handleClose} 
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-white text-gray-600 hover:bg-gray-100 shadow-sm transition-all duration-300 hover:shadow-md hover:text-indigo-600 overflow-hidden"
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-white text-gray-600 hover:bg-gray-100 shadow-sm transition-all duration-300 hover:shadow-md hover:text-indigo-600 overflow-hidden cursor-pointer"
           aria-label="Close menu"
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
         >
           <div className="relative w-6 h-6 flex items-center justify-center">
-            <FontAwesomeIcon 
-              icon={faTimes} 
+            <FaTimes 
               className="absolute transition-all duration-300 transform rotate-0 hover:rotate-90"
               style={{ opacity: 1 }}
             />
@@ -110,7 +109,7 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
       <div className="hidden md:flex p-6 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-blue-50">
         <div className="flex items-center">
           <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-md transform transition-all duration-500 ${isHovering ? 'scale-110' : 'scale-100'}`}>
-            <FontAwesomeIcon icon={faStethoscope} className={`text-lg transition-all duration-500 ${isHovering ? 'rotate-12' : 'rotate-0'}`} />
+            <FaStethoscope className={`text-lg transition-all duration-500 ${isHovering ? 'rotate-12' : 'rotate-0'}`} />
           </div>
           <h1 className="ml-3 text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-600 transition-all duration-300">Doctor Portal</h1>
         </div>
@@ -125,7 +124,7 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
                 onClick={() => handleTabSwitch(item.step)}
                 onMouseEnter={() => setHoveredItem(item.step)}
                 onMouseLeave={() => setHoveredItem(null)}
-                className={`w-full flex items-center px-5 py-3.5 text-sm rounded-xl transition-all duration-300 ease-in-out ${
+                className={`w-full flex items-center px-5 py-3.5 text-sm rounded-xl transition-all duration-300 ease-in-out cursor-pointer ${
                   activeStep === item.step
                     ? "bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-600 font-medium shadow-sm"
                     : "text-gray-600 hover:bg-gray-50 hover:shadow-sm"
@@ -138,13 +137,12 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
                     ? "bg-gray-200 text-indigo-500"
                     : "bg-gray-100 text-gray-400"
                 }`}>
-                  <FontAwesomeIcon
-                    icon={item.icon}
-                    className={`transition-all duration-300 ${
+                  {React.createElement(item.icon, {
+                    className: `transition-all duration-300 ${
                       hoveredItem === item.step && activeStep !== item.step ? "scale-110" : ""
-                    } ${activeStep === item.step ? "animate-pulse-subtle" : ""}`}
-                    fixedWidth
-                  />
+                    } ${activeStep === item.step ? "animate-pulse-subtle" : ""}`,
+                    style: { width: '1em' }
+                  })}
                 </div>
                 <span className={`transition-all duration-300 ${
                   hoveredItem === item.step && activeStep !== item.step ? "translate-x-1" : "translate-x-0"
@@ -152,8 +150,7 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
                 {activeStep === item.step ? (
                   <span className="ml-auto w-1.5 h-6 rounded-full bg-gradient-to-b from-indigo-500 to-blue-600 animate-pulse"></span>
                 ) : (
-                  <FontAwesomeIcon 
-                    icon={faChevronRight} 
+                  <FaChevronRight 
                     className={`ml-auto text-gray-300 transition-all duration-300 ${
                       hoveredItem === item.step ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2"
                     }`}
@@ -164,16 +161,6 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
           ))}
         </ul>
       </nav>
-      
-      {/* Help section */}
-      <div className="border-t border-gray-200 p-4 md:p-6 mt-auto">
-        <button className="w-full flex items-center justify-center md:justify-start py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-600 font-medium transition-all duration-300 hover:shadow-md active:scale-95 hover:bg-gradient-to-r hover:from-indigo-100 hover:to-blue-100">
-          <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center mr-2 transition-all duration-300 group-hover:bg-indigo-200">
-            <FontAwesomeIcon icon={faQuestionCircle} className="text-indigo-600 transition-all duration-300 hover:scale-110" />
-          </div>
-          <span className="transition-transform duration-300 hover:translate-x-1">Need Help?</span>
-        </button>
-      </div>
       
       {/* Progress indicator at bottom */}
       <div className="p-4 border-t border-gray-200 bg-white">
@@ -205,18 +192,16 @@ Sidebar.MobileMenuButton = ({ isOpen, onToggle, isMenuHovered, setIsMenuHovered 
       onClick={() => onToggle(!isOpen)}
       onMouseEnter={() => setIsMenuHovered(true)}
       onMouseLeave={() => setIsMenuHovered(false)}
-      className="w-10 h-10 flex items-center justify-center rounded-full bg-white text-gray-600 hover:bg-gray-100 shadow-sm transition-all duration-300 hover:shadow-md hover:text-indigo-600 overflow-hidden"
+      className="w-10 h-10 flex items-center justify-center rounded-full bg-white text-gray-600 hover:bg-gray-100 shadow-sm transition-all duration-300 hover:shadow-md hover:text-indigo-600 overflow-hidden cursor-pointer"
       aria-label={isOpen ? "Close menu" : "Open menu"}
     >
       <div className="relative w-6 h-6 flex items-center justify-center">
-        <FontAwesomeIcon 
-          icon={faBars} 
+        <FaBars 
           className={`absolute transition-all duration-300 transform ${
             isOpen ? 'opacity-0 rotate-90 scale-0' : 'opacity-100 rotate-0 scale-100'
           } ${isMenuHovered && !isOpen ? 'scale-110' : ''}`}
         />
-        <FontAwesomeIcon 
-          icon={faTimes} 
+        <FaTimes 
           className={`absolute transition-all duration-300 transform ${
             isOpen ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 rotate-90 scale-0'
           } ${isMenuHovered && isOpen ? 'rotate-90' : ''}`}
