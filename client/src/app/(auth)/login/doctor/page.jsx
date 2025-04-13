@@ -3,7 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { SplitScreen, AuthHeader } from '../../components';
-import SignupForm from '../../components/forms/SignupForm';
+import SignupForm from '../../components/forms/LoginForm';
 
 export default function DoctorSignup() {
   const router = useRouter();
@@ -13,25 +13,25 @@ export default function DoctorSignup() {
     console.log(formData);
     
     // Redirect to doctor onboarding after successful signup
-    // router.push('/doctor/portal');
+    // router.push('/doctor/dashboard');
   };
 
   return (
     <SplitScreen 
-      imageSrc="/images/SignUp/doctor-signup.jpg" 
-      imageAlt="Microscope"
+      imageSrc="/images/Login/doctor-login.jpg" 
+      imageAlt="Doctor with telescope"
       imagePosition="left"
     >
       <AuthHeader 
-        title="Join as a Doctor" 
-        subtitle="Create your account to provide medical expertise"
+        title="Welcome" 
+        subtitle="Enter your Email and Password to Login"
         align="left"
       />
       
       <SignupForm 
         userType="doctor"
         onSubmit={handleSubmit}
-        redirectPath="/doctor/onboarding"
+        redirectPath="/doctor/dashboard"
       />
     </SplitScreen>
   );

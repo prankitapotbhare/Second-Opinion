@@ -10,7 +10,7 @@ const SplitScreen = ({
   imagePosition = "left" // 'left' or 'right'
 }) => {
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-auto bg-white">
       {/* Image Section */}
       {imagePosition === 'left' && (
         <div className="hidden md:block md:w-1/2 bg-[#e0eae4] relative overflow-hidden">

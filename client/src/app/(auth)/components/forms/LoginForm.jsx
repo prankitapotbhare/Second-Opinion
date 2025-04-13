@@ -2,33 +2,76 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import PasswordInput from '../common/PasswordInput';
 import SocialLoginButton from '../common/SocialLoginButton';
 import AuthDivider from '../common/AuthDivider';
+import { useAuth } from '@/contexts/AuthContext';
 
 const LoginForm = ({ 
   userType = 'user', // 'user', 'doctor', or 'admin'
   onSubmit,
   redirectPath = '/'
 }) => {
+  const router = useRouter();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (onSubmit) {
-      onSubmit({ email, password, rememberMe });
+    setError('');
+    setIsLoading(true);
+
+    try {
+      // Call the login function from the auth context
+      const result = await login(email, password, userType);
+      
+      if (result.success) {
+        // If login is successful, redirect to the appropriate dashboard
+        const dashboardPath = `/${userType}/dashboard`;
+        router.push(dashboardPath);
+        
+        // Also call the onSubmit prop if provided
+        if (onSubmit) {
+          onSubmit({ email, password, rememberMe });
+        }
+      } else {
+        // If login fails, show the error
+        setError(result.error || 'Login failed');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleGoogleLogin = () => {
     // Handle Google login
     console.log('Google login clicked');
+    // For mock purposes, we'll just log in as the default user for this type
+    const mockEmail = userType === 'admin' ? 'admin@example.com' : 
+                     userType === 'doctor' ? 'doctor@example.com' : 
+                     'user@example.com';
+    setEmail(mockEmail);
+    setPassword('password123');
+    // Submit the form
+    handleSubmit({ preventDefault: () => {} });
   };
 
   return (
     <>
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md mb-4">
+          {error}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -71,9 +114,10 @@ const LoginForm = ({
         <div>
           <button
             type="submit"
-            className="w-full py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 cursor-pointer"
+            disabled={isLoading}
+            className="w-full py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 cursor-pointer disabled:opacity-70"
           >
-            Sign In
+            {isLoading ? 'Signing In...' : 'Sign In'}
           </button>
         </div>
 
