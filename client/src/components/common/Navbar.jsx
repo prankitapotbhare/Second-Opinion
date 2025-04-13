@@ -175,17 +175,17 @@ const Navbar = () => {
                   </button>
                 </>
               ) : (
-                <div className="flex flex-col space-y-2 pt-2 border-t border-teal-600">
+                <div className="flex flex-col space-y-3 pt-2 border-t border-teal-600">
                   <Link 
                     href="/login" 
-                    className="hover:text-teal-200 transition-colors"
+                    className="w-full py-2 text-center border border-teal-200 rounded-md hover:bg-teal-600 transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Login
                   </Link>
                   <Link 
                     href="/signup" 
-                    className="bg-white text-teal-700 px-4 py-2 rounded-md hover:bg-teal-100 transition-colors inline-block text-center"
+                    className="w-full py-2 text-center bg-white text-teal-700 rounded-md hover:bg-teal-100 transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Sign Up
