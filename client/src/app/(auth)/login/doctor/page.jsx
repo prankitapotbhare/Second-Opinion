@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function DoctorLogin() {
   const [email, setEmail] = useState('');
@@ -17,14 +18,15 @@ export default function DoctorLogin() {
 
   return (
     <div className="flex h-screen bg-white">
-      {/* Left side - Stethoscope SVG */}
-      <div className="hidden md:flex md:w-1/2 bg-[#e0eae4] items-center justify-center p-10">
-        <div className="relative w-full max-w-md h-full flex items-center justify-center">
-          <svg viewBox="0 0 100 100" className="w-2/3 h-2/3 text-yellow-400">
-            <path d="M80,40 C80,20 65,5 45,5 C25,5 10,20 10,40 L10,50 C10,55 14,60 19,60 L19,40 C19,25 30,13 45,13 C60,13 71,25 71,40 L71,60 C76,60 80,55 80,50 L80,40 Z" fill="currentColor"/>
-            <path d="M45,95 C35,95 25,85 25,75 C25,65 35,55 45,55 C55,55 65,65 65,75 C65,85 55,95 45,95 Z" fill="currentColor"/>
-          </svg>
-        </div>
+      {/* Left side - Doctor Image */}
+      <div className="hidden md:block md:w-1/2 bg-[#e0eae4] relative overflow-hidden">
+        <Image
+          src="/images/Login/doctor-login.jpg"
+          alt="Doctor with stethoscope"
+          fill
+          className="object-cover object-center"
+          priority
+        />
       </div>
 
       {/* Right side - Login form */}
@@ -146,4 +148,4 @@ export default function DoctorLogin() {
       </div>
     </div>
   );
-} 
+}
