@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { doctors } from '@/data/staticData';
-import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { LoadingSpinner } from '@/components';
 
 // Import components
 import DoctorProfileCard from '../components/DoctorProfileCard';

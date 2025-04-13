@@ -4,6 +4,8 @@ export { default as FileUpload } from './common/FileUpload';
 export { default as LoadingSpinner } from './common/LoadingSpinner';
 export { default as ConfirmationMessage } from './common/ConfirmationMessage';
 export { default as StatCard } from './common/StatCard';
+export { default as Navbar } from './common/Navbar';
+export { default as Footer } from './common/Footer';
 
 // Layout components
 // Doctor-specific components

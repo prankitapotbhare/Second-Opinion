@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Navbar from "./components/Navbar";
+import { Navbar } from "@/components";
 import HeroSection from "./components/HeroSection";
 import DoctorsSection from "./components/DoctorsSection";
 import FAQSection from "./components/FAQSection";
-import Footer from "./components/Footer";
+import { Footer } from "@/components";
 
 export default function Home() {
   // Add client-side only rendering state
