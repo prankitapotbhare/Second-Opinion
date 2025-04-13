@@ -87,7 +87,7 @@ const DoctorPortal = () => {
     if (formSubmitted) {
       // This is a fallback in case the redirect in SubmissionMessage fails
       setTimeout(() => {
-        router.push("/doctor-dashboard");
+        router.push("/doctor/dashboard");
       }, 200);
     }
   }, [formSubmitted, router]);
@@ -183,7 +183,7 @@ const DoctorPortal = () => {
         type="success"
         message="Your profile has been submitted successfully! We will review your information and get back to you soon."
         onClose={handleMessageClose}
-        redirectPath="/doctor-dashboard"
+        redirectPath="/doctor/dashboard"
         autoClose={false} // Disable auto-close to let user read the message
       />
     </div>

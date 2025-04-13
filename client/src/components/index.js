@@ -6,10 +6,6 @@ export { default as ConfirmationMessage } from './common/ConfirmationMessage';
 export { default as StatCard } from './common/StatCard';
 
 // Layout components
-export { default as DoctorSidebar } from './layout/DoctorSidebar';
-export { default as UserSidebar } from './layout/UserSidebar';
-export { default as UserHeader } from './layout/UserHeader';
-
 // Doctor-specific components
 export { default as DoctorSidebar } from './layout/DoctorSidebar';
 

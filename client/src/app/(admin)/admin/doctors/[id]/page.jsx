@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { AdminHeader } from '@/app/(admin)/components';
+import { Header } from '@/app/(admin)/components';
 
 const DoctorDetails = () => {
   const { id } = useParams();
@@ -26,7 +26,7 @@ const DoctorDetails = () => {
   if (!doctor) {
     return (
       <div className="min-h-screen bg-[#f0f8ff]">
-        <AdminHeader title="Doctor Not Found" />
+        <Header title="Doctor Not Found" />
         <div className="max-w-[1440px] mx-auto px-6 py-12 text-center">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Doctor Not Found</h2>
           <p className="text-gray-600">The doctor you are looking for does not exist or has been removed.</p>
@@ -37,7 +37,7 @@ const DoctorDetails = () => {
 
   return (
     <div className="min-h-screen bg-[#f0f8ff]">
-      <AdminHeader title={`Doctor: ${doctor.name}`} />
+      <Header title={`Doctor: ${doctor.name}`} />
       
       <main className="max-w-[1440px] mx-auto px-6 pb-8">
         <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-sm p-6 mb-8">

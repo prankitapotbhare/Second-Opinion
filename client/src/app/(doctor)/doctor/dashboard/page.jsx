@@ -5,7 +5,7 @@ import AppointmentSection from "./components/AppointmentSection";
 import ProfileSection from "./components/ProfileSection";
 import SettingSection from "./components/SettingSection";
 import Header from "./components/Header";
-import DoctorSidebar from "../../../../components/layout/DoctorSidebar";
+import {DoctorSidebar} from "@/components";
 
 const DoctorDashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard");

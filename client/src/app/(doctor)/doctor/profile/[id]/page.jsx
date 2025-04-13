@@ -10,7 +10,7 @@ import DoctorProfileCard from '../components/DoctorProfileCard';
 import ProfessionalDetails from '../components/ProfessionalDetails';
 import AboutDoctor from '../components/AboutDoctor';
 import Reviews from '../components/Reviews';
-import LoadingSpinner from '../components/LoadingSpinner';
+import { LoadingSpinner } from '@/components';
 import NotFound from '../components/NotFound';
 
 export default function DoctorProfilePage() {
