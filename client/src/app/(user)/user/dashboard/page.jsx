@@ -7,10 +7,14 @@ import DashboardSection from "./components/DashboardSection";
 import AppointmentsSection from "./components/AppointmentsSection";
 import ProfileSection from "./components/ProfileSection";
 import SettingsSection from "./components/SettingsSection";
+import { useAuth } from "@/contexts/AuthContext";
+import Link from 'next/link';
+import { FaCalendarAlt, FaUserMd, FaClipboardList, FaCommentMedical } from 'react-icons/fa';
 
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { currentUser, logout } = useAuth();
 
   const handleTabClick = (tab) => {
     setActiveTab(tab);

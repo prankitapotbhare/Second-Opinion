@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { FaUserMd, FaUsers, FaCalendarCheck, FaClock } from 'react-icons/fa';
 import { statCards, doctors, activities } from '@/data/mockData';
+import { useAuth } from "@/contexts/AuthContext";
 
 // Import components
 import { 
@@ -14,6 +15,7 @@ import {
 } from '@/app/(admin)/components';
 
 const AdminDashboard = () => {
+  const { currentUser } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Add icons to stat cards
@@ -31,7 +33,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-[#f0f8ff]">
-      <Header title="Admin Panel" setIsSidebarOpen={setIsSidebarOpen} />
+      <Header title="Admin Panel" setIsSidebarOpen={setIsSidebarOpen} user={currentUser} />
       
       {/* Main Content */}
       <main className="max-w-[1440px] mx-auto px-6 pb-8">
