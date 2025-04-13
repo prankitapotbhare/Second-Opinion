@@ -201,4 +201,4 @@ const ProfessionalDetailsForm = ({ specialization, setSpecialization }) => {
   );
 };
 
-export default ProfessionalDetailsForm; 
+export default ProfessionalDetailsForm;

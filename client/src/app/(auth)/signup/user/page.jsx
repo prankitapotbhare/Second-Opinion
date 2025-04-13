@@ -5,33 +5,33 @@ import { useRouter } from 'next/navigation';
 import { SplitScreen, AuthHeader } from '../../components';
 import SignupForm from '../../components/forms/SignupForm';
 
-export default function DoctorSignup() {
+export default function UserSignup() {
   const router = useRouter();
 
   const handleSubmit = (formData) => {
     // Handle signup logic here
     console.log(formData);
     
-    // Redirect to doctor onboarding after successful signup
-    // router.push('/doctor/onboarding');
+    // Redirect to user dashboard after successful signup
+    // router.push('/user/dashboard');
   };
 
   return (
     <SplitScreen 
-      imageSrc="/images/SignUp/doctor-signup.jpg" 
-      imageAlt="Doctor with patients"
-      imagePosition="left"
+      imageSrc="/images/SignUp/user-signup.jpg" 
+      imageAlt="user with healthcare provider"
+      imagePosition="right"
     >
       <AuthHeader 
-        title="Join as a Doctor" 
-        subtitle="Create your account to provide medical expertise"
+        title="Create Your user Account" 
+        subtitle="Join Second Opinion to get expert medical advice"
         align="center"
       />
       
       <SignupForm 
-        userType="doctor"
+        userType="user"
         onSubmit={handleSubmit}
-        redirectPath="/doctor/onboarding"
+        redirectPath="/user/dashboard"
       />
     </SplitScreen>
   );

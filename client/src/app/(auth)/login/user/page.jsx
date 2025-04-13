@@ -4,32 +4,33 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { SplitScreen, AuthHeader, LoginForm } from '../../components';
 
-export default function DoctorLogin() {
+export default function UserLogin() {
   const router = useRouter();
 
   const handleSubmit = ({ email, password, rememberMe }) => {
     // Handle login logic here
     console.log({ email, password, rememberMe });
     
-    // Redirect to doctor dashboard after successful login
-    // router.push('/doctor/dashboard');
+    // Redirect to user dashboard after successful login
+    // router.push('/user/dashboard');
   };
 
   return (
     <SplitScreen 
-      imageSrc="/images/Login/doctor-login.jpg" 
-      imageAlt="Doctor with stethoscope"
+      imageSrc="/images/Login/user-login.jpg" 
+      imageAlt="user with doctor"
+      imagePosition="right"
     >
       <AuthHeader 
-        title="Welcome Back" 
-        subtitle="Enter your email and password to access your account"
+        title="User Login" 
+        subtitle="Access your healthcare account"
         align="center"
       />
       
       <LoginForm 
-        userType="doctor"
+        userType="user"
         onSubmit={handleSubmit}
-        redirectPath="/doctor/dashboard"
+        redirectPath="/user/dashboard"
       />
     </SplitScreen>
   );
