@@ -38,38 +38,44 @@ export const faqs = [
 
 export const doctors = [
   {
-    id: 1,
-    name: "Dr. Sarah Johnson",
+    id: "1", // Make sure ID is a string to match URL param
+    name: "Dr. Emily Johnson",
     department: "Cardiology",
-    degree: "MD, FACC",
-    experience: "15 years",
-    imagePrompt:
-      "Professional portrait of a female doctor wearing a white coat with stethoscope, warm friendly smile, against a light blue medical office background, high quality professional headshot, clean lighting, medical professional appearance, confident posture, approachable demeanor, studio quality photograph with soft shadows",
+    degree: "M.D., FACC",
+    experience: "8 years",
+    hospital: "City Heart Institute",
+    imageUrl: "https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg"
   },
   {
-    id: 2,
+    id: "2", // Updated to string
     name: "Dr. Michael Chen",
     department: "Neurology",
     degree: "MD, PhD",
     experience: "12 years",
+    hospital: "Neuroscience Medical Center", // Added hospital
+    imageUrl: "https://public.readdy.ai/ai/img_res/asian_male_doctor_professional_headshot.jpg", // Added imageUrl
     imagePrompt:
       "Professional portrait of an Asian male doctor wearing a white coat with stethoscope, warm friendly smile, against a light blue medical office background, high quality professional headshot, clean lighting, medical professional appearance, confident posture, approachable demeanor, studio quality photograph with soft shadows",
   },
   {
-    id: 3,
+    id: "3", // Updated to string
     name: "Dr. Emily Rodriguez",
     department: "Orthopedics",
     degree: "MD, FAAOS",
     experience: "10 years",
+    hospital: "Joint & Spine Specialists", // Added hospital
+    imageUrl: "https://public.readdy.ai/ai/img_res/female_doctor_orthopedics_headshot.jpg", // Added imageUrl
     imagePrompt:
       "Professional portrait of a female doctor wearing a white coat with stethoscope, warm friendly smile, against a light blue medical office background, high quality professional headshot, clean lighting, medical professional appearance, confident posture, approachable demeanor, studio quality photograph with soft shadows",
   },
   {
-    id: 4,
+    id: "4", // Updated to string
     name: "Dr. James Wilson",
     department: "Oncology",
     degree: "MD, FASCO",
     experience: "18 years",
+    hospital: "Cancer Treatment Center", // Added hospital
+    imageUrl: "https://public.readdy.ai/ai/img_res/male_doctor_oncology_headshot.jpg", // Added imageUrl
     imagePrompt:
       "Professional portrait of a male doctor wearing a white coat with stethoscope, warm friendly smile, against a light blue medical office background, high quality professional headshot, clean lighting, medical professional appearance, confident posture, approachable demeanor, studio quality photograph with soft shadows",
   },
