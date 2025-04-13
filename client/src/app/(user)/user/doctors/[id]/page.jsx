@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { doctors } from '@/data/staticData';
 import { LoadingSpinner } from '@/components';
+import Link from 'next/link';
 
 // Import components
 import DoctorProfileCard from '../components/DoctorProfileCard';
