@@ -21,7 +21,7 @@ const DoctorCard = ({ doctor }) => {
             Know More
           </button>
         </Link>
-        <Link href={`/user/appointment/book?doctorId=${doctor.id}`}>
+        <Link href={`/user/appointment/booking?doctorId=${doctor.id}`}>
           <button className="bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 transition-colors duration-200 whitespace-nowrap">
             Book Now
           </button>

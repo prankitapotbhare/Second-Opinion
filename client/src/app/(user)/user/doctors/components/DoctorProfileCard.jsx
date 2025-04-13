@@ -57,7 +57,7 @@ const DoctorProfileCard = ({ doctor }) => {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3">
-            <Link href={`/user/appointment/book?doctorId=${doctor.id}`}>
+            <Link href={`/user/appointment/booking?doctorId=${doctor.id}`}>
               <button className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center">
                 <FaCalendarAlt className="mr-2" />
                 Book Appointment

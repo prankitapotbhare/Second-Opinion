@@ -31,7 +31,7 @@ const BookAppointmentSection = ({ doctorId }) => {
             </div>
             <p className="text-gray-600 mb-4">Consult with the doctor from the comfort of your home</p>
             <p className="text-sm font-medium text-blue-600 mb-4">₹1200</p>
-            <Link href={`/user/appointment/booking/${doctorId}?type=video`}>
+            <Link href={`/user/appointment/booking?doctorId=${doctorId}&type=chat`}>
               <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                 Book Video Consultation
               </button>
@@ -47,7 +47,7 @@ const BookAppointmentSection = ({ doctorId }) => {
             </div>
             <p className="text-gray-600 mb-4">Visit the doctor at their clinic</p>
             <p className="text-sm font-medium text-green-600 mb-4">₹1500</p>
-            <Link href={`/user/appointment/booking/${doctorId}?type=in-person`}>
+            <Link href={`/user/appointment/booking?doctorId=${doctorId}&type=in-person`}>
               <button className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
                 Book In-Person Visit
               </button>
@@ -69,11 +69,11 @@ const BookAppointmentSection = ({ doctorId }) => {
               <p className="text-sm text-gray-600">9:00 AM - 5:00 PM</p>
             </div>
             <div className="border border-gray-200 rounded-md p-2 text-center">
-              <p className="font-medium text-gray-800">Wednesday</p>
+              <p className="font-medium text-gray-800">Thursday</p>
               <p className="text-sm text-gray-600">9:00 AM - 5:00 PM</p>
             </div>
             <div className="border border-gray-200 rounded-md p-2 text-center">
-              <p className="font-medium text-gray-800">Thursday</p>
+              <p className="font-medium text-gray-800">Friday</p>
               <p className="text-sm text-gray-600">9:00 AM - 5:00 PM</p>
             </div>
           </div>
