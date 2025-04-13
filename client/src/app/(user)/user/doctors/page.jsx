@@ -20,10 +20,6 @@ export default function DoctorsSearchPage() {
   
   const toggleShowAll = () => {
     setShowAll(!showAll);
-    // Scroll to top when showing all doctors
-    if (!showAll) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
   };
   
   return (

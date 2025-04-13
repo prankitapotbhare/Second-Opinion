@@ -8,5 +8,5 @@ https://www.figma.com/design/vjyrCtswv987Sx5azQQGZw/Second-Opinion?node-id=0-1&p
 *important points while creating the user side.
 
 Only the Home screen should include the full navbar with all options: Home, Signup, Login, FAQs, and Contact Us. On all other pages, the navbar should only display the "Home" option.
-Please use the same footer shown on the Home screen and add it to all other pages—except Signup, Create Account, Response, and Comments pages. Try to keep it almost the same as shown in the reference figure.
+Please use the same footer shown on the Home screen and add it to all other pages—except Signup, Login, Response, and Comments pages. Try to keep it almost the same as shown in the reference figure.
 

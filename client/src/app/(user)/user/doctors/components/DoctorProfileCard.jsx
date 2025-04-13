@@ -26,11 +26,11 @@ const DoctorProfileCard = ({ doctor }) => {
                 {[...Array(5)].map((_, i) => (
                   <FaStar 
                     key={i} 
-                    className={i < Math.floor(doctor.rating) ? "text-yellow-400" : "text-gray-300"} 
+                    className={i < Math.floor(doctor.rating || 0) ? "text-yellow-400" : "text-gray-300"} 
                   />
                 ))}
               </div>
-              <span className="text-gray-600">({doctor.reviewCount} reviews)</span>
+              <span className="text-gray-600">({doctor.reviewCount || 0} reviews)</span>
             </div>
           </div>
           
@@ -46,7 +46,7 @@ const DoctorProfileCard = ({ doctor }) => {
           </div>
           
           <div className="flex flex-wrap gap-2 mb-6">
-            {doctor.specialties.map((specialty, index) => (
+            {doctor.specialties && doctor.specialties.map((specialty, index) => (
               <span 
                 key={index}
                 className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"

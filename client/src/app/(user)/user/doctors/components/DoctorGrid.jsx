@@ -1,8 +1,7 @@
 import React from 'react';
 import DoctorCard from './DoctorCard';
-import Link from 'next/link';
 
-const DoctorGrid = ({ doctors, showAll = false }) => {
+const DoctorGrid = ({ doctors, showAll = false, toggleShowAll }) => {
   const displayedDoctors = showAll ? doctors : doctors.slice(0, 8);
   
   return (
@@ -15,11 +14,23 @@ const DoctorGrid = ({ doctors, showAll = false }) => {
       
       {!showAll && doctors.length > 8 && (
         <div className="flex justify-center mt-8">
-          <Link href="/user/doctors/all">
-            <button className="bg-teal-600 text-white px-8 py-3 rounded-lg hover:bg-teal-700 transition-colors duration-200 text-lg font-semibold whitespace-nowrap">
-              See All Doctors
-            </button>
-          </Link>
+          <button 
+            onClick={toggleShowAll}
+            className="bg-teal-600 text-white px-8 py-3 rounded-lg hover:bg-teal-700 transition-colors duration-200 text-lg font-semibold whitespace-nowrap"
+          >
+            See All Doctors
+          </button>
+        </div>
+      )}
+      
+      {showAll && doctors.length > 8 && (
+        <div className="flex justify-center mt-8">
+          <button 
+            onClick={toggleShowAll}
+            className="bg-gray-200 text-gray-800 px-8 py-3 rounded-lg hover:bg-gray-300 transition-colors duration-200 text-lg font-semibold whitespace-nowrap"
+          >
+            Show Less
+          </button>
         </div>
       )}
       
