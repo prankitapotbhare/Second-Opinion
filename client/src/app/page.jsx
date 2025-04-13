@@ -17,7 +17,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#e6f5f5]">
       <Navbar />
       {/* Only render interactive components when on client */}
       {isClient ? (
