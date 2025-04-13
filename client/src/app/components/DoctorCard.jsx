@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
 export default function DoctorCard({ doctor }) {
   const [mounted, setMounted] = useState(false);
@@ -12,7 +13,7 @@ export default function DoctorCard({ doctor }) {
     <div className="min-w-[280px] bg-white rounded-xl shadow-md overflow-hidden flex flex-col">
       <div className="h-64 overflow-hidden">
         <img
-          src="https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg"
+          src={doctor.imageUrl || "https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg"}
           alt={doctor.name}
           className="w-full h-full object-cover object-top"
         />
@@ -30,12 +31,21 @@ export default function DoctorCard({ doctor }) {
           experience
         </p>
         {mounted ? (
-          <button className="mt-auto bg-white border border-green-600 text-green-600 hover:bg-green-50 font-medium py-2 px-4 rounded-lg !rounded-button whitespace-nowrap cursor-pointer">
-            Request Consultation
-          </button>
+          <div className="mt-auto flex flex-col space-y-2">
+            <Link href={`/doctor-profile/${doctor.id}`}>
+              <button className="w-full bg-white border border-green-600 text-green-600 hover:bg-green-50 font-medium py-2 px-4 rounded-lg">
+                View Profile
+              </button>
+            </Link>
+            <Link href={`/appointment-booking/${doctor.id}`}>
+              <button className="w-full bg-green-600 text-white hover:bg-green-700 font-medium py-2 px-4 rounded-lg">
+                Book Consultation
+              </button>
+            </Link>
+          </div>
         ) : (
-          <div className="mt-auto bg-white border border-green-600 text-green-600 font-medium py-2 px-4 rounded-lg !rounded-button whitespace-nowrap">
-            Request Consultation
+          <div className="mt-auto bg-white border border-green-600 text-green-600 font-medium py-2 px-4 rounded-lg">
+            View Profile
           </div>
         )}
       </div>

@@ -1,171 +1,126 @@
 "use client";
-
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { FaUserMd, FaCalendarAlt, FaChartLine, FaClipboardList, FaCog, FaSignOutAlt, FaCheckCircle } from "react-icons/fa";
+import React, { useState } from "react";
+import DashboardSection from "./components/DashboardSection";
+import AppointmentSection from "./components/AppointmentSection";
+import ProfileSection from "./components/ProfileSection";
+import SettingSection from "./components/SettingSection";
+import Header from "./components/Header";
+import { FaChartLine, FaCalendarAlt, FaUserMd, FaCog, FaBars } from "react-icons/fa";
+import { MdOutlineLogout, MdClose } from "react-icons/md";
 
 const DoctorDashboard = () => {
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState("overview");
-  const [isLoading, setIsLoading] = useState(true);
-  const [showWelcome, setShowWelcome] = useState(false);
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Check if this is a redirect from form submission
-  useEffect(() => {
-    // Simulate loading doctor data
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-      
-      // Check if we came from the registration form
-      const fromRegistration = sessionStorage.getItem('fromRegistration');
-      if (fromRegistration) {
-        setShowWelcome(true);
-        // Clear the flag
-        sessionStorage.removeItem('fromRegistration');
-      }
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Set the flag when component mounts
-  useEffect(() => {
-    // This will help us know if we came from registration when
-    // we return to this page after a redirect
-    sessionStorage.setItem('fromRegistration', 'true');
-  }, []);
-
-  // Mock data for the dashboard
-  const stats = [
-    { title: "Total Consultations", value: "0", icon: <FaCalendarAlt className="text-indigo-500" /> },
-    { title: "Pending Reviews", value: "0", icon: <FaClipboardList className="text-yellow-500" /> },
-    { title: "Completed", value: "0", icon: <FaCheckCircle className="text-green-500" /> },
-    { title: "Earnings", value: "$0", icon: <FaChartLine className="text-blue-500" /> },
-  ];
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your dashboard...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleTabClick = (tab) => {
+    setActiveTab(tab);
+    setIsSidebarOpen(false); // Close sidebar on mobile after selection
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Welcome message for new registrations */}
-      {showWelcome && (
-        <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <FaCheckCircle className="h-5 w-5 text-green-500" />
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-green-700">
-                Welcome to your dashboard! Your profile has been created successfully and is pending review.
-              </p>
-            </div>
-            <button 
-              onClick={() => setShowWelcome(false)}
-              className="ml-auto text-green-500 hover:text-green-700 cursor-pointer"
-            >
-              &times;
-            </button>
-          </div>
+    <div className="flex h-screen bg-[#E8F9FF] relative overflow-hidden">
+      {/* Mobile Toggle Button */}
+      {/* Mobile Toggle Button - only visible when sidebar is closed */}
+      {!isSidebarOpen && (
+        <div className="md:hidden absolute top-2 left-4 z-50 px-2 py-2">
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="text-2xl text-gray-800 focus:outline-none"
+          >
+            <FaBars />
+          </button>
         </div>
       )}
 
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="flex items-center">
-              <FaUserMd className="text-indigo-600 text-2xl mr-2" />
-              <h1 className="text-xl font-bold text-gray-800">Doctor Dashboard</h1>
-            </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <button className="text-gray-500 hover:text-gray-700 cursor-pointer">
-              <FaCog className="text-xl" />
-            </button>
-            <button 
-              className="text-gray-500 hover:text-gray-700 cursor-pointer"
-              onClick={() => router.push('/')}
-            >
-              <FaSignOutAlt className="text-xl" />
-            </button>
-          </div>
-        </div>
-      </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800">Welcome, Doctor</h2>
-          <p className="text-gray-600">Your profile is currently under review. You'll be notified once it's approved.</p>
-        </div>
+      {/* Sidebar */}
+      <div
+        className={`fixed top-0 left-0 h-full w-64 bg-[#D4EBF8] shadow-md transform transition-transform duration-300 z-40 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          } md:translate-x-0 md:static md:block`}
+      >
+        <div className="p-3 flex justify-between items-center">
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <div key={index} className="bg-white p-6 rounded-lg shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-gray-500 font-medium">{stat.title}</h3>
-                <div className="p-2 rounded-full bg-gray-100">{stat.icon}</div>
-              </div>
-              <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
-          <div className="flex border-b">
+            <h1 className="lg:text-2xl sm:text-[15px] text-black font-bold">Second Opinion</h1>
+            
+          <div className="md:hidden ml-auto px-2 py-2">
             <button
-              onClick={() => setActiveTab("overview")}
-              className={`px-6 py-3 text-sm font-medium cursor-pointer ${
-                activeTab === "overview"
-                  ? "border-b-2 border-indigo-600 text-indigo-600"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
+              onClick={() => setIsSidebarOpen(false)}
+              className="text-xl text-gray-800 focus:outline-none"
             >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveTab("profile")}
-              className={`px-6 py-3 text-sm font-medium cursor-pointer ${
-                activeTab === "profile"
-                  ? "border-b-2 border-indigo-600 text-indigo-600"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Profile
+              <MdClose style={{fontSize:"2rem"}} />
             </button>
           </div>
-
-          <div className="p-6">
-            {activeTab === "overview" && (
-              <div className="text-center py-8">
-                <div className="mx-auto w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
-                  <FaCalendarAlt className="text-indigo-600 text-xl" />
+        </div>
+          {/* Close Icon (mobile only) */}
+        {/* Doctor Info - Sidebar, visible on mobile only */}
+        <div className="px-6 pb-4">
+              <div className="flex items-center">
+                <div className="relative">
+                  <img
+                    src="https://public.readdy.ai/ai/img_res/449f7f9cf87a2dac47b5084a82bbfdd1.jpg"
+                    alt="Doctor"
+                    className="w-10 h-10 rounded-full object-cover object-top"
+                  />
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
                 </div>
-                <h3 className="text-lg font-medium text-gray-800 mb-2">No Consultations Yet</h3>
-                <p className="text-gray-600 max-w-md mx-auto">
-                  Your profile is under review. Once approved, you'll start receiving consultation requests here.
-                </p>
+                <div className="ml-3">
+                  <div className="flex items-center">
+                    <h2 className="text-lg font-medium text-gray-800">Dr. Jane Doe</h2>
+                  </div>
+                  <p className="text-sm text-gray-500">Cardiologist</p>
+                </div>
               </div>
-            )}
+            </div>
 
-            {activeTab === "profile" && (
-              <div>
-                <h3 className="text-lg font-medium text-gray-800 mb-4">Your Profile</h3>
-                <p className="text-gray-600">Your profile information is currently under review by our team.</p>
-              </div>
-            )}
-          </div>
+        <nav className="mt-6">
+          <ul>
+            {[
+              { id: "dashboard", label: "Dashboard", icon: <FaChartLine /> },
+              { id: "appointments", label: "Appointments", icon: <FaCalendarAlt /> },
+              { id: "profile", label: "Profile", icon: <FaUserMd /> },
+              { id: "settings", label: "Settings", icon: <FaCog /> },
+            ].map(({ id, label, icon }) => (
+              <li
+                key={id}
+                className={`px-6 py-3 ${activeTab === id ? "bg-blue-50 border-l-4 border-blue-500" : ""
+                  }`}
+              >
+                <button
+                  onClick={() => handleTabClick(id)}
+                  className={`flex items-center w-full text-left ${activeTab === id
+                      ? "text-blue-600 font-medium"
+                      : "text-gray-700"
+                    } cursor-pointer whitespace-nowrap`}
+                >
+                  <span
+                    className={`mr-3 ${activeTab === id ? "text-blue-600" : "text-gray-500"
+                      }`}
+                  >
+                    {icon}
+                  </span>
+                  {label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        {/* Logout Button */}
+        <div className="absolute bottom-0 left-0 right-0 shadow-md p-4 flex justify-between items-center">
+          <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 w-full flex items-center justify-center">
+            <MdOutlineLogout className="inline-block mr-2" />
+            Log out
+          </button>
         </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header />
+        {activeTab === "dashboard" && <DashboardSection />}
+        {activeTab === "appointments" && <AppointmentSection />}
+        {activeTab === "profile" && <ProfileSection />}
+        {activeTab === "settings" && <SettingSection />}
       </div>
     </div>
   );
