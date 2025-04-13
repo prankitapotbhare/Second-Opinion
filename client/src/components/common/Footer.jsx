@@ -1,4 +1,18 @@
+"use client";
+
+import React from 'react';
+import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
+
 export default function Footer() {
+  const { currentUser, isAuthenticated } = useAuth();
+  
+  // Get dashboard link based on user role
+  const getDashboardLink = () => {
+    if (!currentUser) return '/login';
+    return `/${currentUser.role}/dashboard`;
+  };
+  
   return (
     <footer className="bg-teal-700 text-white py-12 mt-auto">
       <div className="container mx-auto px-6">
@@ -30,29 +44,41 @@ export default function Footer() {
             <h3 className="text-xl font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-teal-100 hover:text-white cursor-pointer">
+                <Link href="/" className="text-teal-100 hover:text-white cursor-pointer">
                   Home
-                </a>
+                </Link>
               </li>
+              {isAuthenticated() ? (
+                <>
+                  <li>
+                    <Link href={getDashboardLink()} className="text-teal-100 hover:text-white cursor-pointer">
+                      Dashboard
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href={`${getDashboardLink()}/profile`} className="text-teal-100 hover:text-white cursor-pointer">
+                      Profile
+                    </Link>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li>
+                    <Link href="/login" className="text-teal-100 hover:text-white cursor-pointer">
+                      Login
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/signup" className="text-teal-100 hover:text-white cursor-pointer">
+                      Sign-Up
+                    </Link>
+                  </li>
+                </>
+              )}
               <li>
-                <a href="#" className="text-teal-100 hover:text-white cursor-pointer">
-                  Login
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-teal-100 hover:text-white cursor-pointer">
-                  Sign-Up
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-teal-100 hover:text-white cursor-pointer">
-                  Response
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-teal-100 hover:text-white cursor-pointer">
+                <Link href="/find-doctors" className="text-teal-100 hover:text-white cursor-pointer">
                   Find Doctors
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

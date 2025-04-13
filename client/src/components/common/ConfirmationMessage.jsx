@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { FaCheck } from 'react-icons/fa';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ConfirmationMessage = ({ 
   title = "Confirmed!",
@@ -11,9 +12,14 @@ const ConfirmationMessage = ({
   primaryButtonText = "Return to Home",
   primaryButtonLink = "/",
   secondaryButtonText = "Go to Dashboard",
-  secondaryButtonLink = "/dashboard",
+  secondaryButtonLink,
   showSecondaryButton = true
 }) => {
+  const { currentUser } = useAuth();
+  
+  // If secondaryButtonLink is not provided, use the user's dashboard
+  const dashboardLink = secondaryButtonLink || (currentUser ? `/${currentUser.role}/dashboard` : '/dashboard');
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 text-center">
@@ -46,7 +52,7 @@ const ConfirmationMessage = ({
           </Link>
           
           {showSecondaryButton && (
-            <Link href={secondaryButtonLink}>
+            <Link href={dashboardLink}>
               <button className="w-full px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">
                 {secondaryButtonText}
               </button>
