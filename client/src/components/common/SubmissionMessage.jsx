@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 const SubmissionMessage = ({ 
   show, 
@@ -14,6 +15,7 @@ const SubmissionMessage = ({
   redirectPath = null
 }) => {
   const router = useRouter();
+  const { currentUser } = useAuth();
 
   useEffect(() => {
     // Handle auto-close with redirect
@@ -31,7 +33,10 @@ const SubmissionMessage = ({
     
     // If redirectPath is provided, navigate to that path
     if (redirectPath) {
-        router.push(redirectPath);
+      router.push(redirectPath);
+    } else if (currentUser) {
+      // If no specific redirect path but user is logged in, redirect to their dashboard
+      router.push(`/${currentUser.role}/dashboard`);
     }
   };
 
@@ -56,7 +61,7 @@ const SubmissionMessage = ({
             onClick={handleClose}
             className="px-6 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors cursor-pointer"
           >
-            {redirectPath ? 'Continue to Dashboard' : 'Close'}
+            {redirectPath || currentUser ? 'Continue to Dashboard' : 'Close'}
           </button>
         </div>
       </div>

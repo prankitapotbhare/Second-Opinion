@@ -3,8 +3,11 @@
 import React from "react";
 import { FaHome, FaCalendarAlt, FaUser, FaCog, FaBars } from "react-icons/fa";
 import { MdOutlineLogout, MdClose } from "react-icons/md";
+import { useAuth } from "@/contexts/AuthContext";
 
 const UserSidebar = ({ activeTab, handleTabClick, isSidebarOpen, setIsSidebarOpen }) => {
+  const { currentUser, logout } = useAuth();
+  
   return (
     <>
       {/* Mobile Toggle Button - only visible when sidebar is closed */}
@@ -43,7 +46,7 @@ const UserSidebar = ({ activeTab, handleTabClick, isSidebarOpen, setIsSidebarOpe
           <div className="flex items-center">
             <div className="relative">
               <img
-                src="https://via.placeholder.com/150"
+                src={currentUser?.avatar || "https://via.placeholder.com/150"}
                 alt="User"
                 className="w-10 h-10 rounded-full object-cover object-top"
               />
@@ -51,7 +54,7 @@ const UserSidebar = ({ activeTab, handleTabClick, isSidebarOpen, setIsSidebarOpe
             </div>
             <div className="ml-3">
               <div className="flex items-center">
-                <h2 className="text-lg font-medium text-gray-800">John Doe</h2>
+                <h2 className="text-lg font-medium text-gray-800">{currentUser?.name || "User"}</h2>
               </div>
               <p className="text-sm text-gray-500">Patient</p>
             </div>
@@ -96,7 +99,10 @@ const UserSidebar = ({ activeTab, handleTabClick, isSidebarOpen, setIsSidebarOpe
 
         {/* Logout Button */}
         <div className="absolute bottom-0 left-0 right-0 shadow-md p-4 flex justify-between items-center">
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 w-full flex items-center justify-center">
+          <button 
+            onClick={logout}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 w-full flex items-center justify-center"
+          >
             <MdOutlineLogout className="inline-block mr-2" />
             Log out
           </button>
