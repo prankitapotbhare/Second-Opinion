@@ -90,30 +90,38 @@ export default function AppointmentBookingPage() {
     setUploadedFiles(newFiles);
   };
   
+  const handleClearForm = () => {
+    setSelectedDate(currentDate.getDate());
+    setSelectedTime('');
+    setGender('');
+    setUploadedFiles([]);
+    // Reset form fields
+    const form = document.getElementById('patientForm');
+    if (form) form.reset();
+  };
+  
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    // In a real app, you would send this data to your backend
-    const appointmentData = {
-      doctorId,
-      doctorName: doctor?.name,
-      appointmentType,
-      date: selectedDate,
-      time: selectedTime,
+    // Process form submission
+    console.log({
+      doctor: doctor?.name,
+      appointmentDate: selectedDate,
+      appointmentTime: selectedTime,
       gender,
       files: uploadedFiles.map(file => file.name)
-    };
+    });
     
-    console.log('Appointment Data:', appointmentData);
+    // In a real app, you would send this data to your backend
+    alert('Appointment booked successfully!');
     
-    // Redirect to confirmation page
-    router.push('/user/appointment/confirmation');
+    // Redirect to confirmation page or dashboard
+    router.push('/user/dashboard');
   };
   
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
       </div>
     );
   }
@@ -122,7 +130,7 @@ export default function AppointmentBookingPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
         <h1 className="text-2xl font-bold text-gray-800 mb-4">Doctor Not Found</h1>
-        <Link href="/user/doctors" className="text-blue-600 hover:underline">
+        <Link href="/user/doctors" className="text-green-600 hover:underline">
           Browse Other Doctors
         </Link>
       </div>
@@ -130,62 +138,70 @@ export default function AppointmentBookingPage() {
   }
   
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Link href={`/user/doctors/${doctorId}`} className="text-blue-600 hover:underline flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
-            </svg>
-            Back to Doctor Profile
-          </Link>
+    <div className="min-h-screen bg-gray-50 font-sans">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Doctor Info */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <div className="flex items-center">
+            <div className="w-20 h-20 rounded-full overflow-hidden mr-6">
+              <img
+                src={doctor.imageUrl || "https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg"}
+                alt={doctor.name}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">{doctor.name}</h1>
+              <p className="text-lg text-green-600">{doctor.specialization || doctor.department}</p>
+              <p className="text-gray-600">{doctor.qualification || doctor.degree} • {doctor.experience} experience</p>
+            </div>
+          </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-800">Book an Appointment</h1>
-            <p className="text-gray-600 mt-1">
-              {appointmentType === 'video' ? 'Video Consultation' : 'In-Person Visit'} with {doctor.name}
-            </p>
-          </div>
+        {/* Appointment Booking Form */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Book Your Appointment</h2>
           
-          <form onSubmit={handleSubmit} className="p-6">
+          <form id="patientForm" onSubmit={handleSubmit} className="space-y-8">
             {/* Date Selection */}
-            <div className="mb-6">
-              <h2 className="text-lg font-medium text-gray-800 mb-3">Select Date</h2>
-              <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Select Date</h3>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3">
                 {getDates().map((date, index) => (
                   <button
                     key={index}
                     type="button"
-                    className={`p-3 rounded-lg border ${
-                      selectedDate === date.date
-                        ? 'bg-blue-500 text-white border-blue-500'
-                        : 'border-gray-200 hover:border-blue-500'
-                    } flex flex-col items-center`}
                     onClick={() => setSelectedDate(date.date)}
+                    className={`flex flex-col items-center justify-center p-3 rounded-lg border ${
+                      selectedDate === date.date
+                        ? 'bg-green-50 border-green-500 text-green-700'
+                        : 'border-gray-200 hover:bg-gray-50'
+                    }`}
                   >
                     <span className="text-sm font-medium">{date.day}</span>
                     <span className="text-lg font-bold">{date.date}</span>
+                    <span className="text-xs text-gray-500">
+                      {new Date(date.year, date.month, date.date).toLocaleDateString('en-US', { month: 'short' })}
+                    </span>
                   </button>
                 ))}
               </div>
             </div>
             
             {/* Time Selection */}
-            <div className="mb-6">
-              <h2 className="text-lg font-medium text-gray-800 mb-3">Select Time</h2>
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Select Time</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 {timeSlots.map((time, index) => (
                   <button
                     key={index}
                     type="button"
-                    className={`p-3 rounded-lg border ${
-                      selectedTime === time
-                        ? 'bg-blue-500 text-white border-blue-500'
-                        : 'border-gray-200 hover:border-blue-500'
-                    } text-center`}
                     onClick={() => setSelectedTime(time)}
+                    className={`py-2 px-4 rounded-lg border ${
+                      selectedTime === time
+                        ? 'bg-green-50 border-green-500 text-green-700'
+                        : 'border-gray-200 hover:bg-gray-50'
+                    }`}
                   >
                     {time}
                   </button>
@@ -193,77 +209,150 @@ export default function AppointmentBookingPage() {
               </div>
             </div>
             
-            {/* Gender Selection */}
-            <div className="mb-6">
-              <h2 className="text-lg font-medium text-gray-800 mb-3">Gender</h2>
-              <div className="flex space-x-4">
-                <label className="flex items-center">
+            {/* Patient Information */}
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Patient Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="patientName" className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name <span className="text-red-500">*</span>
+                  </label>
                   <input
-                    type="radio"
-                    name="gender"
-                    value="male"
-                    checked={gender === 'male'}
-                    onChange={() => setGender('male')}
-                    className="h-5 w-5 text-blue-600"
+                    type="text"
+                    id="patientName"
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
                   />
-                  <span className="ml-2 text-gray-700">Male</span>
-                </label>
-                <label className="flex items-center">
+                </div>
+                <div>
+                  <label htmlFor="patientAge" className="block text-sm font-medium text-gray-700 mb-1">
+                    Age <span className="text-red-500">*</span>
+                  </label>
                   <input
-                    type="radio"
-                    name="gender"
-                    value="female"
-                    checked={gender === 'female'}
-                    onChange={() => setGender('female')}
-                    className="h-5 w-5 text-blue-600"
+                    type="number"
+                    id="patientAge"
+                    required
+                    min="1"
+                    max="120"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
                   />
-                  <span className="ml-2 text-gray-700">Female</span>
-                </label>
-                <label className="flex items-center">
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Gender <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex space-x-4">
+                    <label className="inline-flex items-center">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value="male"
+                        checked={gender === 'male'}
+                        onChange={() => setGender('male')}
+                        required
+                        className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                      />
+                      <span className="ml-2 text-gray-700">Male</span>
+                    </label>
+                    <label className="inline-flex items-center">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value="female"
+                        checked={gender === 'female'}
+                        onChange={() => setGender('female')}
+                        className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                      />
+                      <span className="ml-2 text-gray-700">Female</span>
+                    </label>
+                    <label className="inline-flex items-center">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value="other"
+                        checked={gender === 'other'}
+                        onChange={() => setGender('other')}
+                        className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                      />
+                      <span className="ml-2 text-gray-700">Other</span>
+                    </label>
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="patientPhone" className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number <span className="text-red-500">*</span>
+                  </label>
                   <input
-                    type="radio"
-                    name="gender"
-                    value="other"
-                    checked={gender === 'other'}
-                    onChange={() => setGender('other')}
-                    className="h-5 w-5 text-blue-600"
+                    type="tel"
+                    id="patientPhone"
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
                   />
-                  <span className="ml-2 text-gray-700">Other</span>
-                </label>
+                </div>
+                <div className="md:col-span-2">
+                  <label htmlFor="patientEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    id="patientEmail"
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label htmlFor="symptoms" className="block text-sm font-medium text-gray-700 mb-1">
+                    Symptoms/Reason for Visit <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    id="symptoms"
+                    rows="3"
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                  ></textarea>
+                </div>
               </div>
             </div>
             
-            {/* File Upload */}
-            <div className="mb-6">
-              <h2 className="text-lg font-medium text-gray-800 mb-3">Upload Medical Records (Optional)</h2>
+            {/* Medical Records Upload */}
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Upload Medical Records</h3>
               <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50"
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center"
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
-                onClick={() => document.getElementById('fileInput').click()}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <p className="text-gray-700 mb-1">Drag and drop files here, or click to select files</p>
-                <p className="text-sm text-gray-500">Supported formats: PDF, JPG, PNG (Max 5MB)</p>
-                <input
-                  id="fileInput"
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={handleFileUpload}
-                />
+                <div className="space-y-2">
+                  <div className="flex justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-700">Drag and drop files here, or click to select files</p>
+                  <p className="text-sm text-gray-500">Supported formats: PDF, JPG, PNG (Max 10MB)</p>
+                  <div>
+                    <label className="inline-block px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer">
+                      Browse Files
+                      <input
+                        type="file"
+                        multiple
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                      />
+                    </label>
+                  </div>
+                </div>
               </div>
               
-              {/* Display uploaded files */}
+              {/* File List */}
               {uploadedFiles.length > 0 && (
                 <div className="mt-4">
-                  <h3 className="text-md font-medium text-gray-800 mb-2">Uploaded Files:</h3>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Uploaded Files:</h4>
                   <ul className="space-y-2">
                     {uploadedFiles.map((file, index) => (
-                      <li key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                        <span className="text-gray-700">{file.name}</span>
+                      <li key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                        <span className="text-sm text-gray-700 truncate">{file.name}</span>
                         <button
                           type="button"
                           onClick={() => removeFile(index)}
@@ -280,19 +369,25 @@ export default function AppointmentBookingPage() {
               )}
             </div>
             
-            {/* Submit Button */}
-            <div className="flex justify-end">
+            {/* Form Actions */}
+            <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3">
+              <button
+                type="button"
+                onClick={handleClearForm}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              >
+                Clear Form
+              </button>
               <button
                 type="submit"
-                className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                disabled={!selectedDate || !selectedTime || !gender}
+                className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
               >
-                Confirm Booking
+                Book Appointment
               </button>
             </div>
           </form>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
