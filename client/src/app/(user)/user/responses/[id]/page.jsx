@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { FaFileAlt, FaArrowLeft } from 'react-icons/fa';
+import { FaFileAlt, FaArrowLeft, FaComment } from 'react-icons/fa';
 
 export default function SingleResponsePage() {
   const { id } = useParams();
@@ -66,6 +66,13 @@ export default function SingleResponsePage() {
               <h1 className="text-2xl font-semibold text-gray-800">Response from {response.doctor.name}</h1>
               <p className="text-gray-600">{response.doctor.specialization} • {response.doctor.date}</p>
             </div>
+            <div className="mt-4 md:mt-0">
+              <Link href={`/user/responses/${id}/comments`}>
+                <button className="flex items-center bg-teal-50 text-teal-600 px-4 py-2 rounded-md hover:bg-teal-100 transition-colors">
+                  <FaComment className="mr-2" /> Add Comment & Rating
+                </button>
+              </Link>
+            </div>
           </div>
         </div>
         
@@ -114,21 +121,16 @@ export default function SingleResponsePage() {
         {/* Comments Section */}
         {activeTab === 'comments' && (
           <div>
-            <h2 className="text-2xl font-medium mb-6">Comments</h2>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-medium">Comments</h2>
+              <Link href={`/user/responses/${id}/comments`}>
+                <button className="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 transition-colors">
+                  Add Comment & Rating
+                </button>
+              </Link>
+            </div>
+            
             <div className="bg-white border border-gray-200 rounded-lg p-8 shadow-sm">
-              <div className="mb-6">
-                <textarea 
-                  className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  placeholder="Add a comment..."
-                  rows={4}
-                />
-                <div className="flex justify-end mt-2">
-                  <button className="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 transition-colors">
-                    Post Comment
-                  </button>
-                </div>
-              </div>
-              
               <div className="text-center text-gray-500 py-8">
                 No comments yet. Be the first to comment!
               </div>
