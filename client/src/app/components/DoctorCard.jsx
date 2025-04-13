@@ -44,8 +44,13 @@ export default function DoctorCard({ doctor }) {
             </Link>
           </div>
         ) : (
-          <div className="mt-auto bg-white border border-green-600 text-green-600 font-medium py-2 px-4 rounded-lg">
-            View Profile
+          <div className="mt-auto space-y-2">
+            <div className="w-full bg-white border border-green-600 text-green-600 font-medium py-2 px-4 rounded-lg text-center">
+              View Profile
+            </div>
+            <div className="w-full bg-green-600 text-white font-medium py-2 px-4 rounded-lg text-center">
+              Book Consultation
+            </div>
           </div>
         )}
       </div>
