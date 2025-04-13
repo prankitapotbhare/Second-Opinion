@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import ConfirmationMessage from '@/components/common/ConfirmationMessage';
+import { ConfirmationMessage } from '@/components';
 
 export default function AppointmentConfirmation() {
   const appointmentDetails = [
