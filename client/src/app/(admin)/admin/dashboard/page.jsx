@@ -6,12 +6,12 @@ import { statCards, doctors, activities } from '@/data/mockData';
 
 // Import components
 import { 
-  AdminHeader, 
+  Header, 
   StatCard, 
   DoctorList, 
   AppointmentsChart, 
   RecentActivity 
-} from '@/components';
+} from '@/app/(admin)/components';
 
 const AdminDashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -31,7 +31,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-[#f0f8ff]">
-      <AdminHeader title="Admin Panel" setIsSidebarOpen={setIsSidebarOpen} />
+      <Header title="Admin Panel" setIsSidebarOpen={setIsSidebarOpen} />
       
       {/* Main Content */}
       <main className="max-w-[1440px] mx-auto px-6 pb-8">

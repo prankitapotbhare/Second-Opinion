@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { AdminHeader } from '@/components';
+import { AdminHeader } from '@/app/(admin)/components';
 
 const DoctorDetails = () => {
   const { id } = useParams();

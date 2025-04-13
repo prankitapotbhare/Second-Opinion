@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { FaBars, FaTimes } from 'react-icons/fa';
-import { AdminSidebar } from '@/components';
+import Sidebar from './components/layout/Sidebar';
 
 export default function AdminLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -18,7 +18,7 @@ export default function AdminLayout({ children }) {
       </button>
 
       {/* Sidebar */}
-      <AdminSidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+      <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
 
       {/* Main content */}
       <div className="flex-1 overflow-auto">
