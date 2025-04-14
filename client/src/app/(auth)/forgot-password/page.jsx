@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AuthHeader } from '../components';
 import { useAuth } from '@/contexts/AuthContext';
 import { FaEnvelope, FaArrowLeft } from 'react-icons/fa';
+import { validateEmail } from '@/utils/authUtils';
 
 export default function ForgotPassword() {
   const { resetPassword } = useAuth();
@@ -16,6 +17,13 @@ export default function ForgotPassword() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    
+    // Validate email
+    if (!validateEmail(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
@@ -75,12 +83,14 @@ export default function ForgotPassword() {
                 </div>
                 <input
                   id="email"
+                  name="email"
                   type="email"
+                  autoComplete="email"
+                  required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter your email"
-                  required
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  placeholder="Enter your email address"
                 />
               </div>
             </div>
@@ -89,7 +99,7 @@ export default function ForgotPassword() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center items-center py-3 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
                 {isLoading ? (
                   <>
@@ -99,27 +109,43 @@ export default function ForgotPassword() {
                     </svg>
                     Sending...
                   </>
-                ) : 'Send Reset Link'}
+                ) : (
+                  'Send Reset Link'
+                )}
               </button>
             </div>
           </form>
         ) : (
-          <div className="text-center py-6">
-            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
-              <svg className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          <div className="text-center">
+            <div className="mb-4 text-green-500">
+              <svg className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Check your email</h3>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Check Your Email</h2>
             <p className="text-gray-600 mb-6">
-              We've sent a password reset link to <span className="font-medium">{email}</span>
+              We've sent a password reset link to <span className="font-medium">{email}</span>. 
+              Please check your inbox and click the link to reset your password.
             </p>
-            <button
-              onClick={() => setIsSubmitted(false)}
-              className="text-blue-600 hover:text-blue-800 font-medium transition-colors"
-            >
-              Try another email
-            </button>
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6 text-left">
+              <p className="text-blue-800 text-sm">
+                <i className="fas fa-info-circle mr-2"></i>
+                If you don't see the email in your inbox, please check your spam folder.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <Link href="/login">
+                <button className="w-full mb-2 py-2 px-4 bg-teal-600 text-white font-medium rounded-md hover:bg-teal-700 transition-colors">
+                  Return to Login
+                </button>
+              </Link>
+              <button 
+                onClick={() => setIsSubmitted(false)} 
+                className="w-full py-2 px-4 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors"
+              >
+                Try Another Email
+              </button>
+            </div>
           </div>
         )}
       </div>
