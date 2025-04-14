@@ -98,8 +98,8 @@ export const AuthProvider = ({ children }) => {
     // Remove from localStorage
     localStorage.removeItem('currentUser');
     
-    // Redirect to login page
-    router.push('/login');
+    // Return success
+    return { success: true };
   };
 
   // Check if user is authenticated
