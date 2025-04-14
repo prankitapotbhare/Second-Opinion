@@ -82,7 +82,7 @@ const Sidebar = () => {
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
       >
-        <div className="py-4 px-6 flex items-center justify-between gap-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div className="p-6 flex items-center justify-between gap-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
           <div className="flex items-center gap-3">
             <div className={`bg-blue-600 text-white p-2 rounded-lg shadow-md transform transition-all duration-500 ${isHovering ? 'scale-110' : 'scale-100'}`}>
               <FaHospital className={`text-xl transition-all duration-500 ${isHovering ? 'rotate-12' : 'rotate-0'}`} />
