@@ -16,7 +16,7 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#E8F9FF] p-4 sm:p-6 md:p-8 lg:p-12">
+    <div className="min-h-screen flex items-center justify-center bg-[#E8F9FF] p-4 sm:p-6 md:p-8">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
         <div className="px-4 sm:px-6 pt-6 pb-4 bg-gradient-to-r from-purple-50 to-blue-50">
           <AuthHeader 
@@ -31,7 +31,7 @@ export default function AdminLogin() {
             userType="admin"
             onSubmit={handleSubmit}
             redirectPath="/admin/dashboard"
-            hideOptions={true} // This prop will need to be handled in the LoginForm component
+            hideOptions={true}
           />
         </div>
       </div>
