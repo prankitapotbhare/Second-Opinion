@@ -8,11 +8,12 @@ import {
   AppointmentsContent,
   SettingsContent
 } from '@/app/(admin)/components';
+import { useParams } from 'next/navigation';
 
-export default function AdminSectionPage({ params }) {
-  // Unwrap params with React.use()
-  const unwrappedParams = React.use(params);
-  const { section } = unwrappedParams;
+export default function AdminSectionPage() {
+  // Use useParams hook instead of React.use
+  const params = useParams();
+  const section = params?.section || 'dashboard';
   
   // Render content based on section parameter
   const renderContent = () => {
