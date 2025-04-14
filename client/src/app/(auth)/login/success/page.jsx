@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FaCheckCircle } from 'react-icons/fa';
 
-export default function LoginSuccess() {
+function SuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/dashboard';
   const userType = searchParams.get('type') || 'user';
-  const [countdown, setCountdown] = useState(10);
+  const [countdown, setCountdown] = useState(5);
   
   useEffect(() => {
     // Countdown timer for better UX
@@ -33,55 +33,65 @@ export default function LoginSuccess() {
   }, [router, redirectTo, userType]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#E8F9FF] p-4 sm:p-6 md:p-8">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className="px-4 sm:px-6 pt-6 pb-4 bg-gradient-to-r from-teal-50 to-blue-50">
-          <div className="flex flex-col items-center justify-center">
-            <div className="mb-4 sm:mb-6 text-green-500">
-              <FaCheckCircle className="h-16 w-16 sm:h-20 sm:w-20" />
-            </div>
-            
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 text-center">
-              Login Successful!
-            </h2>
-            
-            <p className="text-sm sm:text-base text-gray-600 mb-4 text-center">
-              Welcome back! You are now logged in.
-            </p>
+    <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md text-center">
+      <div className="mb-6 text-green-500">
+        <FaCheckCircle className="h-16 w-16 mx-auto" />
+      </div>
+      
+      <h2 className="text-2xl font-bold text-gray-900 mb-2">Login Successful!</h2>
+      
+      <p className="text-gray-600 mb-6">
+        Welcome back! You are now logged in.
+      </p>
+      
+      <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
+        <div className="flex items-center justify-center">
+          <div className="flex-shrink-0 mr-3">
+            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
           </div>
-        </div>
-        
-        <div className="p-4 sm:p-6">
-          <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-4 sm:mb-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 mr-3">
-                <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-t-2 border-b-2 border-blue-500"></div>
-              </div>
-              <div>
-                <p className="text-sm sm:text-base text-blue-800">
-                  Redirecting to your dashboard in <span className="font-semibold">{countdown}</span> {countdown === 1 ? 'second' : 'seconds'}...
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-            <button 
-              onClick={() => router.push(`/${userType}/dashboard`)}
-              className="w-full py-2.5 px-4 bg-teal-600 hover:bg-teal-700 text-white text-sm sm:text-base font-medium rounded-md transition-colors"
-            >
-              Go to Dashboard Now
-            </button>
-            
-            <button 
-              onClick={() => router.push('/')}
-              className="w-full py-2.5 px-4 border border-gray-300 text-gray-700 text-sm sm:text-base font-medium rounded-md hover:bg-gray-50 transition-colors"
-            >
-              Return to Home
-            </button>
-          </div>
+          <p className="text-blue-800 text-sm">
+            Redirecting to your dashboard in <span className="font-semibold">{countdown}</span> {countdown === 1 ? 'second' : 'seconds'}...
+          </p>
         </div>
       </div>
+      
+      <div className="space-y-3">
+        <button 
+          onClick={() => router.push(`/${userType}/dashboard`)}
+          className="w-full mb-2 py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800"
+        >
+          Go to Dashboard Now
+        </button>
+        
+        <button 
+          onClick={() => router.push('/')}
+          className="w-full py-3 px-4 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50"
+        >
+          Return to Home
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function LoginSuccess() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <Suspense fallback={
+        <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md text-center">
+          <div className="animate-pulse">
+            <div className="h-16 w-16 mx-auto bg-gray-200 rounded-full mb-6"></div>
+            <div className="h-8 bg-gray-200 rounded w-3/4 mx-auto mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-full mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-5/6 mx-auto mb-6"></div>
+            <div className="h-16 bg-gray-100 rounded-md w-full mb-6"></div>
+            <div className="h-12 bg-gray-200 rounded-md w-full mb-3"></div>
+            <div className="h-12 bg-gray-100 rounded-md w-full"></div>
+          </div>
+        </div>
+      }>
+        <SuccessContent />
+      </Suspense>
     </div>
   );
 }
