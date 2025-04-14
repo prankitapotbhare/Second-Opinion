@@ -4,65 +4,55 @@ import React, { useState } from 'react';
 import { Header } from '@/app/(admin)/components';
 import { useAuth } from "@/contexts/AuthContext";
 import { FaSearch, FaFilter, FaCalendarPlus, FaEye, FaCheck, FaTimes } from 'react-icons/fa';
+import { doctors } from '@/data/doctorsData';
 
-// Mock appointments data
-const appointments = [
-  {
-    id: 'APT-1001',
-    patientName: 'John Doe',
-    patientAvatar: 'https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg',
-    doctorName: 'Dr. Emily Johnson',
-    doctorAvatar: 'https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg',
-    date: '2023-06-15',
-    time: '10:30 AM',
-    type: 'Video Consultation',
-    status: 'Confirmed'
-  },
-  {
-    id: 'APT-1002',
-    patientName: 'Jane Smith',
-    patientAvatar: 'https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg',
-    doctorName: 'Dr. Michael Chen',
-    doctorAvatar: 'https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg',
-    date: '2023-06-16',
-    time: '2:00 PM',
-    type: 'In-Person',
-    status: 'Pending'
-  },
-  {
-    id: 'APT-1003',
-    patientName: 'Robert Wilson',
-    patientAvatar: 'https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg',
-    doctorName: 'Dr. Sarah Williams',
-    doctorAvatar: 'https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg',
-    date: '2023-06-14',
-    time: '11:15 AM',
-    type: 'Video Consultation',
-    status: 'Completed'
-  },
-  {
-    id: 'APT-1004',
-    patientName: 'Emily Davis',
-    patientAvatar: 'https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg',
-    doctorName: 'Dr. James Wilson',
-    doctorAvatar: 'https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg',
-    date: '2023-06-17',
-    time: '9:00 AM',
-    type: 'In-Person',
-    status: 'Confirmed'
-  },
-  {
-    id: 'APT-1005',
-    patientName: 'Michael Johnson',
-    patientAvatar: 'https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg',
-    doctorName: 'Dr. Lisa Brown',
-    doctorAvatar: 'https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg',
-    date: '2023-06-15',
-    time: '3:30 PM',
-    type: 'Video Consultation',
-    status: 'Cancelled'
+// Generate appointments using the doctors data
+const generateAppointments = () => {
+  const patientNames = [
+    'John Doe', 'Jane Smith', 'Robert Wilson', 'Emily Davis', 'Michael Johnson',
+    'Sarah Williams', 'David Brown', 'Lisa Jones', 'James Miller', 'Jennifer Taylor',
+    'Amit Verma', 'Priya Malhotra', 'Rahul Mehta', 'Neha Agarwal', 'Ravi Kumar'
+  ];
+  
+  const appointmentTypes = ['Video Consultation', 'In-Person'];
+  const statuses = ['Confirmed', 'Pending', 'Completed', 'Cancelled'];
+  
+  const generatedAppointments = [];
+  
+  for (let i = 0; i < 20; i++) {
+    const doctor = doctors[Math.floor(Math.random() * doctors.length)];
+    const patientName = patientNames[Math.floor(Math.random() * patientNames.length)];
+    const type = appointmentTypes[Math.floor(Math.random() * appointmentTypes.length)];
+    const status = statuses[Math.floor(Math.random() * statuses.length)];
+    
+    // Generate a random date within the next 14 days
+    const date = new Date();
+    date.setDate(date.getDate() + Math.floor(Math.random() * 14));
+    const formattedDate = date.toISOString().split('T')[0];
+    
+    // Generate a random time between 9 AM and 5 PM
+    const hour = 9 + Math.floor(Math.random() * 8);
+    const minute = Math.floor(Math.random() * 4) * 15;
+    const formattedTime = `${hour}:${minute.toString().padStart(2, '0')} ${hour >= 12 ? 'PM' : 'AM'}`;
+    
+    generatedAppointments.push({
+      id: `APT-${1000 + i}`,
+      patientName,
+      patientAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(patientName)}&background=3b82f6&color=fff`,
+      doctorName: doctor.name,
+      doctorAvatar: doctor.imageUrl,
+      date: formattedDate,
+      time: formattedTime,
+      type,
+      status
+    });
   }
-];
+  
+  return generatedAppointments;
+};
+
+// Generate appointments once
+const appointments = generateAppointments();
 
 const AppointmentsContent = ({ setIsSidebarOpen }) => {
   const { currentUser } = useAuth();

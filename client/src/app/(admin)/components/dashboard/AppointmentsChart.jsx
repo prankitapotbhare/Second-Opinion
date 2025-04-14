@@ -13,8 +13,32 @@ const AppointmentsChart = () => {
     // Import echarts dynamically on client side
     import('echarts').then((echarts) => {
       if (chartRef.current) {
+        // Initialize chart
         myChart = echarts.init(chartRef.current);
+        setChartInstance(myChart);
         
+        // Generate realistic appointment data
+        const currentDate = new Date();
+        const lastWeekData = [];
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const dayNames = [];
+        
+        // Generate data for the last 7 days
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date();
+          date.setDate(currentDate.getDate() - i);
+          const dayName = days[date.getDay()];
+          dayNames.push(dayName);
+          
+          // Generate random appointment counts with a realistic pattern
+          // Weekdays have more appointments than weekends
+          const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+          const baseCount = isWeekend ? 5 : 12;
+          const randomVariation = Math.floor(Math.random() * 8);
+          lastWeekData.push(baseCount + randomVariation);
+        }
+        
+        // Chart options
         const option = {
           tooltip: {
             trigger: 'axis',
@@ -28,35 +52,34 @@ const AppointmentsChart = () => {
             bottom: '3%',
             containLabel: true
           },
-          xAxis: [
-            {
-              type: 'category',
-              data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-              axisTick: {
-                alignWithLabel: true
-              }
+          xAxis: {
+            type: 'category',
+            data: dayNames,
+            axisTick: {
+              alignWithLabel: true
             }
-          ],
-          yAxis: [
-            {
-              type: 'value'
-            }
-          ],
+          },
+          yAxis: {
+            type: 'value'
+          },
           series: [
             {
               name: 'Appointments',
               type: 'bar',
               barWidth: '60%',
-              data: [10, 15, 12, 8, 7, 11, 13],
+              data: lastWeekData,
               itemStyle: {
-                color: '#3b82f6'
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: '#3b82f6' },
+                  { offset: 1, color: '#60a5fa' }
+                ])
               }
             }
           ]
         };
         
+        // Set chart options
         myChart.setOption(option);
-        setChartInstance(myChart);
         
         // Handle resize
         handleResize = () => {
@@ -67,20 +90,21 @@ const AppointmentsChart = () => {
       }
     });
     
+    // Cleanup
     return () => {
-      if (handleResize) {
-        window.removeEventListener('resize', handleResize);
-      }
       if (myChart) {
         myChart.dispose();
       }
+      if (handleResize) {
+        window.removeEventListener('resize', handleResize);
+      }
     };
   }, []);
-
+  
   return (
     <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-sm p-6">
-      <h2 className="text-xl font-semibold mb-6">Weekly Appointments</h2>
-      <div ref={chartRef} className="w-full h-80"></div>
+      <h2 className="text-xl font-semibold mb-6">Appointment Statistics</h2>
+      <div ref={chartRef} style={{ height: '300px' }}></div>
     </div>
   );
 };

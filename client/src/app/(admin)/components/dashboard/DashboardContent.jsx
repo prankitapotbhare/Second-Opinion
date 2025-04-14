@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { FaUserMd, FaUsers, FaCalendarCheck, FaClock } from 'react-icons/fa';
-import { statCards, doctors, activities } from '@/data/mockData';
+import { statCards, doctors as mockDoctors, activities } from '@/data/mockData';
+import { doctors as staticDoctors } from '@/data/doctorsData';
 import { useAuth } from "@/contexts/AuthContext";
 
 // Import components
@@ -30,6 +31,25 @@ const DashboardContent = ({ setIsSidebarOpen }) => {
     return { ...card, icon };
   });
 
+  // Combine doctors from both sources and format them for the DoctorList component
+  const combinedDoctors = [
+    ...mockDoctors.map(doc => ({
+      ...doc,
+      status: doc.status || 'Active',
+      patients: doc.patients || 0,
+      avatar: doc.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(doc.name)}`
+    })),
+    ...staticDoctors.map(doc => ({
+      id: doc.id,
+      name: doc.name,
+      specialization: doc.specialization || doc.department,
+      email: `${doc.name.toLowerCase().replace(/\s+/g, '.')}@example.com`,
+      patients: Math.floor(Math.random() * 50) + 10,
+      status: 'Active',
+      avatar: doc.imageUrl
+    }))
+  ];
+
   return (
     <div className="min-h-screen bg-[#f0f8ff]">
       <Header title="Admin Dashboard" user={currentUser} setIsSidebarOpen={setIsSidebarOpen} />
@@ -50,7 +70,7 @@ const DashboardContent = ({ setIsSidebarOpen }) => {
         </div>
         
         {/* Doctor List */}
-        <DoctorList doctors={doctors} />
+        <DoctorList doctors={combinedDoctors.slice(0, 5)} />
         
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">

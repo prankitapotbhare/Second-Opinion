@@ -4,60 +4,90 @@ import React, { useState } from 'react';
 import { Header } from '@/app/(admin)/components';
 import { useAuth } from "@/contexts/AuthContext";
 import { FaSearch, FaFilter, FaUserPlus } from 'react-icons/fa';
+import { reviews } from '@/data/reviewsData';
 
-// Mock patients data
-const patients = [
-  {
-    id: 1,
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    age: 45,
-    gender: 'Male',
-    lastVisit: '2023-05-15',
-    status: 'Active',
-    avatar: 'https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg'
-  },
-  {
-    id: 2,
-    name: 'Jane Smith',
-    email: 'jane.smith@example.com',
-    age: 32,
-    gender: 'Female',
-    lastVisit: '2023-06-02',
-    status: 'Active',
-    avatar: 'https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg'
-  },
-  {
-    id: 3,
-    name: 'Michael Johnson',
-    email: 'michael.johnson@example.com',
-    age: 58,
-    gender: 'Male',
-    lastVisit: '2023-04-20',
-    status: 'Inactive',
-    avatar: 'https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg'
-  },
-  {
-    id: 4,
-    name: 'Emily Davis',
-    email: 'emily.davis@example.com',
-    age: 29,
-    gender: 'Female',
-    lastVisit: '2023-06-10',
-    status: 'Active',
-    avatar: 'https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg'
-  },
-  {
-    id: 5,
-    name: 'Robert Wilson',
-    email: 'robert.wilson@example.com',
-    age: 62,
-    gender: 'Male',
-    lastVisit: '2023-05-28',
-    status: 'Active',
-    avatar: 'https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg'
-  }
-];
+// Generate more realistic patient data using review authors
+const generatePatients = () => {
+  const existingPatients = [
+    {
+      id: 1,
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+      age: 45,
+      gender: 'Male',
+      lastVisit: '2023-05-15',
+      status: 'Active',
+      avatar: 'https://ui-avatars.com/api/?name=John+Doe&background=3b82f6&color=fff'
+    },
+    {
+      id: 2,
+      name: 'Jane Smith',
+      email: 'jane.smith@example.com',
+      age: 32,
+      gender: 'Female',
+      lastVisit: '2023-06-02',
+      status: 'Active',
+      avatar: 'https://ui-avatars.com/api/?name=Jane+Smith&background=3b82f6&color=fff'
+    },
+    {
+      id: 3,
+      name: 'Michael Johnson',
+      email: 'michael.johnson@example.com',
+      age: 58,
+      gender: 'Male',
+      lastVisit: '2023-04-20',
+      status: 'Inactive',
+      avatar: 'https://ui-avatars.com/api/?name=Michael+Johnson&background=3b82f6&color=fff'
+    },
+    {
+      id: 4,
+      name: 'Emily Davis',
+      email: 'emily.davis@example.com',
+      age: 29,
+      gender: 'Female',
+      lastVisit: '2023-06-10',
+      status: 'Active',
+      avatar: 'https://ui-avatars.com/api/?name=Emily+Davis&background=3b82f6&color=fff'
+    },
+    {
+      id: 5,
+      name: 'Robert Wilson',
+      email: 'robert.wilson@example.com',
+      age: 62,
+      gender: 'Male',
+      lastVisit: '2023-05-28',
+      status: 'Active',
+      avatar: 'https://ui-avatars.com/api/?name=Robert+Wilson&background=3b82f6&color=fff'
+    }
+  ];
+
+  // Add patients from reviews
+  const reviewPatients = reviews.map((review, index) => {
+    const gender = Math.random() > 0.5 ? 'Male' : 'Female';
+    const age = Math.floor(Math.random() * 50) + 20;
+    
+    // Generate a random date within the last 3 months
+    const date = new Date();
+    date.setDate(date.getDate() - Math.floor(Math.random() * 90));
+    const formattedDate = date.toISOString().split('T')[0];
+    
+    return {
+      id: existingPatients.length + index + 1,
+      name: review.author,
+      email: review.author.toLowerCase().replace(/\s+/g, '.') + '@example.com',
+      age,
+      gender,
+      lastVisit: formattedDate,
+      status: Math.random() > 0.2 ? 'Active' : 'Inactive',
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(review.author)}&background=3b82f6&color=fff`
+    };
+  });
+
+  return [...existingPatients, ...reviewPatients];
+};
+
+// Generate patients once
+const patients = generatePatients();
 
 const PatientsContent = ({ setIsSidebarOpen }) => {
   const { currentUser } = useAuth();

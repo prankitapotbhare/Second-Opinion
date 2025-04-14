@@ -31,6 +31,14 @@ const AdminDashboard = () => {
     return { ...card, icon };
   });
 
+  // Prepare doctors data with status for the DoctorList component
+  const doctorsWithStatus = doctors.map(doctor => ({
+    ...doctor,
+    status: doctor.status || 'Active',
+    patients: doctor.patients || 0,
+    avatar: doctor.profileImage || doctor.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(doctor.name)}`
+  }));
+
   return (
     <div className="min-h-screen bg-[#f0f8ff]">
       <Header 
@@ -55,7 +63,7 @@ const AdminDashboard = () => {
         </div>
         
         {/* Doctor List */}
-        <DoctorList doctors={doctors} />
+        <DoctorList doctors={doctorsWithStatus} />
         
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
