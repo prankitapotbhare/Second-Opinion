@@ -32,7 +32,7 @@ const DashboardContent = () => {
 
   return (
     <div className="min-h-screen bg-[#f0f8ff]">
-      <Header title="Admin Dashboard" user={currentUser} />
+      <Header title="Admin Dashboard" user={currentUser} setIsSidebarOpen={setIsSidebarOpen} />
       
       {/* Main Content */}
       <main className="max-w-[1440px] mx-auto px-6 pb-8">

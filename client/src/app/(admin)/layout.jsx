@@ -1,38 +1,25 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components';
 import { FaBars } from 'react-icons/fa';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import DashboardContent from './components/dashboard/DashboardContent';
-import DoctorsContent from './components/dashboard/DoctorsContent';
-import PatientsContent from './components/dashboard/PatientsContent';
-import AppointmentsContent from './components/dashboard/AppointmentsContent';
-import SettingsContent from './components/dashboard/SettingsContent';
+import { usePathname } from 'next/navigation';
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const { currentUser } = useAuth();
+  const pathname = usePathname();
 
-  // Render content based on active tab
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return <DashboardContent />;
-      case 'doctors':
-        return <DoctorsContent />;
-      case 'patients':
-        return <PatientsContent />;
-      case 'appointments':
-        return <AppointmentsContent />;
-      case 'settings':
-        return <SettingsContent />;
-      default:
-        return <DashboardContent />;
+  // Set active tab based on current path
+  useEffect(() => {
+    const section = pathname.split('/').pop();
+    if (section && ['dashboard', 'doctors', 'patients', 'appointments', 'settings'].includes(section)) {
+      setActiveTab(section);
     }
-  };
+  }, [pathname]);
 
   return (
     <div className="flex h-screen bg-[#f0f8ff] overflow-hidden">
@@ -57,7 +44,7 @@ export default function AdminLayout({ children }) {
       {/* Main content */}
       <ProtectedRoute allowedRoles={['admin']} redirectTo="/login/admin">
         <div className="flex-1 overflow-auto">
-          {renderContent()}
+          {children}
         </div>
       </ProtectedRoute>
     </div>
