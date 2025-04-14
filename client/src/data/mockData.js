@@ -7,7 +7,7 @@ export const users = [
     name: 'John Doe',
     email: 'user@example.com',
     role: 'user',
-    profileImage: '/images/avatars/user-avatar.jpg'
+    profileImage: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=250&q=80'
   },
   {
     id: 'doctor-1',
@@ -15,14 +15,14 @@ export const users = [
     email: 'doctor@example.com',
     role: 'doctor',
     specialization: 'Cardiology',
-    profileImage: '/images/avatars/doctor-avatar.jpg'
+    profileImage: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=250&q=80'
   },
   {
     id: 'admin-1',
     name: 'Admin User',
     email: 'admin@example.com',
     role: 'admin',
-    profileImage: '/images/avatars/admin-avatar.jpg'
+    profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=250&q=80'
   }
 ];
 
@@ -35,7 +35,7 @@ export const doctors = [
     patients: 45,
     rating: 4.8,
     status: 'active',
-    profileImage: '/images/avatars/doctor-1.jpg'
+    profileImage: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=250&q=80'
   },
   {
     id: 'doctor-2',
@@ -44,7 +44,7 @@ export const doctors = [
     patients: 32,
     rating: 4.6,
     status: 'active',
-    profileImage: '/images/avatars/doctor-2.jpg'
+    profileImage: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=250&q=80'
   },
   {
     id: 'doctor-3',
@@ -53,7 +53,7 @@ export const doctors = [
     patients: 38,
     rating: 4.9,
     status: 'active',
-    profileImage: '/images/avatars/doctor-3.jpg'
+    profileImage: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=250&q=80'
   },
   {
     id: 'doctor-4',
@@ -62,7 +62,7 @@ export const doctors = [
     patients: 27,
     rating: 4.5,
     status: 'inactive',
-    profileImage: '/images/avatars/doctor-4.jpg'
+    profileImage: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=250&q=80'
   }
 ];
 
