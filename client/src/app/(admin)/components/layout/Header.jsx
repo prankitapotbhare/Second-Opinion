@@ -11,7 +11,7 @@ const Header = ({ title }) => {
   
   return (
     <div className="bg-white shadow-sm sticky top-0 z-30 mb-6">
-      <div className="flex items-center justify-between max-w-[1440px] mx-auto p-4">
+      <div className="flex items-center justify-between max-w-[1440px] mx-auto px-6 py-4">
         <div className="flex items-center gap-4">
           <button 
             className="p-2 rounded-md text-gray-600 hover:bg-gray-100 md:hidden transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"

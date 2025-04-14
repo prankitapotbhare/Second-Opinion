@@ -75,14 +75,14 @@ const Sidebar = () => {
       {/* Sidebar container with slide animation */}
       <div 
         ref={sidebarRef}
-        className={`w-72 h-full fixed inset-y-0 left-0 md:h-screen md:relative bg-white z-50 shadow-xl md:shadow-md
+        className={`w-74 h-full fixed inset-y-0 left-0 md:h-screen md:relative bg-white z-50 shadow-xl md:shadow-md
                    transition-transform duration-300 ease-out ${
                      isSidebarOpen && !isClosing ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
                    }`}
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
       >
-        <div className="py-4 px-6 flex items-center justify-between border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div className="py-4 px-6 flex items-center justify-between gap-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
           <div className="flex items-center gap-3">
             <div className={`bg-blue-600 text-white p-2 rounded-lg shadow-md transform transition-all duration-500 ${isHovering ? 'scale-110' : 'scale-100'}`}>
               <FaHospital className={`text-xl transition-all duration-500 ${isHovering ? 'rotate-12' : 'rotate-0'}`} />
