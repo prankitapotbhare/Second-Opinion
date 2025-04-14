@@ -33,11 +33,34 @@ export const validatePassword = (password) => {
   }
   
   // Check for at least one number
-  if (!/[0-9]/.test(password)) {
+  if (!/\d/.test(password)) {
     return { isValid: false, message: 'Password must contain at least one number' };
   }
   
-  return { isValid: true, message: 'Password is valid' };
+  // Check for at least one special character
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    return { isValid: false, message: 'Password must contain at least one special character' };
+  }
+  
+  return { isValid: true, message: '' };
+};
+
+/**
+ * Creates a user avatar URL using UI Avatars service
+ * @param {string} name - User's name
+ * @param {string} color - Background color (hex without #)
+ * @returns {string} - Avatar URL
+ */
+export const createAvatarUrl = (name, color = '3b82f6') => {
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${color}&color=fff`;
+};
+
+/**
+ * Generates a mock authentication token
+ * @returns {string} - Mock token
+ */
+export const generateMockToken = () => {
+  return `mock-token-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 };
 
 /**

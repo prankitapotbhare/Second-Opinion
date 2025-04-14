@@ -6,11 +6,13 @@ import { AuthHeader } from '../components';
 import PasswordInput from '../components/common/PasswordInput';
 import { AuthLoading } from '@/components';
 import { validatePassword } from '@/utils/authUtils';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ResetPassword() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const router = useRouter();
+  const { setNewPassword } = useAuth();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isValid, setIsValid] = useState(true);
@@ -35,6 +37,7 @@ export default function ResetPassword() {
         setIsValid(true);
       } else {
         setIsValid(false);
+        setError('Invalid or expired reset token. Please request a new password reset link.');
       }
       setIsLoading(false);
     }, 1000);
@@ -73,15 +76,19 @@ export default function ResetPassword() {
     setIsSubmitting(true);
     
     try {
-      // Mock API call to reset password
-      // In a real app, you would call an API endpoint
-      setTimeout(() => {
-        // Simulate successful password reset
-        router.push('/login/success?message=Your+password+has+been+reset+successfully');
-      }, 1500);
+      const result = await setNewPassword(token, password);
+      
+      if (result.success) {
+        // Redirect to login page with success message
+        router.push('/login?message=Your+password+has+been+reset+successfully');
+      } else {
+        setError(result.error || 'Failed to reset password. Please try again.');
+        setIsSubmitting(false);
+      }
     } catch (err) {
-      setError('Failed to reset password. Please try again.');
+      setError('An unexpected error occurred');
       setIsSubmitting(false);
+      console.error(err);
     }
   };
 
@@ -100,21 +107,19 @@ export default function ResetPassword() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Invalid Reset Link</h2>
           <p className="text-gray-600 mb-6">
-            {error || "This password reset link is invalid or has expired."}
+            {error}
           </p>
           <div className="space-y-3">
-            <button 
-              onClick={() => router.push('/forgot-password')}
-              className="w-full py-3 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Request a New Reset Link
-            </button>
-            <button 
-              onClick={() => router.push('/login')}
-              className="w-full py-3 px-4 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors"
-            >
-              Return to Login
-            </button>
+            <a href="/forgot-password">
+              <button className="w-full py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800">
+                Request New Reset Link
+              </button>
+            </a>
+            <a href="/login">
+              <button className="w-full py-3 px-4 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50">
+                Back to Login
+              </button>
+            </a>
           </div>
         </div>
       </div>
@@ -127,46 +132,50 @@ export default function ResetPassword() {
         <div className="px-4 sm:px-6 pt-6 pb-4 bg-gradient-to-r from-blue-50 to-indigo-50">
           <AuthHeader 
             title="Reset Your Password" 
-            subtitle="Please enter a new password for your account"
+            subtitle="Create a new password for your account"
             align="center"
           />
         </div>
         
         <div className="p-4 sm:p-6">
           {error && (
-            <div className="bg-red-50 border-l-4 border-red-400 text-red-700 p-3 rounded-md mb-4 text-sm">
+            <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-md text-sm mb-4">
               {error}
             </div>
           )}
           
           <form onSubmit={handleSubmit} className="space-y-4">
-            <PasswordInput 
-              id="password"
-              label="New Password"
-              value={password}
-              onChange={handlePasswordChange}
-              placeholder="Enter your new password"
-            />
-            
-            {password && !passwordValidation.isValid && (
-              <p className="text-xs text-red-600 mt-1">{passwordValidation.message}</p>
-            )}
-            
-            <PasswordInput 
-              id="confirmPassword"
-              label="Confirm Password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Confirm your new password"
-            />
+            <div className="space-y-4">
+              <PasswordInput
+                id="password"
+                name="password"
+                value={password}
+                onChange={handlePasswordChange}
+                placeholder="Create a new password"
+                label="New Password"
+              />
+              
+              {!passwordValidation.isValid && password && (
+                <div className="text-xs text-amber-600">
+                  {passwordValidation.message}
+                </div>
+              )}
+              
+              <PasswordInput
+                id="confirmPassword"
+                name="confirmPassword"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm your new password"
+                label="Confirm New Password"
+              />
+            </div>
             
             <div className="pt-2">
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`w-full py-2 px-4 rounded-md text-white font-medium ${
-                  isSubmitting ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'
-                }`}
+                className="w-full py-2 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Resetting Password...' : 'Reset Password'}
               </button>

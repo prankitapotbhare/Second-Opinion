@@ -76,6 +76,16 @@ export const AuthProvider = ({ children }) => {
       const mockUser = mockUsers[userType];
       
       if (mockUser && (email.includes(userType) || email === mockUser.email) && password === mockUser.password) {
+        // Check if user is verified
+        if (!mockUser.verified) {
+          return { 
+            success: false, 
+            error: 'Please verify your email before logging in',
+            needsVerification: true,
+            email: email
+          };
+        }
+        
         setCurrentUser(mockUser);
         
         // Generate a mock token
@@ -131,8 +141,11 @@ export const AuthProvider = ({ children }) => {
       // In a real app, you would send this to your backend
       console.log('New user registered:', newUser);
       
+      // Add user to mock database
+      mockUsers[`${userType}-${Date.now()}`] = newUser;
+      
       // Don't log in the user yet - they need to verify email first
-      return { success: true };
+      return { success: true, email: userData.email };
     } catch (error) {
       console.error('Signup error:', error);
       setAuthError('An error occurred during signup');
@@ -177,7 +190,10 @@ export const AuthProvider = ({ children }) => {
       // In a real app, you would send a reset link to the user's email
       console.log(`Password reset link sent to: ${email}`);
       
-      return { success: true };
+      // Generate a mock reset token
+      const resetToken = `reset-token-${Date.now()}`;
+      
+      return { success: true, resetToken };
     } catch (error) {
       console.error('Reset password error:', error);
       return { success: false, error: 'Failed to send reset link' };
@@ -194,6 +210,11 @@ export const AuthProvider = ({ children }) => {
       // For demo purposes, we'll consider tokens longer than 10 chars as valid
       if (token && token.length > 10) {
         console.log(`Email verified with token: ${token}`);
+        
+        // Find the user with this token and mark as verified
+        // In a real app, the token would be linked to a specific user
+        // For mock purposes, we'll just assume it worked
+        
         return { success: true };
       }
       
@@ -201,6 +222,47 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Email verification error:', error);
       return { success: false, error: 'An error occurred during verification' };
+    }
+  };
+
+  // Set new password after reset
+  const setNewPassword = async (token, newPassword) => {
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // In a real app, you would validate the token and update the user's password
+      // For demo purposes, we'll consider tokens longer than 10 chars as valid
+      if (token && token.length > 10) {
+        console.log(`Password reset with token: ${token}`);
+        return { success: true };
+      }
+      
+      return { success: false, error: 'Invalid reset token' };
+    } catch (error) {
+      console.error('Set new password error:', error);
+      return { success: false, error: 'Failed to reset password' };
+    }
+  };
+
+  // Resend verification email
+  const resendVerificationEmail = async (email) => {
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Check if email exists
+      const userExists = Object.values(mockUsers).some(user => user.email === email);
+      
+      if (!userExists) {
+        return { success: false, error: 'Email not found' };
+      }
+      
+      console.log(`Verification email resent to: ${email}`);
+      return { success: true };
+    } catch (error) {
+      console.error('Resend verification error:', error);
+      return { success: false, error: 'Failed to resend verification email' };
     }
   };
 
@@ -214,7 +276,6 @@ export const AuthProvider = ({ children }) => {
     return currentUser?.role === role;
   };
 
-
   const value = {
     currentUser,
     loading,
@@ -225,6 +286,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     resetPassword,
     verifyEmail,
+    setNewPassword,
+    resendVerificationEmail,
     isAuthenticated,
     hasRole
   };

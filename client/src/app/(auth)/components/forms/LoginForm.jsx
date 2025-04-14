@@ -23,6 +23,8 @@ const LoginForm = ({
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -36,6 +38,7 @@ const LoginForm = ({
     e.preventDefault();
     setError('');
     setIsLoading(true);
+    setNeedsVerification(false);
 
     const { email, password, rememberMe } = formData;
 
@@ -44,14 +47,17 @@ const LoginForm = ({
       const result = await login(email, password, userType);
       
       if (result.success) {
-        // If login is successful, redirect to the appropriate dashboard
-        const dashboardPath = `/${userType}/dashboard`;
-        router.push(dashboardPath);
+        // If login is successful, redirect to success page
+        router.push(`/login/success?type=${userType}`);
         
         // Also call the onSubmit prop if provided
         if (onSubmit) {
           onSubmit({ email, password, rememberMe });
         }
+      } else if (result.needsVerification) {
+        // If user needs to verify email
+        setNeedsVerification(true);
+        setVerificationEmail(result.email);
       } else {
         // If login fails, show the error
         setError(result.error || 'Login failed');
@@ -79,6 +85,64 @@ const LoginForm = ({
     // Submit the form
     handleSubmit({ preventDefault: () => {} });
   };
+
+  const handleResendVerification = async () => {
+    setIsLoading(true);
+    try {
+      const { resendVerificationEmail } = useAuth();
+      const result = await resendVerificationEmail(verificationEmail);
+      
+      if (result.success) {
+        setError('');
+        alert('Verification email has been resent. Please check your inbox.');
+      } else {
+        setError(result.error || 'Failed to resend verification email');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (needsVerification) {
+    return (
+      <div className="space-y-4">
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-1 9a1 1 0 01-1-1v-4a1 1 0 112 0v4a1 1 0 01-1 1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium">Email verification required</h3>
+              <div className="mt-2 text-sm">
+                <p>Please verify your email address before logging in.</p>
+                <button 
+                  onClick={handleResendVerification}
+                  disabled={isLoading}
+                  className="mt-2 text-sm font-medium text-yellow-800 hover:text-yellow-700 disabled:opacity-50"
+                >
+                  {isLoading ? 'Sending...' : 'Resend verification email'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <button
+          onClick={() => {
+            setNeedsVerification(false);
+            setError('');
+          }}
+          className="w-full py-2 px-4 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+        >
+          Back to login
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
