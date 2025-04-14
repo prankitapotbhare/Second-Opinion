@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { AuthLoading } from '@/components';
 
 export default function VerifyEmail() {
   const { token } = useParams();
@@ -35,15 +36,7 @@ export default function VerifyEmail() {
   }, [token, verifyEmail]);
 
   if (isVerifying) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Verifying Your Email</h2>
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
-          <p className="text-gray-600 mt-4">Please wait while we verify your email address...</p>
-        </div>
-      </div>
-    );
+    return <AuthLoading message="Verifying your email address..." />;
   }
 
   return (
@@ -77,11 +70,18 @@ export default function VerifyEmail() {
             <p className="text-gray-600 mb-6">
               {error}
             </p>
-            <Link href="/signup">
-              <button className="w-full py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800">
-                Go to Signup
-              </button>
-            </Link>
+            <div className="space-y-3">
+              <Link href="/signup">
+                <button className="w-full py-3 px-4 bg-teal-600 text-white font-medium rounded-md hover:bg-teal-700 transition-colors">
+                  Try Signing Up Again
+                </button>
+              </Link>
+              <Link href="/">
+                <button className="w-full py-3 px-4 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors">
+                  Return to Home
+                </button>
+              </Link>
+            </div>
           </>
         )}
       </div>

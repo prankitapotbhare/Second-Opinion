@@ -14,7 +14,8 @@ const mockUsers = {
     email: 'admin@example.com',
     password: 'password123',
     role: 'admin',
-    avatar: 'https://ui-avatars.com/api/?name=Admin+User&background=6366f1&color=fff'
+    avatar: 'https://ui-avatars.com/api/?name=Admin+User&background=6366f1&color=fff',
+    verified: true
   },
   doctor: {
     id: 'doctor-123',
@@ -23,7 +24,8 @@ const mockUsers = {
     password: 'password123',
     role: 'doctor',
     specialization: 'Cardiology',
-    avatar: 'https://ui-avatars.com/api/?name=Dr+John+Smith&background=10b981&color=fff'
+    avatar: 'https://ui-avatars.com/api/?name=Dr+John+Smith&background=10b981&color=fff',
+    verified: true
   },
   user: {
     id: 'user-123',
@@ -31,7 +33,8 @@ const mockUsers = {
     email: 'user@example.com',
     password: 'password123',
     role: 'user',
-    avatar: 'https://ui-avatars.com/api/?name=Jane+Doe&background=3b82f6&color=fff'
+    avatar: 'https://ui-avatars.com/api/?name=Jane+Doe&background=3b82f6&color=fff',
+    verified: true
   }
 };
 
@@ -66,20 +69,20 @@ export const AuthProvider = ({ children }) => {
     
     try {
       // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Find the mock user that matches the email and password
+      // For demo purposes, we'll just check if the email contains the userType
+      // In a real app, you would validate credentials against your backend
       const mockUser = mockUsers[userType];
       
-      if (mockUser && mockUser.email === email && mockUser.password === password) {
-        // Generate a mock token
-        const token = `mock-token-${Date.now()}-${userType}`;
-        
-        // Set the current user and token
+      if (mockUser && (email.includes(userType) || email === mockUser.email) && password === mockUser.password) {
         setCurrentUser(mockUser);
+        
+        // Generate a mock token
+        const token = `mock-token-${Date.now()}`;
         setAuthToken(token);
         
-        // Store in localStorage
+        // Store in localStorage for persistence
         localStorage.setItem('currentUser', JSON.stringify(mockUser));
         localStorage.setItem('authToken', token);
         
@@ -87,14 +90,12 @@ export const AuthProvider = ({ children }) => {
         return { success: true, user: mockUser };
       }
       
-      // Return error if login fails
-      const error = 'Invalid email or password';
-      setAuthError(error);
-      return { success: false, error };
+      setAuthError('Invalid credentials');
+      return { success: false, error: 'Invalid credentials' };
     } catch (error) {
-      const errorMessage = 'An unexpected error occurred';
-      setAuthError(errorMessage);
-      return { success: false, error: errorMessage };
+      console.error('Login error:', error);
+      setAuthError('An error occurred during login');
+      return { success: false, error: 'An error occurred during login' };
     }
   };
 
@@ -104,7 +105,7 @@ export const AuthProvider = ({ children }) => {
     
     try {
       // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Check if email already exists
       const emailExists = Object.values(mockUsers).some(user => user.email === userData.email);
@@ -119,18 +120,23 @@ export const AuthProvider = ({ children }) => {
       // For mock purposes, we'll just create a new user object
       const newUser = {
         id: `${userType}-${Date.now()}`,
-        ...userData,
+        name: userData.name,
+        email: userData.email,
+        password: userData.password,
         role: userType,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=3b82f6&color=fff`
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=3b82f6&color=fff`,
+        verified: false // User needs to verify email
       };
       
-      // In a real app, you would store this in your database
-      // For mock purposes, we'll just return success
-      return { success: true, user: newUser };
+      // In a real app, you would send this to your backend
+      console.log('New user registered:', newUser);
+      
+      // Don't log in the user yet - they need to verify email first
+      return { success: true };
     } catch (error) {
-      const errorMessage = 'An unexpected error occurred';
-      setAuthError(errorMessage);
-      return { success: false, error: errorMessage };
+      console.error('Signup error:', error);
+      setAuthError('An error occurred during signup');
+      return { success: false, error: 'An error occurred during signup' };
     }
   };
 
@@ -157,52 +163,44 @@ export const AuthProvider = ({ children }) => {
 
   // Reset password function
   const resetPassword = async (email) => {
-    setAuthError(null);
-    
     try {
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Check if email exists
-      const emailExists = Object.values(mockUsers).some(user => user.email === email);
+      // Check if email exists in our mock users
+      const userExists = Object.values(mockUsers).some(user => user.email === email);
       
-      if (!emailExists) {
-        const error = 'Email not found';
-        setAuthError(error);
-        return { success: false, error };
+      if (!userExists) {
+        return { success: false, error: 'Email not found in our records' };
       }
       
-      // In a real app, you would send a reset password email
-      // For mock purposes, we'll just return success
+      // In a real app, you would send a reset link to the user's email
+      console.log(`Password reset link sent to: ${email}`);
+      
       return { success: true };
     } catch (error) {
-      const errorMessage = 'An unexpected error occurred';
-      setAuthError(errorMessage);
-      return { success: false, error: errorMessage };
+      console.error('Reset password error:', error);
+      return { success: false, error: 'Failed to send reset link' };
     }
   };
 
   // Verify email function
   const verifyEmail = async (token) => {
-    setAuthError(null);
-    
     try {
       // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // In a real app, you would verify the token
-      // For mock purposes, we'll just check if the token is valid
+      // In a real app, you would validate the token with your backend
+      // For demo purposes, we'll consider tokens longer than 10 chars as valid
       if (token && token.length > 10) {
+        console.log(`Email verified with token: ${token}`);
         return { success: true };
       }
       
-      const error = 'Invalid verification token';
-      setAuthError(error);
-      return { success: false, error };
+      return { success: false, error: 'Invalid verification token' };
     } catch (error) {
-      const errorMessage = 'An unexpected error occurred';
-      setAuthError(errorMessage);
-      return { success: false, error: errorMessage };
+      console.error('Email verification error:', error);
+      return { success: false, error: 'An error occurred during verification' };
     }
   };
 
@@ -216,10 +214,6 @@ export const AuthProvider = ({ children }) => {
     return currentUser?.role === role;
   };
 
-  // Get user role
-  const getUserRole = () => {
-    return currentUser?.role || null;
-  };
 
   const value = {
     currentUser,
@@ -232,8 +226,7 @@ export const AuthProvider = ({ children }) => {
     resetPassword,
     verifyEmail,
     isAuthenticated,
-    hasRole,
-    getUserRole
+    hasRole
   };
 
   return (
