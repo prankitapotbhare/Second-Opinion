@@ -17,4 +17,4 @@ export { default as UserSidebar } from './layout/UserSidebar';
 export { default as UserHeader } from './layout/UserHeader';
 
 // Auth components
-export { default as ProtectedRoute } from './ProtectedRoute';
+export { default as ProtectedRoute } from './auth/ProtectedRoute';
