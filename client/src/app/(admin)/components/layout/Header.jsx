@@ -3,7 +3,7 @@
 import React from 'react';
 import { FaBars } from 'react-icons/fa';
 
-const Header = ({ title, setIsSidebarOpen }) => {
+const Header = ({ title, setIsSidebarOpen, user }) => {
   return (
     <div className="bg-white shadow-sm sticky top-0 z-30 mb-6">
       <div className="flex items-center justify-between max-w-[1440px] mx-auto p-4">
@@ -28,7 +28,7 @@ const Header = ({ title, setIsSidebarOpen }) => {
               />
             </div>
             <div className="hidden md:block text-left">
-              <p className="font-medium text-gray-800">Uma Shankar</p>
+              <p className="font-medium text-gray-800">{user?.displayName || "Administrator"}</p>
               <p className="text-xs text-gray-500">Administrator</p>
             </div>
           </div>

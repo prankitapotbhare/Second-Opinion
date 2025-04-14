@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import Sidebar from './components/layout/Sidebar';
+import { Sidebar } from './components';
 import { FaBars } from 'react-icons/fa';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import DashboardContent from './components/dashboard/DashboardContent';
@@ -9,10 +9,12 @@ import DoctorsContent from './components/dashboard/DoctorsContent';
 import PatientsContent from './components/dashboard/PatientsContent';
 import AppointmentsContent from './components/dashboard/AppointmentsContent';
 import SettingsContent from './components/dashboard/SettingsContent';
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const { currentUser } = useAuth();
 
   // Render content based on active tab
   const renderContent = () => {
@@ -33,14 +35,16 @@ export default function AdminLayout({ children }) {
   };
 
   return (
-    <div className="flex h-screen bg-[#f0f8ff]">
-      {/* Mobile sidebar toggle */}
-      <button 
-        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-white shadow-md"
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-      >
-        <FaBars />
-      </button>
+    <div className="flex h-screen bg-[#f0f8ff] overflow-hidden">
+      {/* Mobile sidebar toggle - only show when sidebar is closed */}
+      {!isSidebarOpen && (
+        <button 
+          className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-white shadow-md"
+          onClick={() => setIsSidebarOpen(true)}
+        >
+          <FaBars />
+        </button>
+      )}
 
       {/* Sidebar */}
       <Sidebar 

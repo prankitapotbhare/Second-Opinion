@@ -33,7 +33,11 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-[#f0f8ff]">
-      <Header title="Admin Panel" setIsSidebarOpen={setIsSidebarOpen} user={currentUser} />
+      <Header 
+        title="Dashboard" 
+        setIsSidebarOpen={setIsSidebarOpen} 
+        user={currentUser} 
+      />
       
       {/* Main Content */}
       <main className="max-w-[1440px] mx-auto px-6 pb-8">
