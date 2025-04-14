@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { UserSidebar } from "@/components/layout/UserSidebar";
-import UserHeader from "@/components/layout/UserHeader";
+import { UserSidebar, UserHeader } from "@/components";
 import { FaFileMedical, FaFileUpload, FaTrash, FaDownload, FaEye, FaSearch } from 'react-icons/fa';
 
 export default function MedicalRecordsPage() {
