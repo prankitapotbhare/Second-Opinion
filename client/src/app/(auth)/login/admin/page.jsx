@@ -16,19 +16,24 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md">
-        <AuthHeader 
-          title="Admin Login" 
-          subtitle="Access the administration panel"
-          align="center"
-        />
+    <div className="min-h-screen flex items-center justify-center bg-[#E8F9FF] p-4 sm:p-6 md:p-8">
+      <div className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="px-4 sm:px-6 pt-6 pb-4 bg-gradient-to-r from-purple-50 to-blue-50">
+          <AuthHeader 
+            title="Admin Login" 
+            subtitle="Access the administration panel"
+            align="center"
+          />
+        </div>
         
-        <LoginForm 
-          userType="admin"
-          onSubmit={handleSubmit}
-          redirectPath="/admin/dashboard"
-        />
+        <div className="p-4 sm:p-6">
+          <LoginForm 
+            userType="admin"
+            onSubmit={handleSubmit}
+            redirectPath="/admin/dashboard"
+            hideOptions={true}
+          />
+        </div>
       </div>
     </div>
   );
