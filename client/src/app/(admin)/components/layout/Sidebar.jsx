@@ -13,11 +13,13 @@ import {
   FaChevronRight
 } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAdmin } from '@/contexts/AdminContext';
 import { useOnClickOutside } from '@/hooks/useOnClickOutside';
 import { useRouter } from 'next/navigation';
 
-const Sidebar = ({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab }) => {
+const Sidebar = () => {
   const { logout } = useAuth();
+  const { isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab } = useAdmin();
   const [hoveredItem, setHoveredItem] = useState(null);
   const [isClosing, setIsClosing] = useState(false);
   const [isHovering, setIsHovering] = useState(false);

@@ -2,14 +2,12 @@
 
 import React, { useState } from 'react';
 import { Header } from '@/app/(admin)/components';
-import { useAuth } from "@/contexts/AuthContext";
 import { FaPlus, FaSearch, FaFilter } from 'react-icons/fa';
 import { doctors as mockDoctors } from '@/data/mockData';
 import { doctors as staticDoctors } from '@/data/doctorsData';
 import Link from 'next/link';
 
-const DoctorsContent = ({ setIsSidebarOpen }) => {
-  const { currentUser } = useAuth();
+const DoctorsContent = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
@@ -44,7 +42,7 @@ const DoctorsContent = ({ setIsSidebarOpen }) => {
 
   return (
     <div className="min-h-screen bg-[#f0f8ff]">
-      <Header title="Manage Doctors" user={currentUser} setIsSidebarOpen={setIsSidebarOpen} />
+      <Header title="Manage Doctors" />
       
       <main className="max-w-[1440px] mx-auto px-6 pb-8">
         {/* Action Bar */}

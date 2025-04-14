@@ -1,32 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Sidebar } from './components';
 import { FaBars } from 'react-icons/fa';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import { usePathname } from 'next/navigation';
+import { AdminProvider, useAdmin } from '@/contexts/AdminContext';
 import { useAuth } from "@/contexts/AuthContext";
 
-export default function AdminLayout({ children, params }) {
-  // If params is available, unwrap it
-  const unwrappedParams = params ? React.use(params) : null;
-  
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const { currentUser } = useAuth();
-  const pathname = usePathname();
+// Create a wrapper component that uses the context
+const AdminLayoutContent = ({ children }) => {
+  const { isSidebarOpen, setIsSidebarOpen } = useAdmin();
 
-  // Set active tab based on current path
-  useEffect(() => {
-    const pathSegments = pathname.split('/');
-    const section = pathSegments[pathSegments.length - 1];
-    
-    if (section && ['dashboard', 'doctors', 'patients', 'appointments', 'settings'].includes(section)) {
-      setActiveTab(section);
-    }
-  }, [pathname]);
-
-  // Rest of the component remains the same
   return (
     <div className="flex h-screen bg-[#f0f8ff] overflow-hidden">
       {/* Mobile sidebar toggle - only show when sidebar is closed */}
@@ -40,12 +24,7 @@ export default function AdminLayout({ children, params }) {
       )}
 
       {/* Sidebar */}
-      <Sidebar 
-        isSidebarOpen={isSidebarOpen} 
-        setIsSidebarOpen={setIsSidebarOpen} 
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-      />
+      <Sidebar />
 
       {/* Main content */}
       <ProtectedRoute allowedRoles={['admin']} redirectTo="/login/admin">
@@ -54,5 +33,18 @@ export default function AdminLayout({ children, params }) {
         </div>
       </ProtectedRoute>
     </div>
+  );
+};
+
+export default function AdminLayout({ children, params }) {
+  // If params is available, unwrap it
+  const unwrappedParams = params ? React.use(params) : null;
+  
+  return (
+    <AdminProvider>
+      <AdminLayoutContent>
+        {children}
+      </AdminLayoutContent>
+    </AdminProvider>
   );
 }

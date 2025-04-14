@@ -2,8 +2,13 @@
 
 import React from 'react';
 import { FaBars } from 'react-icons/fa';
+import { useAdmin } from '@/contexts/AdminContext';
+import { useAuth } from '@/contexts/AuthContext';
 
-const Header = ({ title, setIsSidebarOpen, user }) => {
+const Header = ({ title }) => {
+  const { setIsSidebarOpen } = useAdmin();
+  const { currentUser } = useAuth();
+  
   return (
     <div className="bg-white shadow-sm sticky top-0 z-30 mb-6">
       <div className="flex items-center justify-between max-w-[1440px] mx-auto p-4">
@@ -22,13 +27,13 @@ const Header = ({ title, setIsSidebarOpen, user }) => {
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-blue-100 shadow-sm">
               <img
-                src="https://readdy.ai/api/search-image?query=professional%20headshot%20of%20a%20male%20indian%20doctor%20wearing%20a%20white%20coat%20against%20a%20neutral%20background%2C%20high%20quality%20professional%20corporate%20photo&width=100&height=100&seq=1&orientation=squarish"
+                src={currentUser?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser?.name || 'Admin')}&background=3b82f6&color=fff`}
                 alt="Profile"
                 className="w-full h-full object-cover"
               />
             </div>
             <div className="hidden md:block text-left">
-              <p className="font-medium text-gray-800">{user?.displayName || "Administrator"}</p>
+              <p className="font-medium text-gray-800">{currentUser?.name || "Administrator"}</p>
               <p className="text-xs text-gray-500">Administrator</p>
             </div>
           </div>

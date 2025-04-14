@@ -15,7 +15,7 @@ import {
   RecentActivity 
 } from '@/app/(admin)/components';
 
-const DashboardContent = ({ setIsSidebarOpen }) => {
+const DashboardContent = () => {
   const { currentUser } = useAuth();
   
   // Add icons to stat cards
@@ -52,7 +52,7 @@ const DashboardContent = ({ setIsSidebarOpen }) => {
 
   return (
     <div className="min-h-screen bg-[#f0f8ff]">
-      <Header title="Admin Dashboard" user={currentUser} setIsSidebarOpen={setIsSidebarOpen} />
+      <Header title="Admin Dashboard" />
       
       {/* Main Content */}
       <main className="max-w-[1440px] mx-auto px-6 pb-8">
