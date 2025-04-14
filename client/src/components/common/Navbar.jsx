@@ -1,14 +1,29 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { FaBars, FaTimes, FaUser, FaSignOutAlt } from 'react-icons/fa';
+import { useOnClickOutside } from '@/hooks/useOnClickOutside';
 
 const Navbar = () => {
   const { currentUser, logout, isAuthenticated } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  
+  // Create refs for the dropdown menus
+  const menuRef = useRef(null);
+  const profileRef = useRef(null);
+
+  // Use the hook to handle clicks outside the mobile menu
+  useOnClickOutside(menuRef, () => {
+    if (isMenuOpen) setIsMenuOpen(false);
+  });
+
+  // Use the hook to handle clicks outside the profile dropdown
+  useOnClickOutside(profileRef, () => {
+    if (isProfileOpen) setIsProfileOpen(false);
+  });
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -55,7 +70,7 @@ const Navbar = () => {
             </Link>
             
             {isAuthenticated() ? (
-              <div className="relative">
+              <div className="relative" ref={profileRef}>
                 <button 
                   onClick={toggleProfile}
                   className="flex items-center space-x-2 hover:text-teal-200 transition-colors focus:outline-none"
@@ -117,7 +132,7 @@ const Navbar = () => {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-teal-600">
+          <div className="md:hidden py-4 border-t border-teal-600" ref={menuRef}>
             <div className="flex flex-col space-y-4">
               <Link 
                 href="/" 
