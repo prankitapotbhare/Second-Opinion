@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthLoading } from '@/components';
 
 export default function VerifyEmail() {
-  const { token } = useParams();
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token');
   const router = useRouter();
   const { verifyEmail } = useAuth();
   const [isVerifying, setIsVerifying] = useState(true);
@@ -16,6 +17,12 @@ export default function VerifyEmail() {
 
   useEffect(() => {
     const verifyToken = async () => {
+      if (!token) {
+        setError('No verification token provided');
+        setIsVerifying(false);
+        return;
+      }
+
       try {
         const result = await verifyEmail(token);
         
