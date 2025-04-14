@@ -15,18 +15,30 @@ const SignupForm = ({
 }) => {
   const router = useRouter();
   const { signup } = useAuth();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    agreeTerms: false
+  });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
+
+    const { name, email, password, confirmPassword, agreeTerms } = formData;
 
     // Validate passwords match
     if (password !== confirmPassword) {
@@ -71,109 +83,114 @@ const SignupForm = ({
     // Handle Google signup
     console.log('Google signup clicked');
     // For mock purposes, we'll just create a default user
-    setName(userType === 'doctor' ? 'Dr. New Doctor' : 'New User');
-    setEmail(`new${Date.now()}@example.com`);
-    setPassword('password123');
-    setConfirmPassword('password123');
-    setAgreeTerms(true);
+    setFormData({
+      name: userType === 'doctor' ? 'Dr. New Doctor' : 'New User',
+      email: `new${Date.now()}@example.com`,
+      password: 'password123',
+      confirmPassword: 'password123',
+      agreeTerms: true
+    });
     // Submit the form
     handleSubmit({ preventDefault: () => {} });
   };
 
   return (
-    <>
+    <div className="space-y-4">
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md mb-4">
+        <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-md text-sm">
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-            Full Name
-          </label>
-          <input
-            id="name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder="Enter your full name"
-            required
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 gap-4">
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+              Full Name
+            </label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              placeholder="Enter your full name"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              placeholder="Enter your email"
+              required
+            />
+          </div>
+
+          <PasswordInput
+            id="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            placeholder="Create a password"
+            label="Password"
+          />
+
+          <PasswordInput
+            id="confirmPassword"
+            name="confirmPassword"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            placeholder="Confirm your password"
+            label="Confirm Password"
           />
         </div>
-
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder="Enter your email"
-            required
-          />
-        </div>
-
-        <PasswordInput
-          id="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Create a password"
-          label="Password"
-        />
-
-        <PasswordInput
-          id="confirmPassword"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          placeholder="Confirm your password"
-          label="Confirm Password"
-        />
 
         <div className="flex items-center">
           <input
             id="agreeTerms"
+            name="agreeTerms"
             type="checkbox"
-            checked={agreeTerms}
-            onChange={(e) => setAgreeTerms(e.target.checked)}
+            checked={formData.agreeTerms}
+            onChange={handleChange}
             className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
           />
-          <label htmlFor="agreeTerms" className="ml-2 block text-sm text-gray-700">
+          <label htmlFor="agreeTerms" className="ml-2 block text-xs text-gray-700">
             I agree to the <a href="/terms" className="text-indigo-600 hover:text-indigo-500">Terms of Service</a> and <a href="/privacy" className="text-indigo-600 hover:text-indigo-500">Privacy Policy</a>
           </label>
         </div>
 
-        <div>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Creating Account...' : 'Create Account'}
-          </button>
-        </div>
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="w-full py-2 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoading ? 'Creating Account...' : 'Create Account'}
+        </button>
       </form>
 
       <AuthDivider text="or" />
 
-      <div className="space-y-3">
-        <SocialLoginButton provider="Google" onClick={handleGoogleSignup} />
-      </div>
+      <SocialLoginButton provider="Google" onClick={handleGoogleSignup} />
 
-      <div className="mt-6 text-center">
-        <p className="text-sm text-gray-600">
+      <div className="text-center">
+        <p className="text-xs text-gray-600">
           Already have an account?{' '}
           <Link href={`/login/${userType}`} className="font-medium text-indigo-600 hover:text-indigo-500">
             Sign In
           </Link>
         </p>
       </div>
-    </>
+    </div>
   );
 };
 

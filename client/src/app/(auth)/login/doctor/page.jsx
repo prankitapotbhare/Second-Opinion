@@ -23,23 +23,19 @@ export default function DoctorLogin() {
       imagePosition="left"
       mobileImageHeight="30vh"
     >
-      <div className="w-full max-w-md mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <AuthHeader 
-          title="Doctor Login" 
-          subtitle="Access your professional dashboard"
-          align="left"
-          titleClass="text-2xl sm:text-3xl font-bold text-gray-900"
-          subtitleClass="text-sm sm:text-base text-gray-600 mt-2"
-        />
+      <AuthHeader 
+        title="Welcome Back" 
+        subtitle="Access your professional dashboard"
+        align="left"
+        titleClass="text-2xl sm:text-3xl font-bold text-gray-900"
+        subtitleClass="text-sm sm:text-base text-gray-600 mt-2"
+      />
         
-        <div className="mt-6 sm:mt-8">
-          <LoginForm 
-            userType="doctor"
-            onSubmit={handleSubmit}
-            redirectPath="/doctor/dashboard"
-          />
-        </div>
-      </div>
+      <LoginForm 
+        userType="doctor"
+        onSubmit={handleSubmit}
+        redirectPath="/doctor/dashboard"
+      />
     </SplitScreen>
   );
 }

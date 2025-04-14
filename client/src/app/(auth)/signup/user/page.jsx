@@ -18,14 +18,14 @@ export default function UserSignup() {
 
   return (
     <SplitScreen 
-      imageSrc="/images/SignUp/user-signup.jpg" 
+      imageSrc="/images/SignUp/doctor-signup.jpg" 
       imageAlt="user with healthcare provider"
       imagePosition="right"
     >
       <AuthHeader 
-        title="Create Your user Account" 
+        title="Create Your Account" 
         subtitle="Join Second Opinion to get expert medical advice"
-        align="center"
+        align="left"
       />
       
       <SignupForm 
