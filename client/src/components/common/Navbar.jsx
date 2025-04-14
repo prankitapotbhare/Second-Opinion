@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { FaBars, FaTimes, FaUser, FaSignOutAlt } from 'react-icons/fa';
 import { useOnClickOutside } from '@/hooks/useOnClickOutside';
 
-const Navbar = () => {
+const Navbar = ({ scrollToFAQs }) => {
   const { currentUser, logout, isAuthenticated } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -59,12 +59,15 @@ const Navbar = () => {
             <Link href="/" className="hover:text-teal-200 transition-colors">
               Home
             </Link>
-            <Link href="/about" className="hover:text-teal-200 transition-colors">
-              About
+            <Link href="/user/responses" className="hover:text-teal-200 transition-colors">
+              Response
             </Link>
-            <Link href="/services" className="hover:text-teal-200 transition-colors">
-              Services
-            </Link>
+            <button 
+              onClick={scrollToFAQs} 
+              className="hover:text-teal-200 transition-colors cursor-pointer"
+            >
+              FAQs
+            </button>
             <Link href="/contact" className="hover:text-teal-200 transition-colors">
               Contact
             </Link>
@@ -142,19 +145,21 @@ const Navbar = () => {
                 Home
               </Link>
               <Link 
-                href="/about" 
+                href="/user/responses" 
                 className="hover:text-teal-200 transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
-                About
+                Response
               </Link>
-              <Link 
-                href="/services" 
-                className="hover:text-teal-200 transition-colors"
-                onClick={() => setIsMenuOpen(false)}
+              <button 
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  scrollToFAQs();
+                }} 
+                className="text-left hover:text-teal-200 transition-colors"
               >
-                Services
-              </Link>
+                FAQs
+              </button>
               <Link 
                 href="/contact" 
                 className="hover:text-teal-200 transition-colors"
