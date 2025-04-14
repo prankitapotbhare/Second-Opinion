@@ -63,14 +63,14 @@ export default function ForgotPassword() {
             
             <div className="space-y-3">
               <Link href="/login">
-                <button className="w-full mb-2 py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800">
+                <button className="w-full mb-2 py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800 transition-colors">
                   Return to Login
                 </button>
               </Link>
               
               <button 
                 onClick={() => setIsSubmitted(false)}
-                className="w-full py-3 px-4 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50"
+                className="w-full py-3 px-4 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors"
               >
                 Try Another Email
               </button>
@@ -112,7 +112,7 @@ export default function ForgotPassword() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 text-base"
                 placeholder="Enter your email"
               />
             </div>
@@ -120,7 +120,7 @@ export default function ForgotPassword() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-2 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? 'Sending...' : 'Send Reset Link'}
             </button>

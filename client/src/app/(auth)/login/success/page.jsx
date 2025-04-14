@@ -33,7 +33,7 @@ function SuccessContent() {
   }, [router, redirectTo, userType]);
 
   return (
-    <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md text-center">
+    <div className="max-w-md w-full space-y-6 bg-white p-6 sm:p-8 rounded-lg shadow-md text-center">
       <div className="mb-6 text-green-500">
         <FaCheckCircle className="h-16 w-16 mx-auto" />
       </div>
@@ -58,14 +58,14 @@ function SuccessContent() {
       <div className="space-y-3">
         <button 
           onClick={() => router.push(`/${userType}/dashboard`)}
-          className="w-full mb-2 py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800"
+          className="w-full mb-2 py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800 transition-colors"
         >
           Go to Dashboard Now
         </button>
         
         <button 
           onClick={() => router.push('/')}
-          className="w-full py-3 px-4 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50"
+          className="w-full py-3 px-4 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors"
         >
           Return to Home
         </button>
@@ -76,9 +76,9 @@ function SuccessContent() {
 
 export default function LoginSuccess() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-6 px-4 sm:px-6 lg:px-8">
       <Suspense fallback={
-        <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md text-center">
+        <div className="max-w-md w-full space-y-8 bg-white p-6 sm:p-8 rounded-lg shadow-md text-center">
           <div className="animate-pulse">
             <div className="h-16 w-16 mx-auto bg-gray-200 rounded-full mb-6"></div>
             <div className="h-8 bg-gray-200 rounded w-3/4 mx-auto mb-4"></div>

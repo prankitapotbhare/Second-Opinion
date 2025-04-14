@@ -32,7 +32,7 @@ const PasswordInput = ({
           type={showPassword ? "text" : "password"}
           value={value}
           onChange={handleChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 text-base"
           placeholder={placeholder}
           required={required}
           autoComplete={id === "password" ? "current-password" : "new-password"}
@@ -42,6 +42,7 @@ const PasswordInput = ({
           onClick={() => setShowPassword(!showPassword)}
           className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
           tabIndex="-1"
+          aria-label={showPassword ? "Hide password" : "Show password"}
         >
           {showPassword ? (
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">

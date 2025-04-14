@@ -47,8 +47,8 @@ export default function VerifyEmail() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md text-center">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-6 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-6 bg-white p-6 sm:p-8 rounded-lg shadow-md text-center">
         {isSuccess ? (
           <>
             <div className="mb-4 text-green-500">
@@ -61,7 +61,7 @@ export default function VerifyEmail() {
               Your email has been successfully verified. You can now log in to your account.
             </p>
             <Link href="/login">
-              <button className="w-full py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800">
+              <button className="w-full py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800 transition-colors">
                 Go to Login
               </button>
             </Link>

@@ -47,8 +47,8 @@ export default function Logout() {
 
   if (isLoggingOut) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#E8F9FF] py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-6 bg-white p-8 rounded-lg shadow-lg text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#E8F9FF] py-6 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-6 bg-white p-6 sm:p-8 rounded-lg shadow-lg text-center">
           <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-blue-100 mb-4">
             {countdown > 0 ? (
               <svg className="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -74,7 +74,7 @@ export default function Logout() {
           <div className="mt-6 pt-4 border-t border-gray-100">
             <Link 
               href="/login" 
-              className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors duration-300"
+              className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors duration-300 w-full"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
@@ -88,8 +88,8 @@ export default function Logout() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#E8F9FF] py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-6 bg-white p-8 rounded-lg shadow-lg text-center">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#E8F9FF] py-6 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-6 bg-white p-6 sm:p-8 rounded-lg shadow-lg text-center">
         {error && (
           <>
             <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-red-100 mb-4">
@@ -101,10 +101,10 @@ export default function Logout() {
             <p className="text-gray-600 mb-6">
               {error}
             </p>
-            <div className="flex space-x-4">
+            <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
               <button
                 onClick={() => router.push('/')}
-                className="flex-1 py-3 px-4 bg-gray-200 text-gray-800 font-medium rounded-md hover:bg-gray-300 transition-colors"
+                className="py-3 px-4 bg-gray-200 text-gray-800 font-medium rounded-md hover:bg-gray-300 transition-colors w-full"
               >
                 Return to Home
               </button>
@@ -114,7 +114,7 @@ export default function Logout() {
                   setError('');
                   logout();
                 }}
-                className="flex-1 py-3 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
+                className="py-3 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors w-full"
               >
                 Try Again
               </button>

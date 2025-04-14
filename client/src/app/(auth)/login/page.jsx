@@ -19,16 +19,16 @@ export default function LoginSelector() {
           <div className="flex flex-col gap-3 sm:gap-4">
             {/* User Login Option */}
             <Link href="/login/user" className="block">
-              <div className="group border border-blue-200 hover:border-blue-500 rounded-lg p-3 sm:p-4 transition-all hover:shadow-md flex items-center">
-                <div className="bg-blue-100 p-2 sm:p-3 rounded-full group-hover:bg-blue-200 transition-colors mr-3 sm:mr-4 flex-shrink-0">
-                  <FaUserAlt className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+              <div className="group border border-blue-200 hover:border-blue-500 rounded-lg p-4 transition-all hover:shadow-md flex items-center">
+                <div className="bg-blue-100 p-3 rounded-full group-hover:bg-blue-200 transition-colors mr-4 flex-shrink-0">
+                  <FaUserAlt className="h-5 w-5 text-blue-600" />
                 </div>
                 <div className="text-left min-w-0 flex-1">
-                  <h3 className="text-base sm:text-lg font-semibold mb-0.5 sm:mb-1 truncate">User Login</h3>
+                  <h3 className="text-base sm:text-lg font-semibold mb-1 truncate">User Login</h3>
                   <p className="text-xs sm:text-sm text-gray-600 truncate">Access your healthcare account</p>
                 </div>
                 <div className="ml-2 flex-shrink-0">
-                  <svg className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-5 w-5 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
@@ -37,16 +37,16 @@ export default function LoginSelector() {
             
             {/* Doctor Login Option */}
             <Link href="/login/doctor" className="block">
-              <div className="group border border-green-200 hover:border-green-500 rounded-lg p-3 sm:p-4 transition-all hover:shadow-md flex items-center">
-                <div className="bg-green-100 p-2 sm:p-3 rounded-full group-hover:bg-green-200 transition-colors mr-3 sm:mr-4 flex-shrink-0">
-                  <FaUserMd className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+              <div className="group border border-green-200 hover:border-green-500 rounded-lg p-4 transition-all hover:shadow-md flex items-center">
+                <div className="bg-green-100 p-3 rounded-full group-hover:bg-green-200 transition-colors mr-4 flex-shrink-0">
+                  <FaUserMd className="h-5 w-5 text-green-600" />
                 </div>
                 <div className="text-left min-w-0 flex-1">
-                  <h3 className="text-base sm:text-lg font-semibold mb-0.5 sm:mb-1 truncate">Doctor Login</h3>
+                  <h3 className="text-base sm:text-lg font-semibold mb-1 truncate">Doctor Login</h3>
                   <p className="text-xs sm:text-sm text-gray-600 truncate">Access your professional dashboard</p>
                 </div>
                 <div className="ml-2 flex-shrink-0">
-                  <svg className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 group-hover:text-green-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-5 w-5 text-gray-400 group-hover:text-green-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
@@ -55,16 +55,16 @@ export default function LoginSelector() {
             
             {/* Admin Login Option */}
             <Link href="/login/admin" className="block">
-              <div className="group border border-purple-200 hover:border-purple-500 rounded-lg p-3 sm:p-4 transition-all hover:shadow-md flex items-center">
-                <div className="bg-purple-100 p-2 sm:p-3 rounded-full group-hover:bg-purple-200 transition-colors mr-3 sm:mr-4 flex-shrink-0">
-                  <FaUserCog className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
+              <div className="group border border-purple-200 hover:border-purple-500 rounded-lg p-4 transition-all hover:shadow-md flex items-center">
+                <div className="bg-purple-100 p-3 rounded-full group-hover:bg-purple-200 transition-colors mr-4 flex-shrink-0">
+                  <FaUserCog className="h-5 w-5 text-purple-600" />
                 </div>
                 <div className="text-left min-w-0 flex-1">
-                  <h3 className="text-base sm:text-lg font-semibold mb-0.5 sm:mb-1 truncate">Admin Login</h3>
+                  <h3 className="text-base sm:text-lg font-semibold mb-1 truncate">Admin Login</h3>
                   <p className="text-xs sm:text-sm text-gray-600 truncate">Access the administration panel</p>
                 </div>
                 <div className="ml-2 flex-shrink-0">
-                  <svg className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 group-hover:text-purple-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-5 w-5 text-gray-400 group-hover:text-purple-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
@@ -75,7 +75,7 @@ export default function LoginSelector() {
         
         {/* Footer Section */}
         <div className="px-4 sm:px-6 py-4 border-t border-gray-100 bg-gray-50">
-          <p className="text-xs sm:text-sm text-center text-gray-600">
+          <p className="text-sm text-center text-gray-600">
             Don't have an account?{' '}
             <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
               Sign Up

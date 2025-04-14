@@ -156,7 +156,7 @@ export default function ResetPassword() {
               />
               
               {!passwordValidation.isValid && password && (
-                <div className="text-xs text-amber-600">
+                <div className="text-xs text-amber-600 px-1">
                   {passwordValidation.message}
                 </div>
               )}
@@ -167,20 +167,24 @@ export default function ResetPassword() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm your new password"
-                label="Confirm New Password"
+                label="Confirm Password"
               />
             </div>
             
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-2 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? 'Resetting Password...' : 'Reset Password'}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mt-4"
+            >
+              {isSubmitting ? 'Resetting...' : 'Reset Password'}
+            </button>
           </form>
+          
+          <div className="mt-6 text-center">
+            <a href="/login" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+              Back to Login
+            </a>
+          </div>
         </div>
       </div>
     </div>
