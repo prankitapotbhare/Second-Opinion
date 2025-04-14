@@ -59,7 +59,7 @@ const patients = [
   }
 ];
 
-const PatientsContent = () => {
+const PatientsContent = ({ setIsSidebarOpen }) => {
   const { currentUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -74,7 +74,7 @@ const PatientsContent = () => {
 
   return (
     <div className="min-h-screen bg-[#f0f8ff]">
-      <Header title="Manage Patients" user={currentUser} />
+      <Header title="Manage Patients" user={currentUser} setIsSidebarOpen={setIsSidebarOpen} />
       
       <main className="max-w-[1440px] mx-auto px-6 pb-8">
         {/* Action Bar */}

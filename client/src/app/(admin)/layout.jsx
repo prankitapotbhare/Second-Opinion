@@ -1,39 +1,32 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components';
 import { FaBars } from 'react-icons/fa';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import DashboardContent from './components/dashboard/DashboardContent';
-import DoctorsContent from './components/doctor/DoctorsContent';
-import PatientsContent from './components/patient/PatientsContent';
-import AppointmentsContent from './components/appointments/AppointmentsContent';
-import SettingsContent from './components/settings/SettingsContent';
+import { usePathname } from 'next/navigation';
 import { useAuth } from "@/contexts/AuthContext";
 
-export default function AdminLayout({ children }) {
+export default function AdminLayout({ children, params }) {
+  // If params is available, unwrap it
+  const unwrappedParams = params ? React.use(params) : null;
+  
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const { currentUser } = useAuth();
+  const pathname = usePathname();
 
-  // Render content based on active tab
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return <DashboardContent />;
-      case 'doctors':
-        return <DoctorsContent />;
-      case 'patients':
-        return <PatientsContent />;
-      case 'appointments':
-        return <AppointmentsContent />;
-      case 'settings':
-        return <SettingsContent />;
-      default:
-        return <DashboardContent />;
+  // Set active tab based on current path
+  useEffect(() => {
+    const pathSegments = pathname.split('/');
+    const section = pathSegments[pathSegments.length - 1];
+    
+    if (section && ['dashboard', 'doctors', 'patients', 'appointments', 'settings'].includes(section)) {
+      setActiveTab(section);
     }
-  };
+  }, [pathname]);
 
+  // Rest of the component remains the same
   return (
     <div className="flex h-screen bg-[#f0f8ff] overflow-hidden">
       {/* Mobile sidebar toggle - only show when sidebar is closed */}
@@ -57,7 +50,7 @@ export default function AdminLayout({ children }) {
       {/* Main content */}
       <ProtectedRoute allowedRoles={['admin']} redirectTo="/login/admin">
         <div className="flex-1 overflow-auto">
-          {renderContent()}
+          {children}
         </div>
       </ProtectedRoute>
     </div>

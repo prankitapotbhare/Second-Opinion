@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   DashboardContent,
   DoctorsContent,
@@ -10,23 +10,27 @@ import {
 } from '@/app/(admin)/components';
 
 export default function AdminSectionPage({ params }) {
-  const { section } = params;
+  // Unwrap params with React.use()
+  const unwrappedParams = React.use(params);
+  const { section } = unwrappedParams;
+  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Render content based on section parameter
   const renderContent = () => {
     switch (section) {
       case 'dashboard':
-        return <DashboardContent />;
+        return <DashboardContent setIsSidebarOpen={setIsSidebarOpen} />;
       case 'doctors':
-        return <DoctorsContent />;
+        return <DoctorsContent setIsSidebarOpen={setIsSidebarOpen} />;
       case 'patients':
-        return <PatientsContent />;
+        return <PatientsContent setIsSidebarOpen={setIsSidebarOpen} />;
       case 'appointments':
-        return <AppointmentsContent />;
+        return <AppointmentsContent setIsSidebarOpen={setIsSidebarOpen} />;
       case 'settings':
-        return <SettingsContent />;
+        return <SettingsContent setIsSidebarOpen={setIsSidebarOpen} />;
       default:
-        return <DashboardContent />;
+        return <DashboardContent setIsSidebarOpen={setIsSidebarOpen} />;
     }
   };
 

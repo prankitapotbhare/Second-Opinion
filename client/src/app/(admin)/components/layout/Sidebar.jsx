@@ -14,6 +14,7 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOnClickOutside } from '@/hooks/useOnClickOutside';
+import { useRouter } from 'next/navigation';
 
 const Sidebar = ({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab }) => {
   const { logout } = useAuth();
@@ -21,6 +22,7 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab }) =
   const [isClosing, setIsClosing] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const sidebarRef = useRef(null);
+  const router = useRouter();
   
   useOnClickOutside(sidebarRef, () => {
     if (window.innerWidth < 768 && isSidebarOpen) {
@@ -46,6 +48,10 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab }) =
 
   const handleTabClick = (tabId) => {
     setActiveTab(tabId);
+    
+    // Navigate to the corresponding route
+    router.push(`/admin/${tabId}`);
+    
     // Close sidebar on mobile after selection
     if (window.innerWidth < 768) {
       handleClose();

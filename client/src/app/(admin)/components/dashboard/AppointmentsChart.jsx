@@ -1,16 +1,19 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 const AppointmentsChart = () => {
+  const chartRef = useRef(null);
   const [chartInstance, setChartInstance] = useState(null);
   
   useEffect(() => {
+    let myChart = null;
+    let handleResize = null;
+    
     // Import echarts dynamically on client side
     import('echarts').then((echarts) => {
-      const chartDom = document.getElementById('appointments-chart');
-      if (chartDom) {
-        const myChart = echarts.init(chartDom);
+      if (chartRef.current) {
+        myChart = echarts.init(chartRef.current);
         
         const option = {
           tooltip: {
@@ -56,24 +59,28 @@ const AppointmentsChart = () => {
         setChartInstance(myChart);
         
         // Handle resize
-        const handleResize = () => {
+        handleResize = () => {
           myChart.resize();
         };
         
         window.addEventListener('resize', handleResize);
-        
-        return () => {
-          window.removeEventListener('resize', handleResize);
-          myChart.dispose();
-        };
       }
     });
+    
+    return () => {
+      if (handleResize) {
+        window.removeEventListener('resize', handleResize);
+      }
+      if (myChart) {
+        myChart.dispose();
+      }
+    };
   }, []);
 
   return (
     <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-sm p-6">
       <h2 className="text-xl font-semibold mb-6">Weekly Appointments</h2>
-      <div id="appointments-chart" className="w-full h-80"></div>
+      <div ref={chartRef} className="w-full h-80"></div>
     </div>
   );
 };

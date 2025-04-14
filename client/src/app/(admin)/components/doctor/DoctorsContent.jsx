@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { FaPlus, FaSearch, FaFilter } from 'react-icons/fa';
 import { doctors } from '@/data/mockData';
 
-const DoctorsContent = () => {
+const DoctorsContent = ({ setIsSidebarOpen }) => {
   const { currentUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -21,7 +21,7 @@ const DoctorsContent = () => {
 
   return (
     <div className="min-h-screen bg-[#f0f8ff]">
-      <Header title="Manage Doctors" user={currentUser} />
+      <Header title="Manage Doctors" user={currentUser} setIsSidebarOpen={setIsSidebarOpen} />
       
       <main className="max-w-[1440px] mx-auto px-6 pb-8">
         {/* Action Bar */}

@@ -14,7 +14,7 @@ import {
   RecentActivity 
 } from '@/app/(admin)/components';
 
-const DashboardContent = () => {
+const DashboardContent = ({ setIsSidebarOpen }) => {
   const { currentUser } = useAuth();
   
   // Add icons to stat cards
