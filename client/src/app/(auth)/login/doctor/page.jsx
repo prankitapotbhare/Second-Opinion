@@ -3,16 +3,16 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { SplitScreen, AuthHeader } from '../../components';
-import SignupForm from '../../components/forms/LoginForm';
+import { LoginForm } from '../../components';
 
-export default function DoctorSignup() {
+export default function DoctorLogin() {
   const router = useRouter();
 
   const handleSubmit = (formData) => {
-    // Handle signup logic here
+    // Handle login logic here
     console.log(formData);
     
-    // Redirect to doctor onboarding after successful signup
+    // Redirect to doctor dashboard after successful login
     // router.push('/doctor/dashboard');
   };
 
@@ -23,12 +23,12 @@ export default function DoctorSignup() {
       imagePosition="left"
     >
       <AuthHeader 
-        title="Welcome" 
-        subtitle="Enter your Email and Password to Login"
+        title="Doctor Login" 
+        subtitle="Enter your credentials to access your account"
         align="left"
       />
       
-      <SignupForm 
+      <LoginForm 
         userType="doctor"
         onSubmit={handleSubmit}
         redirectPath="/doctor/dashboard"

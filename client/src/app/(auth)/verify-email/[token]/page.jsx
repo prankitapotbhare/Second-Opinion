@@ -3,26 +3,36 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function VerifyEmail() {
   const { token } = useParams();
   const router = useRouter();
+  const { verifyEmail } = useAuth();
   const [isVerifying, setIsVerifying] = useState(true);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // Verify email token
-    // This is a mock implementation
-    setTimeout(() => {
-      if (token && token.length > 10) {
-        setIsSuccess(true);
-      } else {
-        setError('Invalid or expired verification link');
+    const verifyToken = async () => {
+      try {
+        const result = await verifyEmail(token);
+        
+        if (result.success) {
+          setIsSuccess(true);
+        } else {
+          setError(result.error || 'Invalid or expired verification link');
+        }
+      } catch (err) {
+        setError('An unexpected error occurred');
+        console.error(err);
+      } finally {
+        setIsVerifying(false);
       }
-      setIsVerifying(false);
-    }, 1500);
-  }, [token]);
+    };
+    
+    verifyToken();
+  }, [token, verifyEmail]);
 
   if (isVerifying) {
     return (
@@ -50,7 +60,7 @@ export default function VerifyEmail() {
             <p className="text-gray-600 mb-6">
               Your email has been successfully verified. You can now log in to your account.
             </p>
-            <Link href="/login/patient">
+            <Link href="/login">
               <button className="w-full py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800">
                 Go to Login
               </button>
@@ -65,11 +75,11 @@ export default function VerifyEmail() {
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Verification Failed</h2>
             <p className="text-gray-600 mb-6">
-              {error || 'Something went wrong during verification.'}
+              {error}
             </p>
-            <Link href="/signup/patient">
+            <Link href="/signup">
               <button className="w-full py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800">
-                Try Again
+                Go to Signup
               </button>
             </Link>
           </>
