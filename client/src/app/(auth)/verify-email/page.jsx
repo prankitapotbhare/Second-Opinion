@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { StatusMessage } from '../components';
 import { AuthLoading } from '@/components';
 import { useAuth } from '@/contexts/AuthContext';
 
-export default function VerifyEmail() {
+// Create a separate component for the verification content
+function VerificationContent() {
   const searchParams = useSearchParams();
-  const token = searchParams.get('token');
+  const token = searchParams?.get('token');
   const { verifyEmail } = useAuth();
   const [isVerifying, setIsVerifying] = useState(true);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -38,7 +39,13 @@ export default function VerifyEmail() {
       }
     };
     
-    verifyToken();
+    // Only run verification if we have a token
+    if (token) {
+      verifyToken();
+    } else {
+      setError('No verification token provided');
+      setIsVerifying(false);
+    }
   }, [token, verifyEmail]);
 
   if (isVerifying) {
@@ -73,5 +80,14 @@ export default function VerifyEmail() {
         />
       )}
     </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function VerifyEmail() {
+  return (
+    <Suspense fallback={<AuthLoading message="Loading verification page..." />}>
+      <VerificationContent />
+    </Suspense>
   );
 }

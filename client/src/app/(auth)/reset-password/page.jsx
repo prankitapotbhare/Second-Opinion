@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AuthHeader, ResetPasswordForm, StatusMessage } from '../components';
 import { AuthLoading } from '@/components';
 
-export default function ResetPassword() {
+// Create a separate component for the reset password content
+function ResetPasswordContent() {
   const searchParams = useSearchParams();
-  const token = searchParams.get('token');
+  const token = searchParams?.get('token');
   const [isValid, setIsValid] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -63,7 +64,7 @@ export default function ResetPassword() {
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
         <div className="px-4 sm:px-6 pt-6 pb-4 bg-gradient-to-r from-blue-50 to-indigo-50">
           <AuthHeader 
-            title="Reset Your Password" 
+            title="Reset Password" 
             subtitle="Create a new password for your account"
             align="center"
           />
@@ -74,5 +75,14 @@ export default function ResetPassword() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function ResetPassword() {
+  return (
+    <Suspense fallback={<AuthLoading message="Loading reset password page..." />}>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
