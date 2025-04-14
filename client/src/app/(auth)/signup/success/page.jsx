@@ -34,7 +34,7 @@ export default function SignupSuccess() {
         
         <div className="space-y-3">
           <Link href={`/login/${userType}`}>
-            <button className="w-full py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800">
+            <button className="w-full mb-2 py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800">
               Go to Login
             </button>
           </Link>

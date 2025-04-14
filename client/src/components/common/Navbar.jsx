@@ -14,10 +14,13 @@ const Navbar = ({ scrollToFAQs }) => {
   // Create refs for the dropdown menus
   const menuRef = useRef(null);
   const profileRef = useRef(null);
+  const menuButtonRef = useRef(null); // Add a ref for the menu toggle button
 
-  // Use the hook to handle clicks outside the mobile menu
-  useOnClickOutside(menuRef, () => {
-    if (isMenuOpen) setIsMenuOpen(false);
+  // Use the hook to handle clicks outside the mobile menu, excluding the toggle button
+  useOnClickOutside(menuRef, (event) => {
+    if (isMenuOpen && !menuButtonRef.current?.contains(event.target)) {
+      setIsMenuOpen(false);
+    }
   });
 
   // Use the hook to handle clicks outside the profile dropdown
@@ -125,6 +128,7 @@ const Navbar = ({ scrollToFAQs }) => {
           {/* Mobile Menu Button */}
           <div className="md:hidden">
             <button 
+              ref={menuButtonRef} // Add the ref to the button
               onClick={toggleMenu}
               className="text-white focus:outline-none"
             >
