@@ -2,6 +2,7 @@
 export { default as PasswordInput } from './common/PasswordInput';
 export { default as SocialLoginButton } from './common/SocialLoginButton';
 export { default as AuthDivider } from './common/AuthDivider';
+export { default as AccountSelector } from './common/AccountSelector';
 
 // Layout components
 export { default as SplitScreen } from './layout/SplitScreen';
