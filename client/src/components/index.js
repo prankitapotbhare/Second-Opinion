@@ -18,3 +18,5 @@ export { default as UserHeader } from './layout/UserHeader';
 
 // Auth components
 export { default as ProtectedRoute } from './auth/ProtectedRoute';
+export { default as AuthLoading } from './auth/AuthLoading';
+export { default as EmailVerificationStatus } from './auth/EmailVerificationStatus';
