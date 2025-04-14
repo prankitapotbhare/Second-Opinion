@@ -1,14 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { AuthHeader } from '../../components';
-import PasswordInput from '../../components/common/PasswordInput';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { AuthHeader } from '../components';
+import PasswordInput from '../components/common/PasswordInput';
 import { AuthLoading } from '@/components';
 import { validatePassword } from '@/utils/authUtils';
 
 export default function ResetPassword() {
-  const { token } = useParams();
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token');
   const router = useRouter();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -20,6 +21,13 @@ export default function ResetPassword() {
 
   useEffect(() => {
     // Validate token
+    if (!token) {
+      setIsValid(false);
+      setError('No reset token provided. Please check your email link.');
+      setIsLoading(false);
+      return;
+    }
+
     // This is a mock implementation
     setTimeout(() => {
       // Check if token is valid
@@ -65,18 +73,14 @@ export default function ResetPassword() {
     setIsSubmitting(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Reset password logic would go here in a real app
-      console.log({ token, password });
-      
-      // Redirect to login page after successful reset
-      router.push('/login/user?reset=success');
+      // Mock API call to reset password
+      // In a real app, you would call an API endpoint
+      setTimeout(() => {
+        // Simulate successful password reset
+        router.push('/login/success?message=Your+password+has+been+reset+successfully');
+      }, 1500);
     } catch (err) {
-      setError('An error occurred while resetting your password');
-      console.error(err);
-    } finally {
+      setError('Failed to reset password. Please try again.');
       setIsSubmitting(false);
     }
   };
@@ -94,78 +98,81 @@ export default function ResetPassword() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Invalid or Expired Link</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Invalid Reset Link</h2>
           <p className="text-gray-600 mb-6">
-            The password reset link is invalid or has expired. Please request a new one.
+            {error || "This password reset link is invalid or has expired."}
           </p>
-          <a href="/forgot-password" className="w-full inline-block py-3 px-4 bg-teal-600 text-white font-medium rounded-md hover:bg-teal-700 text-center transition-colors">
-            Request New Link
-          </a>
+          <div className="space-y-3">
+            <button 
+              onClick={() => router.push('/forgot-password')}
+              className="w-full py-3 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Request a New Reset Link
+            </button>
+            <button 
+              onClick={() => router.push('/login')}
+              className="w-full py-3 px-4 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors"
+            >
+              Return to Login
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md">
-        <AuthHeader 
-          title="Reset Your Password" 
-          subtitle="Please enter a new password for your account"
-          align="center"
-        />
+    <div className="min-h-screen flex items-center justify-center bg-[#E8F9FF] p-4 sm:p-6 md:p-8">
+      <div className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="px-4 sm:px-6 pt-6 pb-4 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <AuthHeader 
+            title="Reset Your Password" 
+            subtitle="Please enter a new password for your account"
+            align="center"
+          />
+        </div>
         
-        {error && (
-          <div className="bg-red-50 border-l-4 border-red-400 text-red-700 p-4 rounded-md mb-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm">{error}</p>
-              </div>
+        <div className="p-4 sm:p-6">
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-400 text-red-700 p-3 rounded-md mb-4 text-sm">
+              {error}
             </div>
-          </div>
-        )}
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <PasswordInput
+          )}
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <PasswordInput 
               id="password"
               label="New Password"
               value={password}
               onChange={handlePasswordChange}
               placeholder="Enter your new password"
-              required
             />
-            {!passwordValidation.isValid && password && (
-              <p className="mt-1 text-sm text-red-600">{passwordValidation.message}</p>
+            
+            {password && !passwordValidation.isValid && (
+              <p className="text-xs text-red-600 mt-1">{passwordValidation.message}</p>
             )}
-          </div>
-          
-          <div>
-            <PasswordInput
+            
+            <PasswordInput 
               id="confirmPassword"
               label="Confirm Password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Confirm your new password"
-              required
             />
-          </div>
-          
-          <div>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className={`w-full py-3 px-4 bg-teal-600 text-white font-medium rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-colors ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
-            >
-              {isSubmitting ? 'Resetting Password...' : 'Reset Password'}
-            </button>
-          </div>
-        </form>
+            
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`w-full py-2 px-4 rounded-md text-white font-medium ${
+                  isSubmitting ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'
+                }`}
+              >
+                {isSubmitting ? 'Resetting Password...' : 'Reset Password'}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
