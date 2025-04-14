@@ -41,7 +41,7 @@ export default function ResetPassword() {
     console.log({ token, password });
     
     // Redirect to login page after successful reset
-    router.push('/login/patient?reset=success');
+    router.push('/login/user?reset=success');
   };
 
   if (isLoading) {

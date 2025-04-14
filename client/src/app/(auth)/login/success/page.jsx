@@ -14,7 +14,7 @@ export default function LoginSuccess() {
     const timer = setTimeout(() => {
       router.push(userType === 'doctor' ? '/doctor/dashboard' : 
                  userType === 'admin' ? '/admin/dashboard' : 
-                 '/patient/dashboard');
+                 '/user/dashboard');
     }, 2000);
     
     return () => clearTimeout(timer);

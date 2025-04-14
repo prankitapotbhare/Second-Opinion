@@ -50,7 +50,7 @@ export default function VerifyEmail() {
             <p className="text-gray-600 mb-6">
               Your email has been successfully verified. You can now log in to your account.
             </p>
-            <Link href="/login/patient">
+            <Link href="/login/user">
               <button className="w-full py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800">
                 Go to Login
               </button>
@@ -67,7 +67,7 @@ export default function VerifyEmail() {
             <p className="text-gray-600 mb-6">
               {error || 'Something went wrong during verification.'}
             </p>
-            <Link href="/signup/patient">
+            <Link href="/signup/user">
               <button className="w-full py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800">
                 Try Again
               </button>
