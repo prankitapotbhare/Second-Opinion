@@ -18,9 +18,9 @@ export default function UserSignup() {
 
   return (
     <SplitScreen 
-      imageSrc="/images/SignUp/doctor-signup.jpg" 
+      imageSrc="/images/microscope.jpg" 
       imageAlt="user with healthcare provider"
-      imagePosition="right"
+      imagePosition="left"
     >
       <AuthHeader 
         title="Create Your Account" 

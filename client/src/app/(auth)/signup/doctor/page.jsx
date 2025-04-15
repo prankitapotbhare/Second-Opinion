@@ -18,7 +18,7 @@ export default function DoctorSignup() {
 
   return (
     <SplitScreen 
-      imageSrc="/images/SignUp/doctor-signup.jpg" 
+      imageSrc="/images/doctor.jpg" 
       imageAlt="Microscope"
       imagePosition="left"
     >

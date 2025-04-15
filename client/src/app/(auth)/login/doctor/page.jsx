@@ -18,7 +18,7 @@ export default function DoctorLogin() {
 
   return (
     <SplitScreen 
-      imageSrc="/images/Login/doctor-login.jpg" 
+      imageSrc="/images/doctor.jpg" 
       imageAlt="Doctor with stethoscope"
       imagePosition="left"
       mobileImageHeight="30vh"

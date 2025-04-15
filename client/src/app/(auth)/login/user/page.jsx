@@ -19,9 +19,9 @@ export default function UserLogin() {
 
   return (
     <SplitScreen 
-      imageSrc="/images/Login/doctor-login.jpg" 
+      imageSrc="/images/microscope.jpg" 
       imageAlt="User with doctor"
-      imagePosition="right"
+      imagePosition="left"
       mobileImageHeight="30vh"
     >
       <AuthHeader 
