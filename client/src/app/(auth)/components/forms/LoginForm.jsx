@@ -10,8 +10,6 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const LoginForm = ({ 
   userType = 'user', // 'user', 'doctor', or 'admin'
-  onSubmit,
-  redirectPath = '/',
   hideOptions = false
 }) => {
   const router = useRouter();
@@ -55,10 +53,6 @@ const LoginForm = ({
         // If login is successful, redirect to success page with redirect parameter
         router.push(`/login/success?type=${userType}${redirectParam ? `&redirect=${redirectParam}` : ''}`);
         
-        // Also call the onSubmit prop if provided
-        if (onSubmit) {
-          onSubmit({ email, password, rememberMe });
-        }
       } else if (result.needsVerification) {
         // If user needs to verify email
         setNeedsVerification(true);
