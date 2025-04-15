@@ -187,22 +187,25 @@ const Navbar = ({ scrollToFAQs, simplifiedNav = false }) => {
                   </Link>
                   
                   {!isAuthenticated() && (
-                    <div className="flex flex-col space-y-3 pt-2 border-t border-teal-600">
-                      <Link 
-                        href="/login" 
-                        className="w-full py-2 text-center border border-teal-200 rounded-md hover:bg-teal-600 transition-colors"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        Login
-                      </Link>
-                      <Link 
-                        href="/signup" 
-                        className="w-full py-2 text-center bg-white text-teal-700 rounded-md hover:bg-teal-100 transition-colors"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        Sign Up
-                      </Link>
-                    </div>
+                    <>
+                      <div className="border-t border-teal-600 my-2"></div>
+                      <div className="flex flex-col space-y-3">
+                        <Link 
+                          href="/login" 
+                          className="w-full py-2 text-center border border-teal-200 rounded-md hover:bg-teal-600 transition-colors"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          Login
+                        </Link>
+                        <Link 
+                          href="/signup" 
+                          className="w-full py-2 text-center bg-white text-teal-700 rounded-md hover:bg-teal-100 transition-colors"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          Sign Up
+                        </Link>
+                      </div>
+                    </>
                   )}
                 </>
               )}
@@ -210,14 +213,7 @@ const Navbar = ({ scrollToFAQs, simplifiedNav = false }) => {
               {/* Always show profile options if authenticated, regardless of simplified nav */}
               {isAuthenticated() && (
                 <>
-                  <div className="flex items-center space-x-2 pt-2 border-t border-teal-600">
-                    <img 
-                      src={currentUser?.photoURL || "https://via.placeholder.com/150"} 
-                      alt="Profile" 
-                      className="w-8 h-8 rounded-full"
-                    />
-                    <span>{currentUser?.displayName}</span>
-                  </div>
+                  <div className="border-t border-teal-600 my-2"></div>
                   {/* Only show Dashboard link if NOT user role */}
                   {currentUser?.role !== "user" && (
                     <Link 
