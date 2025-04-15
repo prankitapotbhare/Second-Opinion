@@ -14,8 +14,8 @@ export default function DoctorCard({ doctor }) {
       {/* Doctor Image */}
       <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden">
         <img
-          src={doctor.imageUrl || "https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg"}
-          alt={doctor.name}
+          src={doctor.photoURL || doctor.imageUrl || "https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg"}
+          alt={doctor.displayName || doctor.name}
           className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-500"
         />
         {doctor.featured && (
@@ -27,7 +27,7 @@ export default function DoctorCard({ doctor }) {
       
       {/* Doctor Info */}
       <div className="p-4 sm:p-5 flex-1 flex flex-col">
-        <h3 className="font-bold text-lg sm:text-xl text-gray-800 mb-1">{doctor.name}</h3>
+        <h3 className="font-bold text-lg sm:text-xl text-gray-800 mb-1">{doctor.displayName || doctor.name}</h3>
         
         <div className="flex flex-wrap gap-1 mb-2">
           <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
@@ -67,12 +67,12 @@ export default function DoctorCard({ doctor }) {
         <div className="mt-auto pt-4">
           {mounted ? (
             <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 sm:gap-3">
-              <Link href={`/doctor-profile/${doctor.id}`} className="col-span-1">
+              <Link href={`/doctor-profile/${doctor.uid || doctor.id}`} className="col-span-1">
                 <button className="w-full bg-white border border-green-600 text-green-600 hover:bg-green-50 font-medium py-2 px-3 rounded-lg text-sm transition-colors duration-200">
                   View Profile
                 </button>
               </Link>
-              <Link href={`/appointment-booking/${doctor.id}`} className="col-span-1">
+              <Link href={`/appointment-booking/${doctor.uid || doctor.id}`} className="col-span-1">
                 <button className="w-full bg-green-600 text-white hover:bg-green-700 font-medium py-2 px-3 rounded-lg text-sm transition-colors duration-200">
                   Book Consultation
                 </button>

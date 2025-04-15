@@ -32,7 +32,9 @@ const Header = ({ user, setIsSidebarOpen, title = "Dashboard" }) => {
         
         <div className="flex items-center">
           <div className="mr-6 text-sm text-gray-500">
-            {formattedDate} | {formattedTime}
+            <span className="hidden sm:inline">{formattedDate}</span>
+            <span className="hidden sm:inline sm:mx-2">|</span>
+            <span>{formattedTime}</span>
           </div>
         </div>
       </div>

@@ -9,32 +9,32 @@ const AuthContext = createContext();
 // Mock user data
 const mockUsers = {
   admin: {
-    id: 'admin-123',
-    name: 'Admin User',
+    uid: 'admin-123',
+    displayName: 'Admin User',
     email: 'admin@example.com',
     password: 'password123',
     role: 'admin',
-    avatar: 'https://ui-avatars.com/api/?name=Admin+User&background=6366f1&color=fff',
-    verified: true
+    photoURL: 'https://ui-avatars.com/api/?name=Admin+User&background=6366f1&color=fff',
+    emailVerified: true
   },
   doctor: {
-    id: 'doctor-123',
-    name: 'Dr. John Smith',
+    uid: 'doctor-123',
+    displayName: 'Dr. John Smith',
     email: 'doctor@example.com',
     password: 'password123',
     role: 'doctor',
     specialization: 'Cardiology',
-    avatar: 'https://ui-avatars.com/api/?name=Dr+John+Smith&background=10b981&color=fff',
-    verified: true
+    photoURL: 'https://ui-avatars.com/api/?name=Dr+John+Smith&background=10b981&color=fff',
+    emailVerified: true
   },
   user: {
-    id: 'user-123',
-    name: 'Jane Doe',
+    uid: 'user-123',
+    displayName: 'Jane Doe',
     email: 'user@example.com',
     password: 'password123',
     role: 'user',
-    avatar: 'https://ui-avatars.com/api/?name=Jane+Doe&background=3b82f6&color=fff',
-    verified: true
+    photoURL: 'https://ui-avatars.com/api/?name=Jane+Doe&background=3b82f6&color=fff',
+    emailVerified: true
   }
 };
 
@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }) => {
       
       if (mockUser && (email.includes(userType) || email === mockUser.email) && password === mockUser.password) {
         // Check if user is verified
-        if (!mockUser.verified) {
+        if (!mockUser.emailVerified) {
           return { 
             success: false, 
             error: 'Please verify your email before logging in',
@@ -129,13 +129,13 @@ export const AuthProvider = ({ children }) => {
       // In a real app, you would send this data to your backend
       // For mock purposes, we'll just create a new user object
       const newUser = {
-        id: `${userType}-${Date.now()}`,
-        name: userData.name,
+        uid: `${userType}-${Date.now()}`,
+        displayName: userData.name,
         email: userData.email,
         password: userData.password,
         role: userType,
         avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=3b82f6&color=fff`,
-        verified: false // User needs to verify email
+        emailVerified: false // User needs to verify email
       };
       
       // In a real app, you would send this to your backend

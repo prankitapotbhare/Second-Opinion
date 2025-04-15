@@ -31,8 +31,8 @@ export default function DoctorsSection() {
                 {/* Doctor Image - Stacks on mobile, side-by-side on larger screens */}
                 <div className="w-full sm:w-1/3 h-48 sm:h-auto overflow-hidden">
                   <img
-                    src={doctor.image || "https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg"}
-                    alt={doctor.name}
+                    src={doctor.photoURL || doctor.image || "https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg"}
+                    alt={doctor.displayName || doctor.name}
                     className="w-full h-full object-cover object-center sm:object-top"
                   />
                 </div>
@@ -40,7 +40,7 @@ export default function DoctorsSection() {
                 {/* Doctor Info */}
                 <div className="p-4 sm:p-6 flex flex-col sm:w-2/3">
                   <div className="flex-grow">
-                    <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">{doctor.name}</h3>
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">{doctor.displayName || doctor.name}</h3>
                     <div className="mb-4">
                       <span className="inline-block bg-teal-100 text-teal-800 text-xs font-medium px-2.5 py-0.5 rounded-full mb-2 mr-2">
                         {doctor.department}
@@ -61,12 +61,12 @@ export default function DoctorsSection() {
                   <div className="flex flex-col xs:flex-row sm:flex-col gap-2 mt-2">
                     {mounted ? (
                       <>
-                        <Link href={`/doctor-profile/${doctor.id || index}`} className="w-full">
+                        <Link href={`/doctor-profile/${doctor.uid || doctor.id || index}`} className="w-full">
                           <button className="w-full bg-teal-600 text-white px-4 py-2 rounded-md text-sm hover:bg-teal-700 transition-colors whitespace-nowrap font-medium">
                             View Profile
                           </button>
                         </Link>
-                        <Link href={`/appointment-booking/${doctor.id || index}`} className="w-full">
+                        <Link href={`/appointment-booking/${doctor.uid || doctor.id || index}`} className="w-full">
                           <button className="w-full border border-teal-600 text-teal-600 px-4 py-2 rounded-md text-sm hover:bg-teal-50 transition-colors whitespace-nowrap font-medium">
                             Book Consultation
                           </button>

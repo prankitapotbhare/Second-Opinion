@@ -64,7 +64,7 @@ const Sidebar = ({
       {/* Toggle Button */}
       <button 
         onClick={toggleSidebar}
-        className="hidden md:flex fixed bottom-16 z-50 items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-700 to-blue-600 text-white rounded-full shadow-lg hover:from-blue-800 hover:to-blue-700 transition-all duration-300 border border-blue-300"
+        className="hidden md:flex fixed bottom-20 z-50 items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-700 to-blue-600 text-white rounded-full shadow-lg hover:from-blue-800 hover:to-blue-700 transition-all duration-300 border border-blue-300"
         style={{ 
           left: isCollapsed ? '4rem' : '17rem',
           transform: 'translateY(-50%)'
@@ -111,7 +111,7 @@ const Sidebar = ({
                 <FaTimes size={20} />
               </button>
             </div>
-            <div className={`mt-6 flex ${isCollapsed ? 'flex-col' : 'items-center'} border-y border-blue-500/30 py-6`}>
+            <div className={`mt-6 flex ${isCollapsed ? 'flex-col items-center' : 'items-center'} border-y border-blue-500/30 py-6`}>
               <div className="flex-shrink-0 w-12 h-12 rounded-full overflow-hidden bg-blue-600 border-2 border-blue-300">
                 <img
                   src={user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.displayName || 'Doctor')}&background=1e40af&color=fff`}
@@ -122,8 +122,8 @@ const Sidebar = ({
                 />
               </div>
               {!isCollapsed && (
-                <div className="ml-3">
-                  <p className="font-medium text-white">
+                <div className="ml-3 overflow-hidden">
+                  <p className="font-medium text-white truncate max-w-[180px]">
                     {user?.displayName || 'Dr. John Doe'}
                   </p>
                   <p className="text-xs text-blue-200">Medical Specialist</p>
@@ -133,7 +133,7 @@ const Sidebar = ({
           </div>
 
           {/* Sidebar Menu */}
-          <nav className="flex-1 px-2 pb-4">
+          <nav className="flex-1 px-2 pb-4 overflow-y-auto">
             <ul className="space-y-1 mt-2">
               {sidebarItems.map((item) => (
                 <li key={item.name}>
@@ -148,7 +148,7 @@ const Sidebar = ({
                     <span className={`inline-flex items-center justify-center ${isCollapsed ? 'w-6 h-6' : 'w-6 h-6 mr-3'}`}>
                       {item.icon}
                     </span>
-                    {!isCollapsed && item.label}
+                    {!isCollapsed && <span className="truncate">{item.label}</span>}
                   </button>
                 </li>
               ))}
@@ -156,13 +156,15 @@ const Sidebar = ({
           </nav>
 
           {/* Logout Button */}
-          <div className="p-4">
+          <div className="p-4 mt-auto border-t border-blue-500/30">
             <button 
               onClick={logout}
-              className={`flex items-center w-full px-4 py-3 text-white bg-red-500/20 hover:bg-red-500/30 rounded-lg transition-colors ${isCollapsed ? 'justify-center' : ''}`}
+              className={`group flex items-center w-full px-4 py-3 text-white bg-gradient-to-br from-blue-600/40 to-red-500/40 hover:from-blue-600/60 hover:to-red-500/60 rounded-lg transition-all duration-300 backdrop-blur-sm border border-blue-400/20 ${isCollapsed ? 'justify-center' : ''}`}
             >
-              <FaSignOutAlt className={isCollapsed ? '' : 'mr-3'} />
-              {!isCollapsed && 'Sign Out'}
+              <span className="inline-flex items-center justify-center bg-blue-500/30 p-1.5 rounded-full">
+                <FaSignOutAlt className={`${isCollapsed ? '' : 'mr-3'} transition-all duration-300 group-hover:rotate-12 text-white`} size={16} />
+              </span>
+              {!isCollapsed && <span className="font-medium ml-2">Sign Out</span>}
             </button>
           </div>
         </div>

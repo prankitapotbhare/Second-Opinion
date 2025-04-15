@@ -7,7 +7,7 @@ import { SuccessMessage, SuccessSkeleton } from '../../components';
 function SuccessContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get('email') || 'your email';
-  const userType = searchParams.get('type') || 'patient';
+  const userType = searchParams.get('type') || 'user';  // Changed from 'patient' to 'user'
 
   const successIcon = (
     <svg className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">

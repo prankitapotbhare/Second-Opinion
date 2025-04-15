@@ -14,6 +14,8 @@ const DoctorDashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  console.log(currentUser);
+
   const handleTabClick = (tab) => {
     setActiveTab(tab);
     setIsSidebarOpen(false); // Close sidebar on mobile after selection

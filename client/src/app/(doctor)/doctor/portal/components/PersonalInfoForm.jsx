@@ -46,14 +46,14 @@ const PersonalInfoForm = ({
             
             <div className="mb-6">
               <label
-                htmlFor="fullName"
+                htmlFor="displayName"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
                 Full Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                id="fullName"
+                id="displayName"
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                 placeholder="Dr. John Smith"
               />

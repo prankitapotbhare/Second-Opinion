@@ -8,7 +8,7 @@ const DoctorGrid = ({ doctors, showAll = false, toggleShowAll }) => {
     <div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {displayedDoctors.map((doctor) => (
-          <DoctorCard key={doctor.id} doctor={doctor} />
+          <DoctorCard key={doctor.uid || doctor.id} doctor={doctor} />
         ))}
       </div>
       

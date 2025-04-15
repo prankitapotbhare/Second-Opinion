@@ -12,7 +12,7 @@ const LoginForm = ({
   userType = 'user', // 'user', 'doctor', or 'admin'
   onSubmit,
   redirectPath = '/',
-  hideOptions = false // New prop to hide social login and other options
+  hideOptions = false
 }) => {
   const router = useRouter();
   const { login } = useAuth();
@@ -42,7 +42,7 @@ const LoginForm = ({
     setNeedsVerification(false);
   
     const { email, password, rememberMe } = formData;
-  
+    
     try {
       // Call the login function from the auth context
       const result = await login(email, password, userType);

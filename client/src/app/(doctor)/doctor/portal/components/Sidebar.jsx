@@ -74,7 +74,7 @@ const Sidebar = ({ activeStep, setActiveStep, isOpen, onToggle }) => {
   // Render the actual sidebar content
   const renderSidebarContent = () => (
     <div 
-      className={`w-full md:w-74 bg-white border-r border-gray-200 flex flex-col h-full fixed inset-y-0 left-0 md:relative md:h-screen
+      className={`w-full md:w-76 bg-white border-r border-gray-200 flex flex-col h-full fixed inset-y-0 left-0 md:relative md:h-screen
                 overflow-y-auto transition-all duration-300 ease-in-out
                 ${isClosing && !isTabSwitching ? 'opacity-0 translate-x-[-10px]' : 'opacity-100 translate-x-0'}
                 shadow-lg md:shadow-md hover:md:shadow-lg`}

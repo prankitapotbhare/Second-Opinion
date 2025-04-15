@@ -56,7 +56,11 @@ const SignupForm = ({
   
     try {
       // Call the signup function from the auth context
-      const userData = { name, email, password };
+      const userData = { 
+        displayName: name,  // Use displayName instead of name
+        email, 
+        password 
+      };
       const result = await signup(userData, userType);
       
       if (result.success) {
@@ -65,17 +69,16 @@ const SignupForm = ({
         
         // Also call the onSubmit prop if provided
         if (onSubmit) {
-          onSubmit(userData);
+          onSubmit(formData);
         }
       } else {
-        // If signup fails, show the error
-        setError(result.error || 'Signup failed');
+        setError(result.error || 'Failed to create account');
+        setIsLoading(false);
       }
     } catch (err) {
       setError('An unexpected error occurred');
-      console.error(err);
-    } finally {
       setIsLoading(false);
+      console.error(err);
     }
   };
 
