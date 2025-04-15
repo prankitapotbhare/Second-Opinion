@@ -126,7 +126,7 @@ const Sidebar = ({
                   <p className="font-medium text-white truncate max-w-[180px]">
                     {user?.displayName || 'Dr. John Doe'}
                   </p>
-                  <p className="text-xs text-blue-200">Medical Specialist</p>
+                  <p className="text-xs text-blue-200">{user?.specialization}</p>
                 </div>
               )}
             </div>

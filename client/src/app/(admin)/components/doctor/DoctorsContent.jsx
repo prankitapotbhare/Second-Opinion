@@ -22,9 +22,9 @@ const DoctorsContent = () => {
     })),
     ...staticDoctors.map(doc => ({
       id: doc.id,
-      name: doc.name,
+      name: doc.name || `Doctor ${doc.id || Math.floor(Math.random() * 1000)}`,
       specialization: doc.specialization || doc.department,
-      email: `${doc.name.toLowerCase().replace(/\s+/g, '.')}@example.com`,
+      email: doc.name ? `${doc.name.toLowerCase().replace(/\s+/g, '.')}@example.com` : `doctor${doc.id || Math.random().toString(36).substr(2, 9)}@example.com`,
       patients: Math.floor(Math.random() * 50) + 10,
       status: Math.random() > 0.2 ? 'Active' : 'Pending',
       avatar: doc.imageUrl

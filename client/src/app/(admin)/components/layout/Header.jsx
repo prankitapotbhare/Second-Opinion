@@ -27,13 +27,13 @@ const Header = ({ title }) => {
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-blue-100 shadow-sm">
               <img
-                src={currentUser?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser?.name || 'Admin')}&background=3b82f6&color=fff`}
+                src={currentUser?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser?.displayName || 'Admin')}&background=3b82f6&color=fff`}
                 alt="Profile"
                 className="w-full h-full object-cover"
               />
             </div>
             <div className="hidden md:block text-left">
-              <p className="font-medium text-gray-800">{currentUser?.name || "Administrator"}</p>
+              <p className="font-medium text-gray-800">{currentUser?.displayName || "Administrator"}</p>
               <p className="text-xs text-gray-500">Administrator</p>
             </div>
           </div>
