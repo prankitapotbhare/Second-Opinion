@@ -19,13 +19,6 @@ export default function DoctorsSection() {
             <span className="text-teal-600">Recommended</span>
             <span className="text-gray-800"> Best Doctors</span>
           </h2>
-          <div className="mt-4 text-right">
-            <Link href="/user/doctors">
-              <button className="bg-teal-600 text-white px-4 py-2 rounded-md text-sm hover:bg-teal-700 transition-colors font-medium">
-                Find Doctors
-              </button>
-            </Link>
-          </div>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">

@@ -1,20 +1,74 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { departments } from "@/data/staticData";
-import { useOnClickOutside } from "@/hooks/useOnClickOutside";
+import { useRouter } from "next/navigation";
+
+// Mock API functions
+const fetchLocations = () =>
+  new Promise((resolve) =>
+    setTimeout(() => resolve(["Delhi", "Mumbai", "Bangalore", "Chennai", "Kolkata"]), 500)
+  );
+const fetchDepartments = () =>
+  new Promise((resolve) =>
+    setTimeout(
+      () =>
+        resolve([
+          "Cardiology",
+          "Neurology",
+          "Orthopedics",
+          "Dermatology",
+          "Pediatrics",
+          "General Medicine",
+        ]),
+      500
+    )
+  );
 
 export default function HeroSection() {
   const [location, setLocation] = useState("");
   const [department, setDepartment] = useState("");
+  const [locations, setLocations] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [showDepartments, setShowDepartments] = useState(false);
+  const [showLocations, setShowLocations] = useState(false);
   const [mounted, setMounted] = useState(false);
   const departmentRef = useRef();
+  const locationRef = useRef();
+  const router = useRouter();
 
-  useOnClickOutside(departmentRef, () => setShowDepartments(false));
-  
   useEffect(() => {
     setMounted(true);
+    fetchLocations().then(setLocations);
+    fetchDepartments().then(setDepartments);
   }, []);
+
+  // Hide dropdowns on outside click
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        departmentRef.current &&
+        !departmentRef.current.contains(event.target)
+      ) {
+        setShowDepartments(false);
+      }
+      if (
+        locationRef.current &&
+        !locationRef.current.contains(event.target)
+      ) {
+        setShowLocations(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const params = [];
+    if (location) params.push(`location=${encodeURIComponent(location)}`);
+    if (department) params.push(`department=${encodeURIComponent(department)}`);
+    const query = params.length ? `?${params.join("&")}` : "";
+    router.push(`/user/doctors${query}`);
+  };
 
   if (!mounted) {
     return (
@@ -55,7 +109,6 @@ export default function HeroSection() {
         <div className="absolute bottom-0 left-0 -mb-16 -ml-16 hidden lg:block">
           <div className="w-48 h-48 xl:w-64 xl:h-64 rounded-full bg-teal-50 opacity-70"></div>
         </div>
-        
         <div className="flex flex-col md:flex-row items-center gap-6 sm:gap-8 md:gap-4 lg:gap-8">
           {/* Left content - Text and search */}
           <div className="w-full md:w-1/2 z-10">
@@ -65,88 +118,94 @@ export default function HeroSection() {
             <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 mb-3 sm:mb-4 md:mb-6 lg:mb-8">
               Expert advice, Trusted decision!
             </h2>
-            
-            {/* Search inputs - Stack on mobile, row on larger screens */}
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
-              <div className="relative flex-grow">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-2 sm:pl-3 pointer-events-none">
-                  <i className="fas fa-map-marker-alt text-gray-400 text-xs sm:text-sm"></i>
-                </span>
+            {/* Search Form */}
+            <form
+              className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6"
+              onSubmit={handleSubmit}
+            >
+              {/* Location Dropdown */}
+              <div className="relative flex-grow" ref={locationRef}>
                 <input
                   type="text"
-                  placeholder="Enter your city or pin code"
-                  className="pl-7 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 w-full rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500 text-xs sm:text-sm shadow-sm"
+                  placeholder="Select Location"
+                  className="w-full pl-3 pr-8 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                   value={location}
-                  onChange={(e) => setLocation(e.target.value)}
+                  onFocus={() => setShowLocations(true)}
+                  readOnly
                 />
-              </div>
-              
-              <div className="relative flex-grow" ref={departmentRef}>
-                <div
-                  className="w-full flex items-center justify-between pl-3 sm:pl-4 pr-2 sm:pr-3 py-2 sm:py-3 bg-white rounded-md border border-gray-300 cursor-pointer shadow-sm"
-                  onClick={() => setShowDepartments(!showDepartments)}
-                  role="button"
-                  tabIndex={0}
-                  aria-expanded={showDepartments}
-                  aria-haspopup="listbox"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      setShowDepartments(!showDepartments);
-                    }
-                  }}
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 flex items-center px-2 text-gray-400"
+                  onClick={() => setShowLocations((v) => !v)}
+                  tabIndex={-1}
                 >
-                  <span
-                    className={`text-xs sm:text-sm ${department ? "text-gray-800" : "text-gray-400"}`}
-                  >
-                    {department || "Select Department"}
-                  </span>
-                  <i className={`fas fa-chevron-${showDepartments ? 'up' : 'down'} text-gray-400 text-xs sm:text-sm transition-transform duration-200`}></i>
-                </div>
-                
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {showLocations && (
+                  <ul className="absolute z-10 left-0 right-0 bg-white border border-gray-200 rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg">
+                    {locations.map((loc) => (
+                      <li
+                        key={loc}
+                        className="px-4 py-2 hover:bg-teal-50 cursor-pointer"
+                        onClick={() => {
+                          setLocation(loc);
+                          setShowLocations(false);
+                        }}
+                      >
+                        {loc}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              {/* Department Dropdown */}
+              <div className="relative flex-grow" ref={departmentRef}>
+                <input
+                  type="text"
+                  placeholder="Select Department"
+                  className="w-full pl-3 pr-8 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  value={department}
+                  onFocus={() => setShowDepartments(true)}
+                  readOnly
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 flex items-center px-2 text-gray-400"
+                  onClick={() => setShowDepartments((v) => !v)}
+                  tabIndex={-1}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
                 {showDepartments && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg z-20 max-h-40 sm:max-h-60 overflow-y-auto">
-                    {departments.map((dept, index) => (
-                      <div
-                        key={index}
-                        className="px-3 sm:px-4 py-1.5 sm:py-2 hover:bg-teal-50 cursor-pointer text-xs sm:text-sm transition-colors duration-150"
+                  <ul className="absolute z-10 left-0 right-0 bg-white border border-gray-200 rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg">
+                    {departments.map((dept) => (
+                      <li
+                        key={dept}
+                        className="px-4 py-2 hover:bg-teal-50 cursor-pointer"
                         onClick={() => {
                           setDepartment(dept);
                           setShowDepartments(false);
                         }}
-                        role="option"
-                        aria-selected={department === dept}
                       >
                         {dept}
-                      </div>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 )}
               </div>
-              
-              <button 
-                className="bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 sm:py-3 px-3 sm:px-4 md:px-6 rounded-md whitespace-nowrap cursor-pointer transition-colors duration-200 shadow-sm flex items-center justify-center text-xs sm:text-sm"
-                aria-label="Find Doctors"
+              <button
+                type="submit"
+                className="bg-teal-600 text-white px-4 py-2 rounded-md whitespace-nowrap hover:bg-teal-700 transition-colors font-medium"
               >
-                <i className="fas fa-user-md mr-1.5 sm:mr-2"></i>
-                <span>Find Doctors</span>
+                Find Doctors
               </button>
-            </div>
-            
-            {/* Additional features - Hidden on small screens, responsive on larger */}
-            <div className="hidden sm:flex flex-wrap items-center gap-4 sm:gap-6 text-xs sm:text-sm text-gray-600">
-              <div className="flex items-center">
-                <i className="fas fa-check-circle text-teal-500 mr-1.5 sm:mr-2"></i>
-                <span>Verified Specialists</span>
-              </div>
-              <div className="flex items-center">
-                <i className="fas fa-shield-alt text-teal-500 mr-1.5 sm:mr-2"></i>
-                <span>Secure Consultations</span>
-              </div>
-            </div>
+            </form>
           </div>
-          
-          {/* Right content - Image */}
+          {/* Right content - Image and floating cards */}
           <div className="w-full md:w-1/2 relative mt-6 md:mt-0">
             <div className="relative flex justify-center">
               {/* Main image container */}
@@ -158,23 +217,19 @@ export default function HeroSection() {
                   loading="eager"
                 />
               </div>
-              
-              {/* Floating info cards - Responsive positioning and sizing */}
+              {/* Floating info cards */}
               <div className="absolute -top-3 sm:-top-4 right-2 sm:right-6 md:right-10 lg:right-16 bg-white py-1.5 sm:py-2 px-2 sm:px-3 md:px-4 rounded-lg shadow-md transform hover:-translate-y-1 transition-transform duration-300">
                 <div className="flex items-center text-[10px] xs:text-xs sm:text-sm whitespace-nowrap">
                   <i className="fas fa-calendar-check text-teal-500 mr-1 sm:mr-1.5 md:mr-2"></i>
                   <span>Easy Appointment Booking</span>
                 </div>
               </div>
-              
               <div className="absolute bottom-3 sm:bottom-4 left-2 sm:left-6 md:left-0 bg-white py-1.5 sm:py-2 px-2 sm:px-3 md:px-4 rounded-lg shadow-md transform hover:-translate-y-1 transition-transform duration-300">
                 <div className="flex items-center text-[10px] xs:text-xs sm:text-sm whitespace-nowrap">
                   <i className="fas fa-clipboard-check text-teal-500 mr-1 sm:mr-1.5 md:mr-2"></i>
                   <span>Get Your Second Opinion Today</span>
                 </div>
               </div>
-              
-              {/* Additional floating element - Only visible on larger screens */}
               <div className="absolute -bottom-2 right-0 bg-white py-1.5 sm:py-2 px-2 sm:px-3 md:px-4 rounded-lg shadow-md hidden sm:flex items-center transform hover:-translate-y-1 transition-transform duration-300">
                 <i className="fas fa-star text-yellow-400 mr-1 sm:mr-1.5 md:mr-2 text-xs sm:text-sm"></i>
                 <span className="text-[10px] xs:text-xs sm:text-sm">Top Rated Specialists</span>
