@@ -37,23 +37,23 @@ const SignupForm = ({
     e.preventDefault();
     setError('');
     setIsLoading(true);
-
+  
     const { name, email, password, confirmPassword, agreeTerms } = formData;
-
+  
     // Validate passwords match
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       setIsLoading(false);
       return;
     }
-
+  
     // Validate terms agreement
     if (!agreeTerms) {
       setError('You must agree to the terms and conditions');
       setIsLoading(false);
       return;
     }
-
+  
     try {
       // Call the signup function from the auth context
       const userData = { name, email, password };

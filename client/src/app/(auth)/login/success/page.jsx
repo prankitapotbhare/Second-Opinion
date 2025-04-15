@@ -8,7 +8,7 @@ import { SuccessMessage, SuccessSkeleton } from '../../components';
 function SuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '/dashboard';
+  const redirectTo = searchParams.get('redirect') || '/';
   const userType = searchParams.get('type') || 'user';
   const [countdown, setCountdown] = useState(5);
   
@@ -18,12 +18,16 @@ function SuccessContent() {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          // Redirect based on user type
-          router.push(
-            userType === 'doctor' ? '/doctor/dashboard' : 
-            userType === 'admin' ? '/admin/dashboard' : 
-            '/user/dashboard'
-          );
+          // Redirect based on user type and redirect parameter
+          if (userType === 'user' && redirectTo !== '/') {
+            router.push(redirectTo);
+          } else {
+            router.push(
+              userType === 'doctor' ? '/doctor/dashboard' : 
+              userType === 'admin' ? '/admin/dashboard' : 
+              '/'
+            );
+          }
           return 0;
         }
         return prev - 1;
@@ -39,7 +43,7 @@ function SuccessContent() {
         <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
       </div>
       <p className="text-blue-800 text-sm">
-        Redirecting to your dashboard in <span className="font-semibold">{countdown}</span> {countdown === 1 ? 'second' : 'seconds'}...
+        Redirecting {redirectTo !== '/' ? 'to your requested page' : 'to home page'} in <span className="font-semibold">{countdown}</span> {countdown === 1 ? 'second' : 'seconds'}...
       </p>
     </div>
   );
@@ -50,8 +54,8 @@ function SuccessContent() {
       title="Login Successful!"
       message="Welcome back! You are now logged in."
       alertContent={alertContent}
-      primaryButtonText="Go to Dashboard Now"
-      primaryButtonAction={() => router.push(`/${userType}/dashboard`)}
+      primaryButtonText={redirectTo !== '/' ? "Go to Requested Page" : "Go to Home Page"}
+      primaryButtonAction={() => router.push(redirectTo !== '/' ? redirectTo : '/')}
       secondaryButtonText="Return to Home"
       secondaryButtonAction={() => router.push('/')}
     />

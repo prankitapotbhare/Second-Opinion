@@ -12,8 +12,8 @@ export default function UserSignup() {
     // Handle signup logic here
     console.log(formData);
     
-    // Redirect to user dashboard after successful signup
-    // router.push('/user/dashboard');
+    // Redirect to home page after successful signup
+    router.push('/');
   };
 
   return (
@@ -31,7 +31,7 @@ export default function UserSignup() {
       <SignupForm 
         userType="user"
         onSubmit={handleSubmit}
-        redirectPath="/user/dashboard"
+        redirectPath="/"
       />
     </SplitScreen>
   );

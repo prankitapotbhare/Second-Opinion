@@ -12,8 +12,8 @@ export default function DoctorSignup() {
     // Handle signup logic here
     console.log(formData);
     
-    // Redirect to doctor onboarding after successful signup
-    // router.push('/doctor/portal');
+    // Redirect to doctor portal after successful signup
+    router.push('/doctor/portal');
   };
 
   return (
@@ -31,7 +31,7 @@ export default function DoctorSignup() {
       <SignupForm 
         userType="doctor"
         onSubmit={handleSubmit}
-        redirectPath="/doctor/onboarding"
+        redirectPath="/doctor/portal"
       />
     </SplitScreen>
   );

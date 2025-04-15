@@ -1,18 +1,20 @@
 "use client";
 
 import React from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { SplitScreen, AuthHeader, LoginForm } from '../../components';
 
 export default function UserLogin() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/';
 
   const handleSubmit = ({ email, password, rememberMe }) => {
     // Handle login logic here
     console.log({ email, password, rememberMe });
     
-    // Redirect to user dashboard after successful login
-    // router.push('/user/dashboard');
+    // Redirect to home page or the requested page after successful login
+    router.push(redirectTo);
   };
 
   return (
@@ -33,7 +35,7 @@ export default function UserLogin() {
       <LoginForm 
         userType="user"
         onSubmit={handleSubmit}
-        redirectPath="/user/dashboard"
+        redirectPath={redirectTo}
       />
     </SplitScreen>
   );

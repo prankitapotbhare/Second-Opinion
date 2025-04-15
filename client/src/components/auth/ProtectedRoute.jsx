@@ -1,38 +1,42 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components';
 
-const ProtectedRoute = ({ children, allowedRoles = [], redirectTo = '/login' }) => {
-  const { currentUser, isLoading } = useAuth();
+const ProtectedRoute = ({ 
+  children, 
+  allowedRoles = [], 
+  redirectTo = '/login' 
+}) => {
+  const { isAuthenticated, hasRole, loading, currentUser } = useAuth();
   const router = useRouter();
-  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    if (!isLoading) {
-      if (!currentUser) {
-        router.push(redirectTo);
-      } else if (allowedRoles.length > 0 && !allowedRoles.includes(currentUser.role)) {
-        // User is logged in but doesn't have the required role
+    if (!loading) {
+      if (!isAuthenticated()) {
+        // If not authenticated, redirect to login with the current path as redirect parameter
+        const currentPath = window.location.pathname;
+        router.push(`${redirectTo}?redirect=${encodeURIComponent(currentPath)}`);
+      } else if (allowedRoles.length > 0 && !allowedRoles.some(role => hasRole(role))) {
+        // If authenticated but doesn't have the required role
         router.push('/unauthorized');
-      } else {
-        setIsAuthorized(true);
       }
     }
-  }, [currentUser, isLoading, router, redirectTo, allowedRoles]);
+  }, [isAuthenticated, hasRole, loading, router, redirectTo, allowedRoles]);
 
-  if (isLoading || !isAuthorized) {
-    // Center the loading spinner in the full viewport
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm z-50">
-        <LoadingSpinner fullScreen={false} size="large" color="blue" />
-      </div>
-    );
+  if (loading) {
+    return <LoadingSpinner />;
   }
 
-  return children;
+  // If authenticated and has the required role, render the children
+  if (isAuthenticated() && (allowedRoles.length === 0 || allowedRoles.some(role => hasRole(role)))) {
+    return children;
+  }
+
+  // Return null while redirecting
+  return null;
 };
 
 export default ProtectedRoute;

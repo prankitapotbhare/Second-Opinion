@@ -34,21 +34,26 @@ const LoginForm = ({
     }));
   };
 
+  // Update the handleSubmit function in LoginForm.jsx
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
     setNeedsVerification(false);
-
+  
     const { email, password, rememberMe } = formData;
-
+  
     try {
       // Call the login function from the auth context
       const result = await login(email, password, userType);
       
       if (result.success) {
-        // If login is successful, redirect to success page
-        router.push(`/login/success?type=${userType}`);
+        // Get the redirect URL from query parameters if it exists
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectParam = urlParams.get('redirect');
+        
+        // If login is successful, redirect to success page with redirect parameter
+        router.push(`/login/success?type=${userType}${redirectParam ? `&redirect=${redirectParam}` : ''}`);
         
         // Also call the onSubmit prop if provided
         if (onSubmit) {

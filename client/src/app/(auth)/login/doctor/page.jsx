@@ -13,7 +13,7 @@ export default function DoctorLogin() {
     console.log({ email, password, rememberMe });
     
     // Redirect to doctor dashboard after successful login
-    // router.push('/doctor/dashboard');
+    router.push('/doctor/dashboard');
   };
 
   return (

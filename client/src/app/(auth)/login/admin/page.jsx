@@ -12,7 +12,7 @@ export default function AdminLogin() {
     console.log({ email, password, rememberMe });
     
     // Redirect to admin dashboard after successful login
-    // router.push('/admin/dashboard');
+    router.push('/admin/dashboard');
   };
 
   return (
