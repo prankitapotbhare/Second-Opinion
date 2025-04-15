@@ -2,7 +2,7 @@ import React from "react";
 import { FaCalendarAlt, FaUserMd, FaClipboardList, FaChartLine, FaFileMedical } from "react-icons/fa";
 import Link from "next/link";
 
-const DashboardSection = () => {
+const DashboardSection = ({ statCards }) => {
   // Mock data for upcoming appointments
   const upcomingAppointments = [
     {
@@ -25,7 +25,23 @@ const DashboardSection = () => {
 
   return (
     <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-[#f0f8ff]">
-      <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4 sm:mb-6">Patient Dashboard</h1>
+      
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
+        {statCards && statCards.map((card, index) => (
+          <div key={index} className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-all duration-300">
+            <div className="flex items-center">
+              <div className={`w-12 h-12 rounded-full bg-${card.color}-100 flex items-center justify-center text-${card.color}-600 mr-4`}>
+                {card.icon}
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">{card.title}</p>
+                <h3 className="text-xl font-bold text-gray-800">{card.count}</h3>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
       
       {/* Quick Action Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
@@ -66,6 +82,7 @@ const DashboardSection = () => {
         </Link>
       </div>
       
+      {/* Rest of the component remains the same */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {/* Upcoming Appointments */}
         <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-4 md:p-6 border border-blue-100">
@@ -83,6 +100,7 @@ const DashboardSection = () => {
           </Link>
         </div>
         
+        {/* Table content remains the same */}
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50 rounded-t-lg">

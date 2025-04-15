@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FaSearch, FaFilter } from "react-icons/fa";
+import { FaSearch, FaFilter, FaCalendarAlt, FaEye, FaTimes } from "react-icons/fa";
 import Link from "next/link";
 
 const AppointmentsSection = () => {
@@ -51,18 +51,21 @@ const AppointmentsSection = () => {
   });
 
   return (
-    <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50">
+    <main className="flex-1 overflow-y-auto p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-        <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4 sm:mb-0">My Appointments</h1>
-        <Link href="/user/appointment/book">
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+        <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4 sm:mb-0 flex items-center">
+          <FaCalendarAlt className="mr-2 text-blue-600" />
+          My Appointments
+        </h1>
+        <Link href="/user/appointment/booking">
+          <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-all duration-300 shadow-sm">
             Book New Appointment
           </button>
         </Link>
       </div>
       
       {/* Search and Filter */}
-      <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+      <div className="bg-white rounded-lg shadow-sm p-4 mb-6 border border-gray-100">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -70,58 +73,61 @@ const AppointmentsSection = () => {
             </div>
             <input
               type="text"
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               placeholder="Search by doctor or specialty"
+              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          
-          <div className="flex items-center">
-            <FaFilter className="text-gray-400 mr-2" />
-            <select
-              className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-            >
-              <option value="all">All Appointments</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="pending">Pending</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+          <div className="md:w-64">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FaFilter className="text-gray-400" />
+              </div>
+              <select
+                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 appearance-none"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+              >
+                <option value="all">All Appointments</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="pending">Pending</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
       
       {/* Appointments List */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        {filteredAppointments.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Appointment ID
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Doctor
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date & Time
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredAppointments.map((appointment, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Appointment ID
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Doctor
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date & Time
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredAppointments.length > 0 ? (
+                filteredAppointments.map((appointment) => (
+                  <tr key={appointment.id} className="hover:bg-blue-50 transition-colors duration-200">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {appointment.id}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -134,43 +140,45 @@ const AppointmentsSection = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        appointment.status === 'Confirmed' 
-                          ? 'bg-green-100 text-green-800' 
-                          : appointment.status === 'Pending'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : appointment.status === 'Completed'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-red-100 text-red-800'
+                        appointment.status === 'Confirmed' ? 'bg-green-100 text-green-800' :
+                        appointment.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                        appointment.status === 'Completed' ? 'bg-blue-100 text-blue-800' :
+                        'bg-red-100 text-red-800'
                       }`}>
                         {appointment.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <Link href={`/user/appointments/${appointment.id}`} className="text-blue-600 hover:text-blue-900 mr-3">
-                        View
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <Link href={`/user/appointments/${appointment.id}`}>
+                        <button className="text-blue-600 hover:text-blue-900 mr-3 inline-flex items-center">
+                          <FaEye className="mr-1" /> View
+                        </button>
                       </Link>
                       {(appointment.status === 'Confirmed' || appointment.status === 'Pending') && (
-                        <button className="text-red-600 hover:text-red-900">
-                          Cancel
+                        <button className="text-red-600 hover:text-red-900 inline-flex items-center">
+                          <FaTimes className="mr-1" /> Cancel
                         </button>
-                      )}
-                      {appointment.status === 'Completed' && (
-                        <Link href={`/user/appointments/${appointment.id}/feedback`} className="text-green-600 hover:text-green-900">
-                          Feedback
-                        </Link>
                       )}
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-500 mb-4">No appointments found matching your criteria.</p>
-            <Link href="/user/appointment/book">
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                Book an Appointment
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className="px-6 py-10 text-center text-gray-500">
+                    No appointments found matching your criteria.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        
+        {filteredAppointments.length === 0 && searchTerm === '' && filter === 'all' && (
+          <div className="text-center py-10">
+            <p className="text-gray-500 mb-4">You don't have any appointments yet.</p>
+            <Link href="/user/doctors">
+              <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-all duration-300">
+                Find a Doctor
               </button>
             </Link>
           </div>

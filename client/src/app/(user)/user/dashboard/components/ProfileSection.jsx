@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaCalendarAlt, FaIdCard } from "react-icons/fa";
 
-const ProfileSection = () => {
-  // Mock user data
+const ProfileSection = ({ user }) => {
+  // Mock user data - will be replaced with actual user data when available
   const [userData, setUserData] = useState({
     firstName: "John",
     lastName: "Doe",
@@ -18,8 +18,26 @@ const ProfileSection = () => {
     medicalConditions: "None"
   });
 
+  // Update userData if user prop changes
+  useEffect(() => {
+    if (user) {
+      setUserData(prevData => ({
+        ...prevData,
+        firstName: user.displayName ? user.displayName.split(' ')[0] : prevData.firstName,
+        lastName: user.displayName ? user.displayName.split(' ').slice(1).join(' ') : prevData.lastName,
+        email: user.email || prevData.email,
+        // Add other fields from user object as needed
+      }));
+    }
+  }, [user]);
+
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(userData);
+
+  // Update formData when userData changes
+  useEffect(() => {
+    setFormData(userData);
+  }, [userData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -33,10 +51,11 @@ const ProfileSection = () => {
     e.preventDefault();
     setUserData(formData);
     setIsEditing(false);
+    // Here you would typically save the data to your backend
   };
 
   return (
-    <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50">
+    <main className="flex-1 overflow-y-auto p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
         <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4 sm:mb-0">My Profile</h1>
         <button
@@ -51,6 +70,7 @@ const ProfileSection = () => {
         </button>
       </div>
 
+      {/* Rest of the component remains the same */}
       <div className="bg-white rounded-lg shadow-sm p-6">
         {isEditing ? (
           <form onSubmit={handleSubmit}>
@@ -241,73 +261,81 @@ const ProfileSection = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
-              <div className="flex items-center">
-                <FaUser className="text-blue-600 mr-3" />
-                <div>
-                  <p className="text-sm text-gray-500">Full Name</p>
-                  <p className="font-medium">{userData.firstName} {userData.lastName}</p>
-                </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Full Name</h3>
+                <p className="mt-1 text-base text-gray-900 flex items-center">
+                  <FaUser className="text-blue-500 mr-2" />
+                  {userData.firstName} {userData.lastName}
+                </p>
               </div>
-              <div className="flex items-center">
-                <FaEnvelope className="text-blue-600 mr-3" />
-                <div>
-                  <p className="text-sm text-gray-500">Email</p>
-                  <p className="font-medium">{userData.email}</p>
-                </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Email Address</h3>
+                <p className="mt-1 text-base text-gray-900 flex items-center">
+                  <FaEnvelope className="text-blue-500 mr-2" />
+                  {userData.email}
+                </p>
               </div>
-              <div className="flex items-center">
-                <FaPhone className="text-blue-600 mr-3" />
-                <div>
-                  <p className="text-sm text-gray-500">Phone</p>
-                  <p className="font-medium">{userData.phone}</p>
-                </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Phone Number</h3>
+                <p className="mt-1 text-base text-gray-900 flex items-center">
+                  <FaPhone className="text-blue-500 mr-2" />
+                  {userData.phone}
+                </p>
               </div>
-              <div className="flex items-center">
-                <FaMapMarkerAlt className="text-blue-600 mr-3" />
-                <div>
-                  <p className="text-sm text-gray-500">Address</p>
-                  <p className="font-medium">{userData.address}</p>
-                </div>
-              </div>
-              <div className="flex items-center">
-                <FaCalendarAlt className="text-blue-600 mr-3" />
-                <div>
-                  <p className="text-sm text-gray-500">Date of Birth</p>
-                  <p className="font-medium">{new Date(userData.dateOfBirth).toLocaleDateString()}</p>
-                </div>
-              </div>
-              <div className="flex items-center">
-                <FaIdCard className="text-blue-600 mr-3" />
-                <div>
-                  <p className="text-sm text-gray-500">Gender</p>
-                  <p className="font-medium">{userData.gender}</p>
-                </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Address</h3>
+                <p className="mt-1 text-base text-gray-900 flex items-center">
+                  <FaMapMarkerAlt className="text-blue-500 mr-2" />
+                  {userData.address}
+                </p>
               </div>
             </div>
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-gray-500">Blood Type</p>
-                <p className="font-medium">{userData.bloodType || "Not specified"}</p>
+                <h3 className="text-sm font-medium text-gray-500">Date of Birth</h3>
+                <p className="mt-1 text-base text-gray-900 flex items-center">
+                  <FaCalendarAlt className="text-blue-500 mr-2" />
+                  {userData.dateOfBirth}
+                </p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Emergency Contact</p>
-                <p className="font-medium">{userData.emergencyContact || "Not specified"}</p>
+                <h3 className="text-sm font-medium text-gray-500">Gender</h3>
+                <p className="mt-1 text-base text-gray-900 flex items-center">
+                  <FaUser className="text-blue-500 mr-2" />
+                  {userData.gender}
+                </p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Emergency Phone</p>
-                <p className="font-medium">{userData.emergencyPhone || "Not specified"}</p>
+                <h3 className="text-sm font-medium text-gray-500">Blood Type</h3>
+                <p className="mt-1 text-base text-gray-900 flex items-center">
+                  <FaIdCard className="text-blue-500 mr-2" />
+                  {userData.bloodType}
+                </p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Allergies</p>
-                <p className="font-medium">{userData.allergies || "None"}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Medical Conditions</p>
-                <p className="font-medium">{userData.medicalConditions || "None"}</p>
+                <h3 className="text-sm font-medium text-gray-500">Emergency Contact</h3>
+                <p className="mt-1 text-base text-gray-900">
+                  {userData.emergencyContact} ({userData.emergencyPhone})
+                </p>
               </div>
             </div>
           </div>
         )}
+      </div>
+
+      {/* Medical Information */}
+      <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
+        <h2 className="text-lg font-medium text-gray-800 mb-4">Medical Information</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h3 className="text-sm font-medium text-gray-500">Allergies</h3>
+            <p className="mt-1 text-base text-gray-900">{userData.allergies}</p>
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-gray-500">Medical Conditions</h3>
+            <p className="mt-1 text-base text-gray-900">{userData.medicalConditions}</p>
+          </div>
+        </div>
       </div>
     </main>
   );

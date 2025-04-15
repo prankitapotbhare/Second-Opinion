@@ -82,11 +82,11 @@ const Navbar = ({ scrollToFAQs }) => {
                   className="flex items-center space-x-2 hover:text-teal-200 transition-colors focus:outline-none"
                 >
                   <img 
-                    src={currentUser?.avatar || "https://via.placeholder.com/150"} 
+                    src={currentUser?.photoURL || "https://via.placeholder.com/150"} 
                     alt="Profile" 
                     className="w-8 h-8 rounded-full"
                   />
-                  <span>{currentUser?.name}</span>
+                  <span>{currentUser?.displayName}</span>
                 </button>
                 
                 {isProfileOpen && (
@@ -176,11 +176,11 @@ const Navbar = ({ scrollToFAQs }) => {
                 <>
                   <div className="flex items-center space-x-2 pt-2 border-t border-teal-600">
                     <img 
-                      src={currentUser?.avatar || "https://via.placeholder.com/150"} 
+                      src={currentUser?.photoURL || "https://via.placeholder.com/150"} 
                       alt="Profile" 
                       className="w-8 h-8 rounded-full"
                     />
-                    <span>{currentUser?.name}</span>
+                    <span>{currentUser?.displayName}</span>
                   </div>
                   <Link 
                     href={getDashboardLink()}
