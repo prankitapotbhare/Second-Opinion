@@ -114,13 +114,16 @@ const Navbar = ({ scrollToFAQs, simplifiedNav = false }) => {
                 
                 {isProfileOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
-                    <Link 
-                      href={getDashboardLink()}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setIsProfileOpen(false)}
-                    >
-                      Dashboard
-                    </Link>
+                    {/* Only show Dashboard link if NOT user role */}
+                    {currentUser?.role !== "user" && (
+                      <Link 
+                        href={getDashboardLink()}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsProfileOpen(false)}
+                      >
+                        Dashboard
+                      </Link>
+                    )}
                     <button
                       onClick={handleLogout}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -215,14 +218,17 @@ const Navbar = ({ scrollToFAQs, simplifiedNav = false }) => {
                     />
                     <span>{currentUser?.displayName}</span>
                   </div>
-                  <Link 
-                    href={getDashboardLink()}
-                    className="flex items-center space-x-2 hover:text-teal-200 transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <FaUser />
-                    <span>Dashboard</span>
-                  </Link>
+                  {/* Only show Dashboard link if NOT user role */}
+                  {currentUser?.role !== "user" && (
+                    <Link 
+                      href={getDashboardLink()}
+                      className="flex items-center space-x-2 hover:text-teal-200 transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <FaUser />
+                      <span>Dashboard</span>
+                    </Link>
+                  )}
                   <button
                     onClick={handleLogout}
                     className="flex items-center space-x-2 hover:text-teal-200 transition-colors"

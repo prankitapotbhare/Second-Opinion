@@ -91,7 +91,7 @@ const Sidebar = ({
           <div className={`mt-2 p-4 flex flex-col ${isCollapsed ? 'items-center' : ''}`}>
             <div className="flex items-center justify-between w-full">
               {!isCollapsed ? (
-                <Link href="/user/dashboard" className="group">
+                <Link href="/" className="group">
                   <div className="flex items-center">
                     <div className="h-10 w-10 bg-teal-500 rounded-md flex items-center justify-center mr-2 shadow-md border-2 border-teal-200">
                       <span className="text-white font-bold text-2xl">S</span>
@@ -104,7 +104,7 @@ const Sidebar = ({
                   </div>
                 </Link>
               ) : (
-                <Link href="/user/dashboard" className="mx-auto">
+                <Link href="/" className="mx-auto">
                   <div className="h-12 w-12 bg-teal-500 rounded-md flex items-center justify-center shadow-md border-2 border-teal-200">
                     <span className="text-white font-bold text-2xl">S</span>
                   </div>
