@@ -19,6 +19,13 @@ export default function DoctorsSection() {
             <span className="text-teal-600">Recommended</span>
             <span className="text-gray-800"> Best Doctors</span>
           </h2>
+          <div className="mt-4 text-right">
+            <Link href="/user/doctors">
+              <button className="bg-teal-600 text-white px-4 py-2 rounded-md text-sm hover:bg-teal-700 transition-colors font-medium">
+                Find Doctors
+              </button>
+            </Link>
+          </div>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
@@ -61,12 +68,12 @@ export default function DoctorsSection() {
                   <div className="flex flex-col xs:flex-row sm:flex-col gap-2 mt-2">
                     {mounted ? (
                       <>
-                        <Link href={`/doctor-profile/${doctor.uid || doctor.id || index}`} className="w-full">
+                        <Link href={`/user/doctors/${doctor.uid || doctor.id || index}`} className="w-full">
                           <button className="w-full bg-teal-600 text-white px-4 py-2 rounded-md text-sm hover:bg-teal-700 transition-colors whitespace-nowrap font-medium">
                             View Profile
                           </button>
                         </Link>
-                        <Link href={`/appointment-booking/${doctor.uid || doctor.id || index}`} className="w-full">
+                        <Link href={`/user/appointment/booking?doctorId=${doctor.uid || doctor.id || index}`} className="w-full">
                           <button className="w-full border border-teal-600 text-teal-600 px-4 py-2 rounded-md text-sm hover:bg-teal-50 transition-colors whitespace-nowrap font-medium">
                             Book Consultation
                           </button>

@@ -67,12 +67,12 @@ export default function DoctorCard({ doctor }) {
         <div className="mt-auto pt-4">
           {mounted ? (
             <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 sm:gap-3">
-              <Link href={`/doctor-profile/${doctor.uid || doctor.id}`} className="col-span-1">
+              <Link href={`/user/doctors/${doctor.uid || doctor.id}`} className="col-span-1">
                 <button className="w-full bg-white border border-green-600 text-green-600 hover:bg-green-50 font-medium py-2 px-3 rounded-lg text-sm transition-colors duration-200">
                   View Profile
                 </button>
               </Link>
-              <Link href={`/appointment-booking/${doctor.uid || doctor.id}`} className="col-span-1">
+              <Link href={`/user/appointment/booking?doctorId=${doctor.uid || doctor.id}`} className="col-span-1">
                 <button className="w-full bg-green-600 text-white hover:bg-green-700 font-medium py-2 px-3 rounded-lg text-sm transition-colors duration-200">
                   Book Consultation
                 </button>
