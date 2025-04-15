@@ -28,6 +28,8 @@ export default function HeroSection() {
   const [department, setDepartment] = useState("");
   const [locations, setLocations] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [filteredLocations, setFilteredLocations] = useState([]);
+  const [filteredDepartments, setFilteredDepartments] = useState([]);
   const [showDepartments, setShowDepartments] = useState(false);
   const [showLocations, setShowLocations] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -37,8 +39,14 @@ export default function HeroSection() {
 
   useEffect(() => {
     setMounted(true);
-    fetchLocations().then(setLocations);
-    fetchDepartments().then(setDepartments);
+    fetchLocations().then((data) => {
+      setLocations(data);
+      setFilteredLocations(data);
+    });
+    fetchDepartments().then((data) => {
+      setDepartments(data);
+      setFilteredDepartments(data);
+    });
   }, []);
 
   // Hide dropdowns on outside click
@@ -60,6 +68,28 @@ export default function HeroSection() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const handleLocationChange = (e) => {
+    const value = e.target.value;
+    setLocation(value);
+    setFilteredLocations(
+      locations.filter(loc => 
+        loc.toLowerCase().includes(value.toLowerCase())
+      )
+    );
+    setShowLocations(true);
+  };
+
+  const handleDepartmentChange = (e) => {
+    const value = e.target.value;
+    setDepartment(value);
+    setFilteredDepartments(
+      departments.filter(dept => 
+        dept.toLowerCase().includes(value.toLowerCase())
+      )
+    );
+    setShowDepartments(true);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -123,29 +153,20 @@ export default function HeroSection() {
               className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6"
               onSubmit={handleSubmit}
             >
-              {/* Location Dropdown */}
+              {/* Location Search */}
               <div className="relative flex-grow" ref={locationRef}>
                 <input
                   type="text"
-                  placeholder="Select Location"
+                  placeholder="Search location"
                   className="w-full pl-3 pr-8 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                   value={location}
+                  onChange={handleLocationChange}
                   onFocus={() => setShowLocations(true)}
-                  readOnly
+                  autoComplete="off"
                 />
-                <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 flex items-center px-2 text-gray-400"
-                  onClick={() => setShowLocations((v) => !v)}
-                  tabIndex={-1}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {showLocations && (
+                {showLocations && filteredLocations.length > 0 && (
                   <ul className="absolute z-10 left-0 right-0 bg-white border border-gray-200 rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg">
-                    {locations.map((loc) => (
+                    {filteredLocations.map((loc) => (
                       <li
                         key={loc}
                         className="px-4 py-2 hover:bg-teal-50 cursor-pointer"
@@ -160,29 +181,21 @@ export default function HeroSection() {
                   </ul>
                 )}
               </div>
-              {/* Department Dropdown */}
+
+              {/* Department Search */}
               <div className="relative flex-grow" ref={departmentRef}>
                 <input
                   type="text"
-                  placeholder="Select Department"
+                  placeholder="Search department"
                   className="w-full pl-3 pr-8 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                   value={department}
+                  onChange={handleDepartmentChange}
                   onFocus={() => setShowDepartments(true)}
-                  readOnly
+                  autoComplete="off"
                 />
-                <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 flex items-center px-2 text-gray-400"
-                  onClick={() => setShowDepartments((v) => !v)}
-                  tabIndex={-1}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {showDepartments && (
+                {showDepartments && filteredDepartments.length > 0 && (
                   <ul className="absolute z-10 left-0 right-0 bg-white border border-gray-200 rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg">
-                    {departments.map((dept) => (
+                    {filteredDepartments.map((dept) => (
                       <li
                         key={dept}
                         className="px-4 py-2 hover:bg-teal-50 cursor-pointer"
@@ -199,7 +212,7 @@ export default function HeroSection() {
               </div>
               <button
                 type="submit"
-                className="bg-teal-600 text-white px-4 py-2 rounded-md whitespace-nowrap hover:bg-teal-700 transition-colors font-medium"
+                className="bg-teal-600 text-white px-3 sm:px-4 md:px-6 py-2 rounded-md hover:bg-teal-700 transition-colors whitespace-nowrap"
               >
                 Find Doctors
               </button>
