@@ -11,8 +11,8 @@ export default function DoctorsSearchPage() {
   
   // Filter doctors based on search term
   const filteredDoctors = doctors.filter(doctor => 
-    doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    doctor.specialization.toLowerCase().includes(searchTerm.toLowerCase())
+    (doctor.name && doctor.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (doctor.specialization && doctor.specialization.toLowerCase().includes(searchTerm.toLowerCase()))
   );
   
   // Determine which doctors to display
