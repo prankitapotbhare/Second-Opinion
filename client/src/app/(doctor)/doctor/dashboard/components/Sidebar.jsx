@@ -137,19 +137,20 @@ const Sidebar = ({
             <ul className="space-y-1 mt-2">
               {sidebarItems.map((item) => (
                 <li key={item.name}>
-                  <button
-                    onClick={() => handleTabClick(item.name)}
+                  <Link 
+                    href={`/doctor/${item.name}`}
                     className={`flex items-center w-full px-4 py-3 rounded-lg text-left transition-all duration-200 ${
                       activeTab === item.name
                         ? "bg-blue-400 text-white font-medium shadow-md"
                         : "text-blue-700 hover:bg-blue-200 hover:text-blue-800"
                     } ${isCollapsed ? 'justify-center' : ''}`}
+                    onClick={() => setIsSidebarOpen(false)}
                   >
                     <span className={`inline-flex items-center justify-center ${isCollapsed ? 'w-6 h-6' : 'w-6 h-6 mr-3'}`}>
                       {item.icon}
                     </span>
                     {!isCollapsed && <span className="truncate">{item.label}</span>}
-                  </button>
+                  </Link>
                 </li>
               ))}
             </ul>
