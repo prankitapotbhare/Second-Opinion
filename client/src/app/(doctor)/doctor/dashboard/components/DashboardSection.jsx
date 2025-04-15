@@ -3,8 +3,7 @@ import { FaStar, FaUser, FaCalendarAlt, FaClipboardCheck, FaUserMd, FaChartLine 
 
 const DashboardSection = () => {
   return (
-    <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-[#f0f8ff]">
-      <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4 sm:mb-6">Doctor Dashboard</h1>
+    <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
 
       {/* Patient Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">

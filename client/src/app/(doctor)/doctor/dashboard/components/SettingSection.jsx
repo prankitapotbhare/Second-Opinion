@@ -3,8 +3,7 @@ import { FaPhoneAlt, FaEnvelope, FaLock, FaTrash, FaUserCircle } from "react-ico
 
 const SettingSection = ({ user }) => {
   return (
-    <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50">
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">Settings</h1>
+    <main className="flex-1 overflow-y-auto p-4 sm:p-6">
 
       {/* Privacy & Security */}
       <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100 mb-8">

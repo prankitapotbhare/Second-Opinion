@@ -30,10 +30,7 @@ const AppointmentSection = () => {
   };
 
   return (
-    <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50">
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">
-        Appointments
-      </h1>
+    <main className="flex-1 overflow-y-auto p-4 sm:p-6">
       <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100 mb-8">
         {/* Filter and view options */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">

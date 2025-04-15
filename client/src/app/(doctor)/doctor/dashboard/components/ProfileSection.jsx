@@ -14,8 +14,7 @@ import {
 
 const ProfileSection = () => {
   return (
-    <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-gray-50">
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">Profile</h1>
+    <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
 
       {/* Personal Information */}
       <section className="bg-white rounded-lg shadow-sm p-4 sm:p-6 border border-gray-100 mb-8">
