@@ -5,7 +5,7 @@ import AppointmentSection from "./components/AppointmentSection";
 import ProfileSection from "./components/ProfileSection";
 import SettingSection from "./components/SettingSection";
 import Header from "./components/Header";
-import { DoctorSidebar } from "@/components";
+import Sidebar from "./components/Sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 
 const DoctorDashboard = () => {
@@ -20,7 +20,7 @@ const DoctorDashboard = () => {
 
   return (
     <div className="flex h-screen bg-[#E8F9FF] relative overflow-hidden">
-      <DoctorSidebar 
+      <Sidebar 
         activeTab={activeTab} 
         handleTabClick={handleTabClick} 
         isSidebarOpen={isSidebarOpen} 

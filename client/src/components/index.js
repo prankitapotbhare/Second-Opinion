@@ -9,8 +9,6 @@ export { default as Footer } from './common/Footer';
 export { default as SubmissionMessage } from './common/SubmissionMessage';
 
 // Layout components
-// Doctor-specific components
-export { default as DoctorSidebar } from './layout/DoctorSidebar';
 
 // User-specific components
 export { default as UserSidebar } from './layout/UserSidebar';

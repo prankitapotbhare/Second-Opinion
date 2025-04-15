@@ -4,7 +4,7 @@ import { FaChartLine, FaCalendarAlt, FaUserMd, FaCog, FaBars } from "react-icons
 import { MdOutlineLogout, MdClose } from "react-icons/md";
 import { useAuth } from "@/contexts/AuthContext";
 
-const DoctorSidebar = ({ activeTab, handleTabClick, isSidebarOpen, setIsSidebarOpen, user }) => {
+const Sidebar = ({ activeTab, handleTabClick, isSidebarOpen, setIsSidebarOpen, user }) => {
   const { logout } = useAuth();
   
   return (
@@ -131,4 +131,4 @@ const DoctorSidebar = ({ activeTab, handleTabClick, isSidebarOpen, setIsSidebarO
   );
 };
 
-export default DoctorSidebar;
+export default Sidebar;
