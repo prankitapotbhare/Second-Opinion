@@ -1,130 +1,170 @@
 "use client";
-import React from "react";
-import { FaChartLine, FaCalendarAlt, FaUserMd, FaCog, FaBars } from "react-icons/fa";
-import { MdOutlineLogout, MdClose } from "react-icons/md";
+import React, { useState } from "react";
+import { 
+  FaTimes, 
+  FaHome, 
+  FaCalendarAlt, 
+  FaUserMd, 
+  FaCog, 
+  FaSignOutAlt,
+  FaChartBar,
+  FaChevronLeft,
+  FaChevronRight
+} from "react-icons/fa";
+import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 
-const Sidebar = ({ activeTab, handleTabClick, isSidebarOpen, setIsSidebarOpen, user }) => {
+const Sidebar = ({ 
+  activeTab, 
+  handleTabClick, 
+  isSidebarOpen, 
+  setIsSidebarOpen,
+  user
+}) => {
   const { logout } = useAuth();
+  const [isCollapsed, setIsCollapsed] = useState(false);
   
+  const sidebarItems = [
+    {
+      name: "dashboard",
+      label: "Dashboard",
+      icon: <FaHome className="w-5 h-5" />,
+    },
+    {
+      name: "appointments",
+      label: "Appointments",
+      icon: <FaCalendarAlt className="w-5 h-5" />,
+    },
+    {
+      name: "profile",
+      label: "My Profile",
+      icon: <FaUserMd className="w-5 h-5" />,
+    },
+    {
+      name: "settings",
+      label: "Settings",
+      icon: <FaCog className="w-5 h-5" />,
+    },
+  ];
+
+  const toggleSidebar = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
   return (
     <>
-      {/* Mobile Toggle Button - only visible when sidebar is closed */}
-      {!isSidebarOpen && (
-        <div className="md:hidden absolute top-2 left-4 z-50 px-2 py-2">
-          <button
-            onClick={() => setIsSidebarOpen(true)}
-            className="text-2xl text-gray-800 focus:outline-none"
-          >
-            <FaBars />
-          </button>
-        </div>
+      {/* Mobile Sidebar Backdrop */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        ></div>
       )}
+
+      {/* Toggle Button */}
+      <button 
+        onClick={toggleSidebar}
+        className="hidden md:flex fixed bottom-16 z-50 items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-700 to-blue-600 text-white rounded-full shadow-lg hover:from-blue-800 hover:to-blue-700 transition-all duration-300 border border-blue-300"
+        style={{ 
+          left: isCollapsed ? '4rem' : '17rem',
+          transform: 'translateY(-50%)'
+        }}
+        aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+      >
+        {isCollapsed ? <FaChevronRight size={14} /> : <FaChevronLeft size={14} />}
+      </button>
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-full w-64 bg-[#D4EBF8] shadow-md transform transition-transform duration-300 z-40 ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0 md:static md:block`}
+        className={`fixed md:relative md:flex transform transition-all duration-300 ease-in-out z-50 md:z-0 ${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        }`}
       >
-        <div className="p-3 flex justify-between items-center">
-          <h1 className="lg:text-2xl sm:text-[15px] text-black font-bold">Second Opinion</h1>
-          
-          <div className="md:hidden ml-auto px-2 py-2">
-            <button
-              onClick={() => setIsSidebarOpen(false)}
-              className="text-xl text-gray-800 focus:outline-none"
+        <div className={`flex flex-col h-screen ${isCollapsed ? 'w-20' : 'w-72'} bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white shadow-xl overflow-y-auto transition-all duration-300`}>
+          {/* Sidebar Header with Enhanced Logo */}
+          <div className={`mt-2 p-4 flex flex-col ${isCollapsed ? 'items-center' : ''}`}>
+            <div className="flex items-center justify-between w-full">
+              {!isCollapsed ? (
+                <Link href="/doctor/dashboard" className="group">
+                  <div className="flex items-center">
+                    <div className="h-10 w-10 bg-white rounded-md flex items-center justify-center mr-2 shadow-lg border-2 border-blue-300">
+                      <span className="text-blue-700 font-bold text-2xl">S</span>
+                    </div>
+                    <div>
+                      <span className="text-white font-bold text-xl">Second</span>
+                      <span className="text-blue-300 font-bold text-xl ml-1">Opinion</span>
+                      <div className="h-0.5 w-0 group-hover:w-full bg-blue-300 transition-all duration-300 ease-in-out"></div>
+                    </div>
+                  </div>
+                </Link>
+              ) : (
+                <Link href="/doctor/dashboard" className="mx-auto">
+                  <div className="h-12 w-12 bg-white rounded-md flex items-center justify-center shadow-lg border-2 border-blue-300">
+                    <span className="text-blue-700 font-bold text-2xl">S</span>
+                  </div>
+                </Link>
+              )}
+              <button
+                className="md:hidden text-white border border-blue-300 p-1 rounded-md hover:bg-blue-700/50"
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                <FaTimes size={20} />
+              </button>
+            </div>
+            <div className={`mt-6 flex ${isCollapsed ? 'flex-col' : 'items-center'} border-y border-blue-500/30 py-6`}>
+              <div className="flex-shrink-0 w-12 h-12 rounded-full overflow-hidden bg-blue-600 border-2 border-blue-300">
+                <img
+                  src={user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.displayName || 'Doctor')}&background=1e40af&color=fff`}
+                  alt="Doctor"
+                  className="w-full h-full object-cover"
+                  width={48}
+                  height={48}
+                />
+              </div>
+              {!isCollapsed && (
+                <div className="ml-3">
+                  <p className="font-medium text-white">
+                    {user?.displayName || 'Dr. John Doe'}
+                  </p>
+                  <p className="text-xs text-blue-200">Medical Specialist</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Sidebar Menu */}
+          <nav className="flex-1 px-2 pb-4">
+            <ul className="space-y-1 mt-2">
+              {sidebarItems.map((item) => (
+                <li key={item.name}>
+                  <button
+                    onClick={() => handleTabClick(item.name)}
+                    className={`flex items-center w-full px-4 py-3 rounded-lg text-left transition-all duration-200 ${
+                      activeTab === item.name
+                        ? "bg-blue-600 text-white font-medium shadow-md"
+                        : "text-blue-100 hover:bg-blue-600/50 hover:text-white"
+                    } ${isCollapsed ? 'justify-center' : ''}`}
+                  >
+                    <span className={`inline-flex items-center justify-center ${isCollapsed ? 'w-6 h-6' : 'w-6 h-6 mr-3'}`}>
+                      {item.icon}
+                    </span>
+                    {!isCollapsed && item.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/* Logout Button */}
+          <div className="p-4">
+            <button 
+              onClick={logout}
+              className={`flex items-center w-full px-4 py-3 text-white bg-red-500/20 hover:bg-red-500/30 rounded-lg transition-colors ${isCollapsed ? 'justify-center' : ''}`}
             >
-              <MdClose style={{fontSize:"2rem"}} />
+              <FaSignOutAlt className={isCollapsed ? '' : 'mr-3'} />
+              {!isCollapsed && 'Sign Out'}
             </button>
           </div>
-        </div>
-        
-        {/* Doctor Info */}
-        <div className="px-6 pb-4">
-          <div className="flex items-center">
-            <div className="relative">
-              <img
-                src={user?.avatar || "https://public.readdy.ai/ai/img_res/449f7f9cf87a2dac47b5084a82bbfdd1.jpg"}
-                alt="Doctor"
-                className="w-10 h-10 rounded-full object-cover object-top"
-              />
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-800">{user?.name || "Dr. John Smith"}</p>
-              <p className="text-xs text-gray-500">{user?.specialization || "Cardiologist"}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <nav className="px-4 py-2">
-          <ul className="space-y-2">
-            <li>
-              <button
-                onClick={() => handleTabClick("dashboard")}
-                className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg ${
-                  activeTab === "dashboard"
-                    ? "bg-[#0F4C75] text-white"
-                    : "text-gray-700 hover:bg-[#BBE1FA] hover:text-gray-900"
-                }`}
-              >
-                <FaChartLine className="mr-3" />
-                Dashboard
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => handleTabClick("appointments")}
-                className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg ${
-                  activeTab === "appointments"
-                    ? "bg-[#0F4C75] text-white"
-                    : "text-gray-700 hover:bg-[#BBE1FA] hover:text-gray-900"
-                }`}
-              >
-                <FaCalendarAlt className="mr-3" />
-                Appointments
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => handleTabClick("profile")}
-                className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg ${
-                  activeTab === "profile"
-                    ? "bg-[#0F4C75] text-white"
-                    : "text-gray-700 hover:bg-[#BBE1FA] hover:text-gray-900"
-                }`}
-              >
-                <FaUserMd className="mr-3" />
-                Profile
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => handleTabClick("settings")}
-                className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg ${
-                  activeTab === "settings"
-                    ? "bg-[#0F4C75] text-white"
-                    : "text-gray-700 hover:bg-[#BBE1FA] hover:text-gray-900"
-                }`}
-              >
-                <FaCog className="mr-3" />
-                Settings
-              </button>
-            </li>
-          </ul>
-        </nav>
-
-        {/* Logout Button */}
-        <div className="absolute bottom-0 left-0 right-0 p-4">
-          <button 
-            onClick={logout}
-            className="w-full flex items-center px-4 py-3 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg"
-          >
-            <MdOutlineLogout className="mr-3" />
-            Logout
-          </button>
         </div>
       </div>
     </>

@@ -8,6 +8,8 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaCheckCircle,
+  FaCalendarAlt,
+  FaFilter,
 } from "react-icons/fa";
 
 const AppointmentSection = () => {
@@ -15,6 +17,7 @@ const AppointmentSection = () => {
   const [showResponseSection, setShowResponseSection] = useState(false);
   const [showResponseSuccess, setShowResponseSuccess] = useState(false);
   const [responseMessage, setResponseMessage] = useState("");
+  const [activeFilter, setActiveFilter] = useState("today");
 
   const handleSendResponse = () => {
     setShowResponseSuccess(true);
@@ -28,35 +31,52 @@ const AppointmentSection = () => {
 
   return (
     <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50">
-      <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4 sm:mb-6">
+      <h1 className="text-2xl font-semibold text-gray-800 mb-6">
         Appointments
       </h1>
-      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 border border-gray-100 mb-8">
+      <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100 mb-8">
         {/* Filter and view options */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 space-y-4 sm:space-y-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-4 sm:space-y-0">
           <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
             <div className="relative">
               <button className="flex items-center px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 whitespace-nowrap text-sm">
-                <span>Today</span>
+                <FaCalendarAlt className="mr-2 text-gray-500" />
+                <span>{activeFilter === "today" ? "Today" : activeFilter === "week" ? "This Week" : "This Month"}</span>
                 <FaChevronDown className="ml-2 text-xs" />
               </button>
             </div>
             <div className="flex border border-gray-300 rounded-md overflow-hidden">
-              <button className="px-4 py-2 text-sm bg-blue-50 text-blue-600 border-r border-gray-300">
+              <button 
+                className={`px-4 py-2 text-sm ${activeFilter === "today" ? "bg-blue-50 text-blue-600" : "bg-white text-gray-700"} border-r border-gray-300`}
+                onClick={() => setActiveFilter("today")}
+              >
                 Day
               </button>
-              <button className="px-4 py-2 text-sm bg-white text-gray-700 border-r border-gray-300">
+              <button 
+                className={`px-4 py-2 text-sm ${activeFilter === "week" ? "bg-blue-50 text-blue-600" : "bg-white text-gray-700"} border-r border-gray-300`}
+                onClick={() => setActiveFilter("week")}
+              >
                 Week
               </button>
-              <button className="px-4 py-2 text-sm bg-white text-gray-700">
+              <button 
+                className={`px-4 py-2 text-sm ${activeFilter === "month" ? "bg-blue-50 text-blue-600" : "bg-white text-gray-700"}`}
+                onClick={() => setActiveFilter("month")}
+              >
                 Month
               </button>
             </div>
           </div>
+          
+          <div className="flex items-center">
+            <button className="flex items-center px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 whitespace-nowrap text-sm">
+              <FaFilter className="mr-2 text-gray-500" />
+              <span>Filter</span>
+            </button>
+          </div>
         </div>
 
         {/* Appointments Table */}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-lg border border-gray-200">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead className="bg-gray-50">
               <tr>
@@ -76,7 +96,7 @@ const AppointmentSection = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {[1, 2, 3, 4, 5].map((item) => (
-                <tr key={item} className="hover:bg-gray-50">
+                <tr key={item} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
@@ -100,7 +120,7 @@ const AppointmentSection = () => {
                   </td>
                   <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         item % 2 === 0
                           ? "bg-green-100 text-green-800"
                           : "bg-yellow-100 text-yellow-800"
@@ -110,15 +130,13 @@ const AppointmentSection = () => {
                     </span>
                   </td>
                   <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      <button
-                        className="text-green-600 hover:text-green-900"
-                        onClick={() => setShowPatientDetail(item)}
-                      >
-                        <FaClipboardCheck className="inline-block mr-1" />
-                        Review
-                      </button>
-                    </div>
+                    <button
+                      className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors"
+                      onClick={() => setShowPatientDetail(item)}
+                    >
+                      <FaClipboardCheck className="inline-block mr-1" />
+                      Review
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -162,22 +180,21 @@ const AppointmentSection = () => {
           patientId={showPatientDetail}
           responseMessage={responseMessage}
           showResponseSection={showResponseSection}
-          onClose={() => {
-            setShowPatientDetail(null);
-            setShowResponseSection(false);
-          }}
+          onClose={() => setShowPatientDetail(null)}
           onSetShowResponseSection={setShowResponseSection}
           onSetResponseMessage={setResponseMessage}
           onSendResponse={handleSendResponse}
         />
       )}
 
-      {/* Success Notification */}
+      {/* Success Message */}
       {showResponseSuccess && (
-        <div className="fixed bottom-4 right-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-md">
-          <div className="flex items-center">
-            <FaCheckCircle className="text-green-500 mr-3" />
-            <p>Response sent successfully!</p>
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 flex items-center shadow-xl animate-fade-in-up">
+            <FaCheckCircle className="text-green-500 text-2xl mr-3" />
+            <span className="text-gray-800 font-medium">
+              Response sent successfully!
+            </span>
           </div>
         </div>
       )}
