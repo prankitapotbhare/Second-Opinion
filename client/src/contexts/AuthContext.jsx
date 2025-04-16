@@ -15,11 +15,14 @@ export const AuthProvider = ({ children }) => {
   const [authToken, setAuthToken] = useState(null);
   const [refreshToken, setRefreshToken] = useState(null);
 
-  // Check if user is already logged in (from localStorage)
+  // Check if user is already logged in (from localStorage or sessionStorage)
   useEffect(() => {
-    const storedUser = localStorage.getItem('currentUser');
-    const storedToken = localStorage.getItem('authToken');
-    const storedRefreshToken = localStorage.getItem('refreshToken');
+    const rememberMe = localStorage.getItem('rememberMe') === 'true';
+    const storage = rememberMe ? localStorage : sessionStorage;
+    
+    const storedUser = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+    const storedToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    const storedRefreshToken = localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken');
     
     if (storedUser && storedToken && storedRefreshToken) {
       try {
@@ -28,7 +31,7 @@ export const AuthProvider = ({ children }) => {
         setRefreshToken(storedRefreshToken);
         
         // Validate token and refresh if needed
-        validateToken(storedToken, storedRefreshToken);
+        validateToken(storedToken, storedRefreshToken, rememberMe);
       } catch (error) {
         console.error("Failed to parse stored user:", error);
         clearAuthData();
@@ -39,23 +42,49 @@ export const AuthProvider = ({ children }) => {
   }, []);
   
   // Validate token and refresh if needed
-  const validateToken = async (token, refresh) => {
+  const validateToken = async (token, refresh, rememberMe = false) => {
     try {
       // Try to get current user with token
-      await authApi.getCurrentUser(token);
+      const response = await authApi.getCurrentUser(token);
+      if (response.success) {
+        // Update user data if needed
+        const userData = formatUserData(response.data.user);
+        setCurrentUser(userData);
+        
+        // Store updated user data
+        const storage = rememberMe ? localStorage : sessionStorage;
+        storage.setItem('currentUser', JSON.stringify(userData));
+      }
       setLoading(false);
     } catch (error) {
       // If token is expired, try to refresh
       try {
         const response = await authApi.refreshToken(refresh);
-        const { accessToken, refreshToken: newRefreshToken } = response.data.tokens;
-        
-        setAuthToken(accessToken);
-        setRefreshToken(newRefreshToken);
-        
-        // Update localStorage
-        localStorage.setItem('authToken', accessToken);
-        localStorage.setItem('refreshToken', newRefreshToken);
+        if (response.success) {
+          const { accessToken, refreshToken: newRefreshToken } = response.data.tokens;
+          
+          setAuthToken(accessToken);
+          setRefreshToken(newRefreshToken);
+          
+          // Update storage
+          const storage = rememberMe ? localStorage : sessionStorage;
+          storage.setItem('authToken', accessToken);
+          storage.setItem('refreshToken', newRefreshToken);
+          
+          // Try to get user data with new token
+          try {
+            const userResponse = await authApi.getCurrentUser(accessToken);
+            if (userResponse.success) {
+              const userData = formatUserData(userResponse.data.user);
+              setCurrentUser(userData);
+              storage.setItem('currentUser', JSON.stringify(userData));
+            }
+          } catch (userError) {
+            console.error("Failed to get user data after token refresh:", userError);
+          }
+        } else {
+          throw new Error('Token refresh failed');
+        }
         
         setLoading(false);
       } catch (refreshError) {
@@ -66,6 +95,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
   
+  // Format user data to match our app's structure
+  const formatUserData = (user) => {
+    return {
+      uid: user._id || user.id,
+      displayName: user.name,
+      email: user.email,
+      role: user.role,
+      photoURL: user.photoURL,
+      emailVerified: user.emailVerified,
+      specialization: user.specialization
+    };
+  };
+  
   // Clear all auth data
   const clearAuthData = () => {
     setCurrentUser(null);
@@ -74,6 +116,10 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('currentUser');
     localStorage.removeItem('authToken');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('rememberMe');
+    sessionStorage.removeItem('currentUser');
+    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem('refreshToken');
   };
 
   // Login function
@@ -88,211 +134,253 @@ export const AuthProvider = ({ children }) => {
         const { user, tokens } = response.data;
         const { accessToken, refreshToken: newRefreshToken } = tokens;
         
-        // Format user data to match our app's structure
-        const userData = {
-          uid: user.id,
-          displayName: user.name,
-          email: user.email,
-          role: user.role,
-          photoURL: user.photoURL,
-          emailVerified: user.emailVerified,
-          specialization: user.specialization
-        };
+        // Format user data
+        const userData = formatUserData(user);
         
         setCurrentUser(userData);
         setAuthToken(accessToken);
         setRefreshToken(newRefreshToken);
         
-        // Store in localStorage or sessionStorage based on rememberMe
+        // Store in appropriate storage based on rememberMe
+        const storage = rememberMe ? localStorage : sessionStorage;
+        storage.setItem('currentUser', JSON.stringify(userData));
+        storage.setItem('authToken', accessToken);
+        storage.setItem('refreshToken', newRefreshToken);
+        
         if (rememberMe) {
-          // Store in localStorage for persistence across browser sessions
-          localStorage.setItem('currentUser', JSON.stringify(userData));
-          localStorage.setItem('authToken', accessToken);
-          localStorage.setItem('refreshToken', newRefreshToken);
           localStorage.setItem('rememberMe', 'true');
         } else {
-          // Store in sessionStorage for current session only
-          sessionStorage.setItem('currentUser', JSON.stringify(userData));
-          sessionStorage.setItem('authToken', accessToken);
-          sessionStorage.setItem('refreshToken', newRefreshToken);
-          // Clear localStorage to prevent conflicts
-          localStorage.removeItem('currentUser');
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('refreshToken');
           localStorage.removeItem('rememberMe');
+          // Clear localStorage if not using remember me
+          if (!localStorage.getItem('rememberMe')) {
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('refreshToken');
+          }
         }
         
-        // Return success
+        setLoading(false);
         return { success: true, user: userData };
       }
       
+      setLoading(false);
       return { success: false, error: response.message };
     } catch (error) {
       console.error('Login error:', error);
-      const errorMessage = error.message || 'An error occurred during login';
-      setAuthError(errorMessage);
       
-      // Check if it's a verification error
-      if (errorMessage.includes('verify your email')) {
-        return { 
-          success: false, 
-          error: errorMessage,
-          needsVerification: true,
-          email: email
-        };
+      // Handle verification needed error
+      if (error.response && error.response.status === 401) {
+        try {
+          const errorData = await error.response.json();
+          if (errorData.needsVerification) {
+            setAuthError({
+              message: 'Please verify your email before logging in',
+              needsVerification: true,
+              email: errorData.email
+            });
+            
+            setLoading(false);
+            return { 
+              success: false, 
+              error: errorData.message,
+              needsVerification: true,
+              email: errorData.email
+            };
+          }
+        } catch (jsonError) {
+          // If we can't parse the response, continue with generic error
+        }
       }
       
-      return { success: false, error: errorMessage };
-    } finally {
+      const errorMessage = error.message || 'An error occurred during login';
+      setAuthError({ message: errorMessage });
       setLoading(false);
+      return { success: false, error: errorMessage };
     }
   };
 
-  // Signup function
-  const signup = async (userData, userType) => {
+  // Register function
+  const register = async (userData, userType) => {
     setAuthError(null);
     setLoading(true);
     
     try {
-      const response = await authApi.register(userData, userType);
+      const response = await authApi.register({
+        ...userData,
+        role: userType
+      });
       
       if (response.success) {
-        // Return success with email for verification
-        return { success: true, email: userData.email };
+        setLoading(false);
+        return { 
+          success: true, 
+          message: response.message,
+          email: response.data.email,
+          verificationToken: response.data.verificationToken
+        };
       }
       
+      setLoading(false);
       return { success: false, error: response.message };
     } catch (error) {
-      console.error('Signup error:', error);
-      const errorMessage = error.message || 'An error occurred during signup';
-      setAuthError(errorMessage);
-      return { success: false, error: errorMessage };
-    } finally {
+      console.error('Registration error:', error);
+      
+      // Handle admin registration attempt
+      if (error.response && error.response.status === 403) {
+        const errorMessage = 'Admin registration is not allowed through the API';
+        setAuthError({ message: errorMessage });
+        setLoading(false);
+        return { success: false, error: errorMessage };
+      }
+      
+      const errorMessage = error.message || 'An error occurred during registration';
+      setAuthError({ message: errorMessage });
       setLoading(false);
+      return { success: false, error: errorMessage };
     }
   };
 
   // Logout function
   const logout = async () => {
+    setLoading(true);
+    
     try {
       if (refreshToken) {
-        // Call the logout API
         await authApi.logout(refreshToken);
       }
-      
-      // Clear all auth data
-      clearAuthData();
-      
-      // Return success
-      return { success: true };
     } catch (error) {
       console.error('Logout error:', error);
-      // Even if API call fails, clear local data
-      clearAuthData();
-      return { success: false, error: error.message || 'Failed to logout' };
-    }
-  };
-
-  // Reset password function
-  const resetPassword = async (email) => {
-    setLoading(true);
-    try {
-      const response = await authApi.requestPasswordReset(email);
-      
-      if (response.success) {
-        return { success: true, resetToken: response.data.resetToken };
-      }
-      
-      return { success: false, error: response.message };
-    } catch (error) {
-      console.error('Reset password error:', error);
-      return { success: false, error: error.message || 'Failed to send reset link' };
     } finally {
+      clearAuthData();
       setLoading(false);
+      router.push('/login');
     }
   };
 
   // Verify email function
   const verifyEmail = async (token) => {
+    setAuthError(null);
     setLoading(true);
+    
     try {
       const response = await authApi.verifyEmail(token);
       
-      if (response.success) {
-        return { success: true };
-      }
-      
-      return { success: false, error: response.message };
+      setLoading(false);
+      return { success: true, message: response.message };
     } catch (error) {
       console.error('Email verification error:', error);
-      return { success: false, error: error.message || 'An error occurred during verification' };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Set new password after reset
-  const setNewPassword = async (token, newPassword) => {
-    setLoading(true);
-    try {
-      const response = await authApi.resetPassword(token, newPassword);
+      const errorMessage = error.message || 'An error occurred during email verification';
       
-      if (response.success) {
-        return { success: true };
-      }
-      
-      return { success: false, error: response.message };
-    } catch (error) {
-      console.error('Set new password error:', error);
-      return { success: false, error: error.message || 'Failed to reset password' };
-    } finally {
+      setAuthError({ message: errorMessage });
       setLoading(false);
+      return { success: false, error: errorMessage };
     }
   };
 
   // Resend verification email
-  const resendVerificationEmail = async (email) => {
+  const resendVerification = async (email) => {
+    setAuthError(null);
     setLoading(true);
+    
     try {
-      const response = await authApi.resendVerificationEmail(email);
+      const response = await authApi.resendVerification(email);
       
-      if (response.success) {
-        return { success: true };
-      }
-      
-      return { success: false, error: response.message };
+      setLoading(false);
+      return { 
+        success: true, 
+        message: response.message,
+        verificationToken: response.data?.verificationToken
+      };
     } catch (error) {
       console.error('Resend verification error:', error);
-      return { success: false, error: error.message || 'Failed to resend verification email' };
-    } finally {
+      
+      // Handle admin restriction
+      if (error.response && error.response.status === 403) {
+        try {
+          const errorData = await error.response.json();
+          if (errorData.message === 'Admin users can only use specific authentication routes') {
+            setAuthError({ 
+              message: 'Admin users can only use specific authentication routes',
+              isAdminRestriction: true
+            });
+            
+            setLoading(false);
+            return { 
+              success: false, 
+              error: errorData.message,
+              isAdminRestriction: true
+            };
+          }
+        } catch (jsonError) {
+          // If we can't parse the response, continue with generic error
+        }
+      }
+      
+      const errorMessage = error.message || 'An error occurred while resending verification';
+      setAuthError({ message: errorMessage });
       setLoading(false);
+      return { success: false, error: errorMessage };
     }
   };
 
-  // Check if user is authenticated
-  const isAuthenticated = () => {
-    return !!currentUser && !!authToken && !!refreshToken;
+  // Request password reset
+  const requestPasswordReset = async (email) => {
+    setAuthError(null);
+    setLoading(true);
+    
+    try {
+      const response = await authApi.requestPasswordReset(email);
+      
+      setLoading(false);
+      return { 
+        success: true, 
+        message: response.message,
+        resetToken: response.data?.resetToken
+      };
+    } catch (error) {
+      console.error('Password reset request error:', error);
+      const errorMessage = error.message || 'An error occurred while requesting password reset';
+      
+      setAuthError({ message: errorMessage });
+      setLoading(false);
+      return { success: false, error: errorMessage };
+    }
   };
 
-  // Check if user has a specific role
-  const hasRole = (role) => {
-    return currentUser?.role === role;
+  // Reset password
+  const resetPassword = async (token, password) => {
+    setAuthError(null);
+    setLoading(true);
+    
+    try {
+      const response = await authApi.resetPassword(token, password);
+      
+      setLoading(false);
+      return { success: true, message: response.message };
+    } catch (error) {
+      console.error('Password reset error:', error);
+      const errorMessage = error.message || 'An error occurred while resetting password';
+      
+      setAuthError({ message: errorMessage });
+      setLoading(false);
+      return { success: false, error: errorMessage };
+    }
   };
 
+  // Context value
   const value = {
     currentUser,
     loading,
     authError,
     authToken,
     login,
-    signup,
+    register,
     logout,
-    resetPassword,
     verifyEmail,
-    setNewPassword,
-    resendVerificationEmail,
-    isAuthenticated,
-    hasRole
+    resendVerification,
+    requestPasswordReset,
+    resetPassword,
+    clearAuthData
   };
 
   return (
@@ -302,9 +390,10 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// Custom hook to use the auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
