@@ -339,6 +339,36 @@ const getCurrentUser = async (userId) => {
   return user;
 };
 
+/**
+ * Get user email from a token
+ * @param {string} token - The token
+ * @param {string} tokenType - The token type ('verification', 'passwordReset', etc.)
+ * @returns {string} User email
+ */
+const getUserEmailFromToken = async (token, tokenType) => {
+  // Find the token
+  const tokenDoc = await Token.findOne({
+    token,
+    type: tokenType
+  });
+
+  if (!tokenDoc) {
+    const error = new Error('Invalid token');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // Get the user
+  const user = await User.findById(tokenDoc.userId);
+  if (!user) {
+    const error = new Error('User not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return user.email;
+};
+
 module.exports = {
   generateTokens,
   registerUser,
@@ -349,5 +379,6 @@ module.exports = {
   requestPasswordReset,
   resetPassword,
   resendVerification,
-  getCurrentUser
+  getCurrentUser,
+  getUserEmailFromToken // Add the new function to exports
 };
