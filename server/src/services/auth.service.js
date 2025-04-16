@@ -3,6 +3,10 @@ const Token = require('../models/token.model');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const emailService = require('./email.service');
+const tokenUtil = require('../utils/token.util');
+const errorUtil = require('../utils/error.util');
+const logger = require('../utils/logger.util');
+const validationUtil = require('../utils/validation.util');
 
 // Environment variables
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -17,27 +21,16 @@ const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
  */
 const generateTokens = async (userId) => {
   // Create access token
-  const accessToken = jwt.sign({ id: userId }, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN
-  });
+  const accessToken = tokenUtil.generateAccessToken(userId);
 
   // Create refresh token
-  const refreshToken = jwt.sign({ id: userId }, JWT_REFRESH_SECRET, {
-    expiresIn: JWT_REFRESH_EXPIRES_IN
-  });
+  const refreshToken = tokenUtil.generateRefreshToken(userId);
 
-  // Calculate expiry date for refresh token
-  const refreshExpiry = new Date();
-  refreshExpiry.setDate(refreshExpiry.getDate() + 7); // 7 days from now
+  // Calculate expiry date for refresh token (7 days)
+  const refreshExpiry = tokenUtil.calculateExpiryDate(24 * 7);
 
   // Save refresh token in database
-  await Token.findOneAndDelete({ userId, type: 'refresh' });
-  await Token.create({
-    userId,
-    token: refreshToken,
-    type: 'refresh',
-    expiresAt: refreshExpiry
-  });
+  await tokenUtil.saveToken(userId, refreshToken, 'refresh', refreshExpiry);
 
   return { accessToken, refreshToken };
 };
@@ -48,24 +41,21 @@ const generateTokens = async (userId) => {
  * @returns {Object} Created user and verification token
  */
 const registerUser = async (userData) => {
+  // Validate user data
+  const validation = validationUtil.validateUserData(userData);
+  if (!validation.isValid) {
+    throw errorUtil.validationError(Object.values(validation.errors)[0]);
+  }
+
   const { name, email, password, role, termsAccepted } = userData;
 
   // Check if user already exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    const error = new Error('Email already registered');
-    error.statusCode = 400;
-    throw error;
+    throw errorUtil.validationError('Email already registered');
   }
 
-  // Validate terms acceptance
-  if (!termsAccepted) {
-    const error = new Error('You must accept the terms and conditions');
-    error.statusCode = 400;
-    throw error;
-  }
-
-  // Create user object based on role
+  // Create user object
   const userObj = { 
     name, 
     email, 
@@ -79,27 +69,21 @@ const registerUser = async (userData) => {
   const user = await User.create(userObj);
 
   // Generate verification token
-  const verificationToken = crypto.randomBytes(32).toString('hex');
-  const tokenExpiry = new Date();
-  tokenExpiry.setHours(tokenExpiry.getHours() + 24); // 24 hours from now
+  const verificationToken = tokenUtil.generateRandomToken();
+  const tokenExpiry = tokenUtil.calculateExpiryDate(24); // 24 hours
 
   // Save verification token
-  await Token.create({
-    userId: user._id,
-    token: verificationToken,
-    type: 'verification',
-    expiresAt: tokenExpiry
-  });
+  await tokenUtil.saveToken(user._id, verificationToken, 'verification', tokenExpiry);
 
   // Send verification email
   try {
     await emailService.sendVerificationEmail(user.email, user.name, verificationToken);
   } catch (error) {
-    console.error('Failed to send verification email:', error);
+    logger.error('Failed to send verification email:', error);
     // Continue with registration even if email fails
   }
 
-  return { user, verificationToken };
+  return { user };
 };
 
 /**

@@ -1,4 +1,7 @@
 const authService = require('../services/auth.service');
+const responseUtil = require('../utils/response.util');
+const logger = require('../utils/logger.util');
+
 // Register a new user
 exports.register = async (req, res, next) => {
   try {
@@ -6,32 +9,36 @@ exports.register = async (req, res, next) => {
 
     // Explicitly prevent admin registration through API
     if (role === 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Admin registration is not allowed through the API'
-      });
+      const { response, statusCode } = responseUtil.errorResponse(
+        'Admin registration is not allowed through the API', 
+        403
+      );
+      return res.status(statusCode).json(response);
     }
 
     // Check if terms are accepted
     if (!termsAccepted) {
-      return res.status(400).json({
-        success: false,
-        message: 'You must accept the terms and conditions'
-      });
+      const { response, statusCode } = responseUtil.errorResponse(
+        'You must accept the terms and conditions', 
+        400
+      );
+      return res.status(statusCode).json(response);
     }
 
     const { user } = await authService.registerUser(req.body);
 
-    res.status(201).json({
-      success: true,
-      message: 'User registered successfully. Please check your email to verify your account.',
-      data: {
+    const { response, statusCode } = responseUtil.successResponse(
+      'User registered successfully. Please check your email to verify your account.',
+      {
         userId: user._id,
         email: user.email,
         termsAccepted: user.termsAccepted,
         termsAcceptedAt: user.termsAcceptedAt
-      }
-    });
+      },
+      201
+    );
+
+    res.status(statusCode).json(response);
   } catch (error) {
     next(error);
   }
