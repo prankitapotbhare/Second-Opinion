@@ -1,13 +1,17 @@
 "use client";
 
-import React, { Suspense } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { SuccessMessage, SuccessSkeleton } from '../../components';
+import { useAuth } from '@/contexts/AuthContext';
 
 function SuccessContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get('email') || 'your email';
-  const userType = searchParams.get('type') || 'user';  // Changed from 'patient' to 'user'
+  const userType = searchParams.get('type') || 'user';
+  const { resendVerification } = useAuth();
+  const [isResending, setIsResending] = useState(false);
+  const [resendStatus, setResendStatus] = useState(null);
 
   const successIcon = (
     <svg className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -15,11 +19,48 @@ function SuccessContent() {
     </svg>
   );
 
+  const handleResendVerification = async () => {
+    setIsResending(true);
+    setResendStatus(null);
+    
+    try {
+      const result = await resendVerification(email);
+      
+      if (result.success) {
+        setResendStatus({
+          type: 'success',
+          message: 'Verification email sent! Please check your inbox.'
+        });
+      } else {
+        setResendStatus({
+          type: 'error',
+          message: result.error || 'Failed to resend verification email.'
+        });
+      }
+    } catch (error) {
+      setResendStatus({
+        type: 'error',
+        message: 'An unexpected error occurred.'
+      });
+      console.error('Resend verification error:', error);
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   const alertContent = (
-    <p className="text-blue-800 text-sm">
-      <i className="fas fa-info-circle mr-2"></i>
-      If you don't see the email in your inbox, please check your spam folder.
-    </p>
+    <div className="text-sm">
+      {resendStatus ? (
+        <div className={`p-2 rounded ${resendStatus.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+          {resendStatus.message}
+        </div>
+      ) : (
+        <p className="text-blue-800">
+          <i className="fas fa-info-circle mr-2"></i>
+          If you don't see the email in your inbox, please check your spam folder.
+        </p>
+      )}
+    </div>
   );
 
   return (
@@ -35,9 +76,9 @@ function SuccessContent() {
       alertContent={alertContent}
       primaryButtonText="Go to Login"
       primaryButtonHref={`/login/${userType}`}
-      isLink={true}
       secondaryButtonText="Resend Verification Email"
-      secondaryButtonAction={() => window.location.reload()}
+      secondaryButtonAction={handleResendVerification}
+      isLoading={isResending}
     />
   );
 }
