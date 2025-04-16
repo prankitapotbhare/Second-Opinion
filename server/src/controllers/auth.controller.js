@@ -1,43 +1,4 @@
-const User = require('../models/user.model');
-const Token = require('../models/token.model');
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
 const authService = require('../services/auth.service');
-
-// Environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1d';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key';
-const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
-
-// Helper function to generate tokens
-const generateTokens = async (userId) => {
-  // Create access token
-  const accessToken = jwt.sign({ id: userId }, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN
-  });
-
-  // Create refresh token
-  const refreshToken = jwt.sign({ id: userId }, JWT_REFRESH_SECRET, {
-    expiresIn: JWT_REFRESH_EXPIRES_IN
-  });
-
-  // Calculate expiry date for refresh token
-  const refreshExpiry = new Date();
-  refreshExpiry.setDate(refreshExpiry.getDate() + 7); // 7 days from now
-
-  // Save refresh token in database
-  await Token.findOneAndDelete({ userId, type: 'refresh' });
-  await Token.create({
-    userId,
-    token: refreshToken,
-    type: 'refresh',
-    expiresAt: refreshExpiry
-  });
-
-  return { accessToken, refreshToken };
-};
-
 // Register a new user
 exports.register = async (req, res, next) => {
   try {

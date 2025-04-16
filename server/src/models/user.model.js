@@ -39,6 +39,9 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: function() {
       return this.role === 'doctor';
+    },
+    default: function() {
+      return this.role === 'doctor' ? 'General Medicine' : undefined;
     }
   },
   createdAt: {

@@ -61,8 +61,9 @@ const registerUser = async (userData) => {
   const userObj = { name, email, password, role };
   
   // Add specialization for doctors
-  if (role === 'doctor' && specialization) {
-    userObj.specialization = specialization;
+  if (role === 'doctor') {
+    // Set default specialization if not provided
+    userObj.specialization = specialization || 'General Medicine';
   }
 
   // Create new user
