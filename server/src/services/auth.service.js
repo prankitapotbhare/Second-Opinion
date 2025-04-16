@@ -2,6 +2,7 @@ const User = require('../models/user.model');
 const Token = require('../models/token.model');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const emailService = require('./email.service');
 
 // Environment variables
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -89,6 +90,14 @@ const registerUser = async (userData) => {
     type: 'verification',
     expiresAt: tokenExpiry
   });
+
+  // Send verification email
+  try {
+    await emailService.sendVerificationEmail(user.email, user.name, verificationToken);
+  } catch (error) {
+    console.error('Failed to send verification email:', error);
+    // Continue with registration even if email fails
+  }
 
   return { user, verificationToken };
 };
@@ -238,9 +247,8 @@ const requestPasswordReset = async (email) => {
   // Check if user exists
   const user = await User.findOne({ email });
   if (!user) {
-    const error = new Error('User not found');
-    error.statusCode = 404;
-    throw error;
+    // For security, don't reveal if the email exists or not
+    return null;
   }
 
   // Generate reset token
@@ -256,6 +264,14 @@ const requestPasswordReset = async (email) => {
     type: 'passwordReset',
     expiresAt: tokenExpiry
   });
+
+  // Send password reset email
+  try {
+    await emailService.sendPasswordResetEmail(user.email, user.name, resetToken);
+  } catch (error) {
+    console.error('Failed to send password reset email:', error);
+    // Continue with reset process even if email fails
+  }
 
   return resetToken;
 };
@@ -300,16 +316,14 @@ const resendVerification = async (email) => {
   // Check if user exists
   const user = await User.findOne({ email });
   if (!user) {
-    const error = new Error('User not found');
-    error.statusCode = 404;
-    throw error;
+    // For security, don't reveal if the email exists or not
+    return null;
   }
 
   // Check if email is already verified
   if (user.emailVerified) {
-    const error = new Error('Email is already verified');
-    error.statusCode = 400;
-    throw error;
+    // For security, don't reveal verification status
+    return null;
   }
 
   // Generate new verification token
@@ -317,14 +331,24 @@ const resendVerification = async (email) => {
   const tokenExpiry = new Date();
   tokenExpiry.setHours(tokenExpiry.getHours() + 24); // 24 hours from now
 
-  // Save verification token
+  // Delete any existing verification tokens
   await Token.findOneAndDelete({ userId: user._id, type: 'verification' });
+
+  // Save new verification token
   await Token.create({
     userId: user._id,
     token: verificationToken,
     type: 'verification',
     expiresAt: tokenExpiry
   });
+
+  // Send verification email
+  try {
+    await emailService.sendVerificationEmail(user.email, user.name, verificationToken);
+  } catch (error) {
+    console.error('Failed to send verification email:', error);
+    // Continue with process even if email fails
+  }
 
   return verificationToken;
 };

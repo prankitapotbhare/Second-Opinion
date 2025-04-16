@@ -20,21 +20,16 @@ exports.register = async (req, res, next) => {
       });
     }
 
-    const { user, verificationToken } = await authService.registerUser(req.body);
-
-    // Create verification URL with email parameter
-    const verificationUrl = `/verify-email?token=${verificationToken}&email=${encodeURIComponent(user.email)}`;
+    const { user } = await authService.registerUser(req.body);
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: 'User registered successfully. Please check your email to verify your account.',
       data: {
         userId: user._id,
         email: user.email,
         termsAccepted: user.termsAccepted,
-        termsAcceptedAt: user.termsAcceptedAt,
-        verificationToken, // In production, this would be sent via email
-        verificationUrl // Include the full URL with email parameter
+        termsAcceptedAt: user.termsAcceptedAt
       }
     });
   } catch (error) {
@@ -134,17 +129,18 @@ exports.requestPasswordReset = async (req, res, next) => {
   try {
     const { email } = req.body;
     
-    const resetToken = await authService.requestPasswordReset(email);
+    await authService.requestPasswordReset(email);
 
     res.status(200).json({
       success: true,
-      message: 'Password reset link sent to email',
-      data: {
-        resetToken // In production, this would be sent via email
-      }
+      message: 'If your email is registered with us, you will receive a password reset link shortly.'
     });
   } catch (error) {
-    next(error);
+    // Don't expose whether the email exists or not for security
+    res.status(200).json({
+      success: true,
+      message: 'If your email is registered with us, you will receive a password reset link shortly.'
+    });
   }
 };
 
@@ -170,22 +166,18 @@ exports.resendVerification = async (req, res, next) => {
   try {
     const { email } = req.body;
     
-    const verificationToken = await authService.resendVerification(email);
-
-    // Create verification URL with email parameter
-    const verificationUrl = `/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
+    await authService.resendVerification(email);
 
     res.status(200).json({
       success: true,
-      message: 'Verification email sent',
-      data: {
-        verificationToken, // In production, this would be sent via email
-        verificationUrl, // Include the full URL with email parameter
-        email // Include the email in the response
-      }
+      message: 'If your email is unverified, a new verification email has been sent.'
     });
   } catch (error) {
-    next(error);
+    // Don't expose whether the email exists or verification status
+    res.status(200).json({
+      success: true,
+      message: 'If your email is unverified, a new verification email has been sent.'
+    });
   }
 };
 
