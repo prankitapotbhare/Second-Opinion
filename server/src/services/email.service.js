@@ -95,7 +95,7 @@ const sendEmail = async (to, subject, html) => {
  * @returns {Promise} Nodemailer info
  */
 const sendVerificationEmail = async (to, name, token) => {
-  const { subject, html } = emailTemplates.verificationEmailTemplate(name, token);
+  const { subject, html } = emailTemplates.verificationEmailTemplate(name, token, to);
   return await sendEmail(to, subject, html);
 };
 

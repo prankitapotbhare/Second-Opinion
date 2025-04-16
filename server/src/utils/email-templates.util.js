@@ -11,8 +11,8 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
  * @param {string} token - Verification token
  * @returns {Object} Email subject and HTML content
  */
-const verificationEmailTemplate = (name, token) => {
-  const verificationUrl = `${CLIENT_URL}/auth/verify-email/${token}`;
+const verificationEmailTemplate = (name, token, email) => {
+  const verificationUrl = `${CLIENT_URL}/verify-email?token=${token}&email=${email}`;
   
   return {
     subject: 'Verify Your Email Address',
@@ -41,7 +41,7 @@ const verificationEmailTemplate = (name, token) => {
  * @returns {Object} Email subject and HTML content
  */
 const passwordResetEmailTemplate = (name, token) => {
-  const resetUrl = `${CLIENT_URL}/auth/reset-password?token=${token}`;
+  const resetUrl = `${CLIENT_URL}/reset-password?token=${token}`;
   
   return {
     subject: 'Reset Your Password',
