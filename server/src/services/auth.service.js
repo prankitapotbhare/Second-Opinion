@@ -7,12 +7,17 @@ const tokenUtil = require('../utils/token.util');
 const errorUtil = require('../utils/error.util');
 const logger = require('../utils/logger.util');
 const validationUtil = require('../utils/validation.util');
+const { OAuth2Client } = require('google-auth-library');
 
 // Environment variables
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1d';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key';
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+
+// Initialize Google OAuth client
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 /**
  * Generate access and refresh tokens for a user
@@ -384,6 +389,86 @@ const getUserEmailFromToken = async (token, tokenType) => {
   return user.email;
 };
 
+/**
+ * Authenticate with Google
+ * @param {string} idToken - Google ID token
+ * @param {string} userType - User type (user, doctor)
+ * @returns {Object} User data and tokens
+ */
+const googleAuth = async (idToken, userType = 'user') => {
+  try {
+    // Verify the Google ID token
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: GOOGLE_CLIENT_ID
+    });
+    
+    const payload = ticket.getPayload();
+    
+    // Extract user info from Google payload
+    const { email, name, picture, email_verified } = payload;
+    
+    // Check if user exists
+    let user = await User.findOne({ email });
+    let isNewUser = false;
+    
+    if (user) {
+      // If user exists but doesn't have Google as auth provider, update the user
+      if (!user.googleId) {
+        user.googleId = payload.sub;
+        user.photoURL = picture || user.photoURL;
+        await user.save();
+      }
+    } else {
+      // Create new user
+      isNewUser = true;
+      
+      // Validate user type
+      if (!['user', 'doctor'].includes(userType)) {
+        throw errorUtil.validationError('Invalid user type');
+      }
+      
+      // Create user with Google data
+      user = await User.create({
+        name,
+        email,
+        googleId: payload.sub,
+        password: crypto.randomBytes(20).toString('hex'), // Random password for Google users
+        photoURL: picture,
+        emailVerified: email_verified,
+        role: userType,
+        termsAccepted: true,
+        termsAcceptedAt: new Date()
+      });
+    }
+    
+    // Generate tokens
+    const tokens = await generateTokens(user._id);
+    
+    // Format user data for response
+    const userData = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      photoURL: user.photoURL,
+      emailVerified: user.emailVerified,
+      termsAccepted: user.termsAccepted,
+      termsAcceptedAt: user.termsAcceptedAt
+    };
+    
+    return { user: userData, tokens, isNewUser };
+  } catch (error) {
+    logger.error('Google authentication error:', error);
+    
+    if (error.message.includes('Token used too late')) {
+      throw errorUtil.authError('Google token expired. Please try again.');
+    }
+    
+    throw errorUtil.authError('Google authentication failed. Please try again.');
+  }
+};
+
 module.exports = {
   generateTokens,
   registerUser,
@@ -395,5 +480,6 @@ module.exports = {
   resetPassword,
   resendVerification,
   getCurrentUser,
-  getUserEmailFromToken // Add the new function to exports
+  getUserEmailFromToken,
+  googleAuth
 };

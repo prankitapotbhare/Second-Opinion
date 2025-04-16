@@ -203,3 +203,43 @@ exports.getCurrentUser = async (req, res, next) => {
     next(error);
   }
 };
+
+// Google Authentication
+exports.googleAuth = async (req, res, next) => {
+  try {
+    const { idToken, userType = 'user' } = req.body;
+
+    if (!idToken) {
+      const { response, statusCode } = responseUtil.errorResponse(
+        'Google ID token is required', 
+        400
+      );
+      return res.status(statusCode).json(response);
+    }
+
+    // Validate userType to prevent security issues
+    if (userType && !['user', 'doctor'].includes(userType)) {
+      const { response, statusCode } = responseUtil.errorResponse(
+        'Invalid user type', 
+        400
+      );
+      return res.status(statusCode).json(response);
+    }
+
+    const { user, tokens, isNewUser } = await authService.googleAuth(idToken, userType);
+
+    const { response, statusCode } = responseUtil.successResponse(
+      isNewUser ? 'Google signup successful' : 'Google login successful',
+      {
+        user,
+        tokens,
+        isNewUser
+      }
+    );
+
+    res.status(statusCode).json(response);
+  } catch (error) {
+    logger.error('Google auth error:', error);
+    next(error);
+  }
+};

@@ -228,3 +228,26 @@ export const getCurrentUser = async (token) => {
     throw error;
   }
 };
+
+/**
+ * Google authentication
+ * @param {string} idToken - Google ID token
+ * @param {string} userType - User type (user, doctor)
+ * @returns {Promise<Object>} Authentication response
+ */
+export const googleAuth = async (idToken, userType = 'user') => {
+  try {
+    const response = await fetch(`${API_URL}/auth/google`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ idToken, userType })
+    });
+    
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Google auth error:', error);
+    throw error;
+  }
+};

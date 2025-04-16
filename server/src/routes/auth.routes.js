@@ -17,6 +17,9 @@ router.post('/reset-password/:token', authController.resetPassword);
 router.get('/verify-email/:token', authController.verifyEmail);
 router.post('/resend-verification', authController.resendVerification);
 
+// Google OAuth routes
+router.post('/google', authController.googleAuth);
+
 // Protected routes
 router.get('/me', authenticate, authController.getCurrentUser);
 

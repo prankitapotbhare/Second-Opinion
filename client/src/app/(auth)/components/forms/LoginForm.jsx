@@ -14,7 +14,7 @@ const LoginForm = ({
   redirectPath
 }) => {
   const router = useRouter();
-  const { login, resendVerification } = useAuth();
+  const { login, resendVerification, googleAuth } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -82,21 +82,56 @@ const LoginForm = ({
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
+    setError('');
+    
     try {
-      // This should be updated to use the actual Google OAuth implementation
-      // from the AuthContext. For now, we'll leave a placeholder
-      setError('Google login is not implemented yet');
+      // Load the Google Identity Services script
+      const googleScript = document.createElement('script');
+      googleScript.src = 'https://accounts.google.com/gsi/client';
+      googleScript.async = true;
+      googleScript.defer = true;
+      document.head.appendChild(googleScript);
       
-      // When implemented, it should look something like:
-      // const result = await googleLogin(userType);
-      // if (result.success) {
-      //   const finalRedirectPath = getRedirectPath();
-      //   router.push(`/login/success?type=${userType}${finalRedirectPath !== '/' ? `&redirect=${encodeURIComponent(finalRedirectPath)}` : ''}`);
-      // } else {
-      //   setError(result.error || 'Social login failed');
-      // }
+      googleScript.onload = () => {
+        // Initialize Google Identity Services
+        window.google.accounts.id.initialize({
+          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+          callback: handleGoogleCredentialResponse,
+          cancel_on_tap_outside: true
+        });
+        
+        // Prompt the user to select an account
+        window.google.accounts.id.prompt();
+      };
     } catch (err) {
-      setError('An error occurred during social login');
+      setError('Failed to initialize Google authentication');
+      console.error(err);
+      setIsLoading(false);
+    }
+  };
+  
+  // Handle the credential response from Google
+  const handleGoogleCredentialResponse = async (response) => {
+    try {
+      if (!response || !response.credential) {
+        throw new Error('Google authentication failed');
+      }
+      
+      // Call the googleAuth method from AuthContext
+      const result = await googleAuth(
+        response.credential, 
+        userType,
+        formData.rememberMe
+      );
+      
+      if (result.success) {
+        const finalRedirectPath = getRedirectPath();
+        router.push(`/login/success?type=${userType}${finalRedirectPath !== '/' ? `&redirect=${encodeURIComponent(finalRedirectPath)}` : ''}`);
+      } else {
+        setError(result.error || 'Google authentication failed');
+      }
+    } catch (err) {
+      setError('An error occurred during Google authentication');
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -261,6 +296,8 @@ const LoginForm = ({
           <SocialLoginButton 
             provider="Google" 
             onClick={handleGoogleLogin}
+            isLoading={isLoading && !formData.email && !formData.password}
+            disabled={userType === 'admin'} // Disable for admin users
           />
           
           <div className="text-center">

@@ -12,7 +12,7 @@ const SignupForm = ({
   userType = 'user' // 'user' or 'doctor'
 }) => {
   const router = useRouter();
-  const { register } = useAuth();
+  const { register, googleAuth } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -79,19 +79,68 @@ const SignupForm = ({
     }
   };
 
-  const handleGoogleSignup = () => {
-    // Handle Google signup
-    console.log('Google signup clicked');
-    // For mock purposes, we'll just create a default user
-    setFormData({
-      name: userType === 'doctor' ? 'Dr. New Doctor' : 'New User',
-      email: `new${Date.now()}@example.com`,
-      password: 'password123',
-      confirmPassword: 'password123',
-      agreeTerms: true
-    });
-    // Submit the form
-    handleSubmit({ preventDefault: () => {} });
+  const handleGoogleSignup = async () => {
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      // Load the Google Identity Services script
+      const googleScript = document.createElement('script');
+      googleScript.src = 'https://accounts.google.com/gsi/client';
+      googleScript.async = true;
+      googleScript.defer = true;
+      document.head.appendChild(googleScript);
+      
+      googleScript.onload = () => {
+        // Initialize Google Identity Services
+        window.google.accounts.id.initialize({
+          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+          callback: handleGoogleCredentialResponse,
+          cancel_on_tap_outside: true
+        });
+        
+        // Prompt the user to select an account
+        window.google.accounts.id.prompt();
+      };
+    } catch (err) {
+      setError('Failed to initialize Google authentication');
+      console.error(err);
+      setIsLoading(false);
+    }
+  };
+  
+  // Handle the credential response from Google
+  const handleGoogleCredentialResponse = async (response) => {
+    try {
+      if (!response || !response.credential) {
+        throw new Error('Google authentication failed');
+      }
+      
+      // Call the googleAuth method from AuthContext
+      const result = await googleAuth(
+        response.credential, 
+        userType,
+        true // Remember me for signup
+      );
+      
+      if (result.success) {
+        if (result.isNewUser) {
+          // If it's a new user, redirect to signup success page
+          router.push(`/signup/success?email=${encodeURIComponent(result.user.email)}&type=${userType}`);
+        } else {
+          // If existing user, redirect to dashboard
+          const redirectPath = userType === 'doctor' ? '/doctor/dashboard' : '/';
+          router.push(`/login/success?type=${userType}&redirect=${encodeURIComponent(redirectPath)}`);
+        }
+      } else {
+        setError(result.error || 'Google authentication failed');
+      }
+    } catch (err) {
+      setError('An error occurred during Google authentication');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -180,7 +229,11 @@ const SignupForm = ({
 
       <AuthDivider text="or" />
 
-      <SocialLoginButton provider="Google" onClick={handleGoogleSignup} />
+      <SocialLoginButton 
+        provider="Google" 
+        onClick={handleGoogleSignup}
+        isLoading={isLoading && !formData.email}
+      />
 
       <div className="text-center">
         <p className="text-xs text-gray-600">

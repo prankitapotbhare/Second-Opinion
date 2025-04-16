@@ -412,6 +412,62 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Google authentication
+  const googleAuth = async (idToken, userType = 'user', rememberMe = false) => {
+    setAuthError(null);
+    setLoading(true);
+    
+    try {
+      const response = await authApi.googleAuth(idToken, userType);
+      
+      if (response.success) {
+        const { user, tokens, isNewUser } = response.data;
+        const { accessToken, refreshToken: newRefreshToken } = tokens;
+        
+        // Format user data
+        const userData = formatUserData(user);
+        
+        setCurrentUser(userData);
+        setAuthToken(accessToken);
+        setRefreshToken(newRefreshToken);
+        
+        // Store in appropriate storage based on rememberMe
+        const storage = rememberMe ? localStorage : sessionStorage;
+        storage.setItem('currentUser', JSON.stringify(userData));
+        storage.setItem('authToken', accessToken);
+        storage.setItem('refreshToken', newRefreshToken);
+        
+        if (rememberMe) {
+          localStorage.setItem('rememberMe', 'true');
+        } else {
+          localStorage.removeItem('rememberMe');
+          // Clear localStorage if not using remember me
+          if (!localStorage.getItem('rememberMe')) {
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('refreshToken');
+          }
+        }
+        
+        setLoading(false);
+        return { 
+          success: true, 
+          user: userData, 
+          isNewUser 
+        };
+      }
+      
+      setLoading(false);
+      return { success: false, error: response.message };
+    } catch (error) {
+      console.error('Google auth error:', error);
+      const errorMessage = error.message || 'An error occurred during Google authentication';
+      setAuthError({ message: errorMessage });
+      setLoading(false);
+      return { success: false, error: errorMessage };
+    }
+  };
+
   // Context value
   const value = {
     currentUser,
@@ -427,7 +483,8 @@ export const AuthProvider = ({ children }) => {
     requestPasswordReset,
     resetPassword,
     refreshUserToken,
-    clearAuthData
+    clearAuthData,
+    googleAuth
   };
 
   return (
