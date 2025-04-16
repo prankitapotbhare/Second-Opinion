@@ -55,7 +55,7 @@ const SignupForm = ({
     try {
       // Call the signup function from the auth context
       const userData = { 
-        displayName: name,  // Use displayName instead of name
+        name,  // Use displayName instead of name
         email, 
         password 
       };

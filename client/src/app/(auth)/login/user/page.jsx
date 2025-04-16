@@ -26,7 +26,6 @@ function UserLoginContent() {
       
       <LoginForm 
         userType="user"
-        onSubmit={handleSubmit}
         redirectPath={redirectTo}
       />
     </SplitScreen>
