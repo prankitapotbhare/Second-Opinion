@@ -65,7 +65,9 @@ async function createAdmin() {
       email,
       password,
       role: 'admin',
-      emailVerified: true
+      emailVerified: true,
+      termsAccepted: true,
+      termsAcceptedAt: new Date()
     };
 
     const admin = await User.create(adminUser);

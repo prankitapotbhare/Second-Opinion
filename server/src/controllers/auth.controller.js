@@ -2,13 +2,21 @@ const authService = require('../services/auth.service');
 // Register a new user
 exports.register = async (req, res, next) => {
   try {
-    const { role } = req.body;
+    const { role, termsAccepted } = req.body;
 
     // Explicitly prevent admin registration through API
     if (role === 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Admin registration is not allowed through the API'
+      });
+    }
+
+    // Check if terms are accepted
+    if (!termsAccepted) {
+      return res.status(400).json({
+        success: false,
+        message: 'You must accept the terms and conditions'
       });
     }
 
@@ -23,6 +31,8 @@ exports.register = async (req, res, next) => {
       data: {
         userId: user._id,
         email: user.email,
+        termsAccepted: user.termsAccepted,
+        termsAcceptedAt: user.termsAcceptedAt,
         verificationToken, // In production, this would be sent via email
         verificationUrl // Include the full URL with email parameter
       }

@@ -35,14 +35,14 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  specialization: {
-    type: String,
-    required: function() {
-      return this.role === 'doctor';
-    },
-    default: function() {
-      return this.role === 'doctor' ? 'General Medicine' : undefined;
-    }
+  termsAccepted: {
+    type: Boolean,
+    default: false,
+    required: [true, 'Terms and conditions must be accepted']
+  },
+  termsAcceptedAt: {
+    type: Date,
+    default: null
   },
   createdAt: {
     type: Date,

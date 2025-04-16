@@ -47,7 +47,7 @@ const generateTokens = async (userId) => {
  * @returns {Object} Created user and verification token
  */
 const registerUser = async (userData) => {
-  const { name, email, password, role, specialization } = userData;
+  const { name, email, password, role, termsAccepted } = userData;
 
   // Check if user already exists
   const existingUser = await User.findOne({ email });
@@ -57,15 +57,23 @@ const registerUser = async (userData) => {
     throw error;
   }
 
-  // Create user object based on role
-  const userObj = { name, email, password, role };
-  
-  // Add specialization for doctors
-  if (role === 'doctor') {
-    // Set default specialization if not provided
-    userObj.specialization = specialization || 'General Medicine';
+  // Validate terms acceptance
+  if (!termsAccepted) {
+    const error = new Error('You must accept the terms and conditions');
+    error.statusCode = 400;
+    throw error;
   }
 
+  // Create user object based on role
+  const userObj = { 
+    name, 
+    email, 
+    password, 
+    role,
+    termsAccepted: true,
+    termsAcceptedAt: new Date()
+  };
+  
   // Create new user
   const user = await User.create(userObj);
 
@@ -128,7 +136,6 @@ const loginUser = async (email, password) => {
       role: user.role,
       photoURL: user.photoURL,
       emailVerified: user.emailVerified,
-      specialization: user.specialization
     },
     tokens
   };

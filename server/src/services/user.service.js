@@ -74,12 +74,12 @@ const getUserById = async (userId) => {
  * @returns {Object} Updated user data
  */
 const updateUser = async (userId, updateData) => {
-  const { name, email, role, emailVerified, photoURL, specialization } = updateData;
+  const { name, email, role, emailVerified, photoURL } = updateData;
   
   // Find user and update
   const user = await User.findByIdAndUpdate(
     userId,
-    { name, email, role, emailVerified, photoURL, specialization, updatedAt: Date.now() },
+    { name, email, role, emailVerified, photoURL, updatedAt: Date.now() },
     { new: true, runValidators: true }
   ).select('-password');
   
