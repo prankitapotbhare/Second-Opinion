@@ -17,17 +17,14 @@ const handleResponse = async (response) => {
 };
 
 // Register a new user
-export const register = async (userData, userType) => {
+export const register = async (userData) => {
   try {
     const response = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        ...userData,
-        role: userType
-      })
+      body: JSON.stringify(userData)
     });
     
     return handleResponse(response);

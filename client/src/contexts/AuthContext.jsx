@@ -104,7 +104,8 @@ export const AuthProvider = ({ children }) => {
       role: user.role,
       photoURL: user.photoURL,
       emailVerified: user.emailVerified,
-      specialization: user.specialization
+      termsAccepted: user.termsAccepted,
+      termsAcceptedAt: user.termsAcceptedAt
     };
   };
   
@@ -200,15 +201,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Register function
-  const register = async (userData, userType) => {
+  const register = async (userData) => {
     setAuthError(null);
     setLoading(true);
     
     try {
-      const response = await authApi.register({
-        ...userData,
-        role: userType
-      });
+      const response = await authApi.register(userData);
       
       if (response.success) {
         setLoading(false);
@@ -216,7 +214,10 @@ export const AuthProvider = ({ children }) => {
           success: true, 
           message: response.message,
           email: response.data.email,
-          verificationToken: response.data.verificationToken
+          verificationToken: response.data.verificationToken,
+          verificationUrl: response.data.verificationUrl,
+          termsAccepted: response.data.termsAccepted,
+          termsAcceptedAt: response.data.termsAcceptedAt
         };
       }
       
@@ -265,12 +266,21 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authApi.verifyEmail(token);
       
+      if (response.success) {
+        setLoading(false);
+        return { 
+          success: true, 
+          message: response.message,
+          email: response.email // Include the email from the response
+        };
+      }
+      
       setLoading(false);
-      return { success: true, message: response.message };
+      return { success: false, error: response.message };
     } catch (error) {
       console.error('Email verification error:', error);
-      const errorMessage = error.message || 'An error occurred during email verification';
       
+      const errorMessage = error.message || 'An error occurred during email verification';
       setAuthError({ message: errorMessage });
       setLoading(false);
       return { success: false, error: errorMessage };
@@ -285,12 +295,19 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authApi.resendVerification(email);
       
+      if (response.success) {
+        setLoading(false);
+        return { 
+          success: true, 
+          message: response.message,
+          email: response.data.email,
+          verificationToken: response.data.verificationToken,
+          verificationUrl: response.data.verificationUrl
+        };
+      }
+      
       setLoading(false);
-      return { 
-        success: true, 
-        message: response.message,
-        verificationToken: response.data?.verificationToken
-      };
+      return { success: false, error: response.message };
     } catch (error) {
       console.error('Resend verification error:', error);
       

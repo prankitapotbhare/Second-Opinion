@@ -57,9 +57,12 @@ const SignupForm = ({
       const userData = { 
         name,
         email, 
-        password 
+        password,
+        role: userType,
+        termsAccepted: agreeTerms
       };
-      const result = await register(userData, userType);
+      
+      const result = await register(userData);
       
       if (result.success) {
         // If signup is successful, redirect to success page

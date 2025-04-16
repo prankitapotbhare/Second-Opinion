@@ -14,7 +14,7 @@ const LoginForm = ({
   redirectPath
 }) => {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, resendVerification } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -67,8 +67,14 @@ const LoginForm = ({
         setError(result.error || 'Login failed');
       }
     } catch (err) {
-      setError('An unexpected error occurred');
-      console.error(err);
+      // Check if the error contains verification information
+      if (err.response && err.response.data && err.response.data.needsVerification) {
+        setNeedsVerification(true);
+        setVerificationEmail(email);
+      } else {
+        setError('An unexpected error occurred');
+        console.error(err);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -77,15 +83,18 @@ const LoginForm = ({
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     try {
-      // Implement actual Google OAuth login here
-      const result = await login('google', null, userType);
+      // This should be updated to use the actual Google OAuth implementation
+      // from the AuthContext. For now, we'll leave a placeholder
+      setError('Google login is not implemented yet');
       
-      if (result.success) {
-        const finalRedirectPath = getRedirectPath();
-        router.push(`/login/success?type=${userType}${finalRedirectPath !== '/' ? `&redirect=${encodeURIComponent(finalRedirectPath)}` : ''}`);
-      } else {
-        setError(result.error || 'Social login failed');
-      }
+      // When implemented, it should look something like:
+      // const result = await googleLogin(userType);
+      // if (result.success) {
+      //   const finalRedirectPath = getRedirectPath();
+      //   router.push(`/login/success?type=${userType}${finalRedirectPath !== '/' ? `&redirect=${encodeURIComponent(finalRedirectPath)}` : ''}`);
+      // } else {
+      //   setError(result.error || 'Social login failed');
+      // }
     } catch (err) {
       setError('An error occurred during social login');
       console.error(err);
@@ -97,8 +106,8 @@ const LoginForm = ({
   const handleResendVerification = async () => {
     setIsLoading(true);
     try {
-      const { resendVerificationEmail } = useAuth();
-      const result = await resendVerificationEmail(verificationEmail);
+      // Use the resendVerification function from the auth context
+      const result = await resendVerification(verificationEmail);
       
       if (result.success) {
         setError('');
@@ -108,6 +117,7 @@ const LoginForm = ({
       }
     } catch (err) {
       setError('An unexpected error occurred');
+      console.error(err);
     } finally {
       setIsLoading(false);
     }

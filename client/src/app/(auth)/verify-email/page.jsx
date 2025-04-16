@@ -10,32 +10,67 @@ import { useAuth } from '@/contexts/AuthContext';
 function VerificationContent() {
   const searchParams = useSearchParams();
   const token = searchParams?.get('token');
-  const { verifyEmail } = useAuth();
+  const email = searchParams?.get('email');
+  const { verifyEmail, resendVerification } = useAuth();
   const [isVerifying, setIsVerifying] = useState(true);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [isResending, setIsResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+
+  // Handle resend verification email
+  const handleResendVerification = async () => {
+    if (!email) {
+      setError('Email address is required to resend verification');
+      return;
+    }
+
+    setIsResending(true);
+    try {
+      const result = await resendVerification(email);
+      
+      if (result.success) {
+        setResendSuccess(true);
+      } else {
+        setError(result.error || 'Failed to resend verification email');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred while resending verification');
+      console.error(err);
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   useEffect(() => {
+    let isMounted = true;
+    
     const verifyToken = async () => {
       if (!token) {
-        setError('No verification token provided');
-        setIsVerifying(false);
+        if (isMounted) {
+          setError('No verification token provided');
+          setIsVerifying(false);
+        }
         return;
       }
 
       try {
         const result = await verifyEmail(token);
         
-        if (result.success) {
-          setIsSuccess(true);
-        } else {
-          setError(result.error || 'Invalid or expired verification link');
+        if (isMounted) {
+          if (result.success) {
+            setIsSuccess(true);
+          } else {
+            setError(result.error || 'Invalid or expired verification link');
+          }
+          setIsVerifying(false);
         }
       } catch (err) {
-        setError('An unexpected error occurred');
-        console.error(err);
-      } finally {
-        setIsVerifying(false);
+        if (isMounted) {
+          setError('An unexpected error occurred');
+          setIsVerifying(false);
+          console.error(err);
+        }
       }
     };
     
@@ -46,10 +81,35 @@ function VerificationContent() {
       setError('No verification token provided');
       setIsVerifying(false);
     }
-  }, [token, verifyEmail]);
+
+    // Cleanup function to prevent state updates if component unmounts
+    return () => {
+      isMounted = false;
+    };
+  }, [token]); // Remove verifyEmail from dependencies to prevent infinite loop
 
   if (isVerifying) {
     return <AuthLoading message="Verifying your email address..." />;
+  }
+
+  if (resendSuccess) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-6 px-4 sm:px-6 lg:px-8">
+        <StatusMessage
+          status="success"
+          title="Verification Email Sent!"
+          message="A new verification email has been sent to your email address. Please check your inbox and click the verification link."
+          primaryButton={{
+            text: "Go to Login",
+            href: "/login"
+          }}
+          secondaryButton={{
+            text: "Return to Home",
+            href: "/"
+          }}
+        />
+      </div>
+    );
   }
 
   return (
@@ -70,8 +130,10 @@ function VerificationContent() {
           title="Verification Failed"
           message={error}
           primaryButton={{
-            text: "Try Signing Up Again",
-            href: "/signup"
+            text: email ? "Resend Verification Email" : "Go to Login",
+            onClick: email ? handleResendVerification : undefined,
+            href: email ? undefined : "/login",
+            loading: isResending
           }}
           secondaryButton={{
             text: "Return to Home",
