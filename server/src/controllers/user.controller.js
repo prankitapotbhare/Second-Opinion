@@ -1,16 +1,10 @@
 const User = require('../models/user.model');
+const userService = require('../services/user.service');
 
 // Get user profile
 exports.getUserProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
+    const user = await userService.getUserProfile(req.user.id);
 
     res.status(200).json({
       success: true,
@@ -26,21 +20,7 @@ exports.getUserProfile = async (req, res, next) => {
 // Update user profile
 exports.updateUserProfile = async (req, res, next) => {
   try {
-    const { name, photoURL } = req.body;
-    
-    // Find user and update
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { name, photoURL, updatedAt: Date.now() },
-      { new: true, runValidators: true }
-    ).select('-password');
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
+    const user = await userService.updateUserProfile(req.user.id, req.body);
 
     res.status(200).json({
       success: true,
@@ -59,7 +39,7 @@ exports.updateUserProfile = async (req, res, next) => {
 // Get all users
 exports.getAllUsers = async (req, res, next) => {
   try {
-    const users = await User.find().select('-password');
+    const users = await userService.getAllUsers();
     
     res.status(200).json({
       success: true,
@@ -76,14 +56,7 @@ exports.getAllUsers = async (req, res, next) => {
 // Get user by ID
 exports.getUserById = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id).select('-password');
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
+    const user = await userService.getUserById(req.params.id);
 
     res.status(200).json({
       success: true,
@@ -99,21 +72,7 @@ exports.getUserById = async (req, res, next) => {
 // Update user
 exports.updateUser = async (req, res, next) => {
   try {
-    const { name, email, role, emailVerified, photoURL, specialization } = req.body;
-    
-    // Find user and update
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { name, email, role, emailVerified, photoURL, specialization, updatedAt: Date.now() },
-      { new: true, runValidators: true }
-    ).select('-password');
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
+    const user = await userService.updateUser(req.params.id, req.body);
 
     res.status(200).json({
       success: true,
@@ -130,14 +89,7 @@ exports.updateUser = async (req, res, next) => {
 // Delete user
 exports.deleteUser = async (req, res, next) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
+    await userService.deleteUser(req.params.id);
 
     res.status(200).json({
       success: true,
