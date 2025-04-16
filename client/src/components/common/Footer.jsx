@@ -5,7 +5,12 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function Footer() {
-  const { currentUser, isAuthenticated } = useAuth();
+  const { currentUser } = useAuth();
+  
+  // Add isAuthenticated function
+  const isAuthenticated = () => {
+    return !!currentUser;
+  };
   
   // Get dashboard link based on user role
   const getDashboardLink = () => {

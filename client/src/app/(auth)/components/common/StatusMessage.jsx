@@ -69,7 +69,7 @@ const StatusMessage = ({
     const { text, href, onClick, primary = false, disabled = false, isLoading = false } = buttonConfig;
     
     const buttonClasses = primary 
-      ? "w-full py-3 px-4 mb-2 bg-black text-white font-medium rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      ? "w-full py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       : "w-full py-3 px-4 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
     
     const buttonContent = (
