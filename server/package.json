@@ -7,7 +7,8 @@
     "dev": "nodemon src/server.js",
     "build": "npm prune --production",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "create-admin": "node src/scripts/create-admin.js"
+    "create-admin": "node src/scripts/create-admin.js",
+    "generate-jwt": "node src/scripts/generate-jwt-secrets.js"
   },
   "keywords": [],
   "author": "",
