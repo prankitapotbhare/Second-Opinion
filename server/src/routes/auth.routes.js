@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
 const { authenticate } = require('../middleware/auth.middleware');
+const { restrictAdminAuth } = require('../middleware/admin-restriction.middleware');
+
+// Apply admin restriction middleware to all auth routes
+router.use(restrictAdminAuth);
 
 // Public routes
 router.post('/register', authController.register);

@@ -27,17 +27,28 @@ All endpoints return errors in the following format:
 }
 ```
 
+## Important Notes
+
+**Admin Authentication Restrictions:**
+- Admin users can only use specific auth routes: `/auth/login`, `/auth/refresh-token`, `/auth/logout`, `/auth/request-password-reset`, and `/auth/reset-password/:token`
+- Admin registration is not available through the API
+- Admin accounts must be created directly in the database using the provided script:
+  ```bash
+  npm run create-admin
+  ```
+
 ---
 
 ## Auth Routes
 
 ### Register User
 
-Creates a new user account.
+Creates a new user account (not available for admin role).
 
 - **URL**: `/auth/register`
 - **Method**: `POST`
 - **Auth Required**: No
+- **Restrictions**: Not available for admin role
 
 **Request Body**:
 
@@ -46,7 +57,7 @@ Creates a new user account.
   "name": "John Doe",
   "email": "john@example.com",
   "password": "password123",
-  "role": "user" // "user", "doctor", or "admin"
+  "role": "user" // Only "user" or "doctor" roles allowed
 }
 ```
 
@@ -83,6 +94,7 @@ Authenticates a user and returns tokens.
 - **URL**: `/auth/login`
 - **Method**: `POST`
 - **Auth Required**: No
+- **Available for**: All roles (user, doctor, admin)
 
 **Request Body**:
 
@@ -104,7 +116,7 @@ Authenticates a user and returns tokens.
       "id": "60d21b4667d0d8992e610c85",
       "name": "John Doe",
       "email": "john@example.com",
-      "role": "user",
+      "role": "user", // Can be "user", "doctor", or "admin"
       "photoURL": "https://ui-avatars.com/api/?name=John%20Doe&background=3b82f6&color=fff",
       "emailVerified": true,
       "specialization": null
@@ -119,11 +131,12 @@ Authenticates a user and returns tokens.
 
 ### Verify Email
 
-Verifies a user's email address using the token sent during registration.
+Verifies a user's email address using the token sent during registration (not available for admin role).
 
 - **URL**: `/auth/verify-email/:token`
 - **Method**: `GET`
 - **Auth Required**: No
+- **Restrictions**: Not available for admin role
 
 **URL Parameters**:
 - `token`: The verification token sent to the user's email
@@ -144,6 +157,7 @@ Generates a new access token using a refresh token.
 - **URL**: `/auth/refresh-token`
 - **Method**: `POST`
 - **Auth Required**: No
+- **Available for**: All roles (user, doctor, admin)
 
 **Request Body**:
 
@@ -175,6 +189,7 @@ Invalidates a refresh token.
 - **URL**: `/auth/logout`
 - **Method**: `POST`
 - **Auth Required**: No
+- **Available for**: All roles (user, doctor, admin)
 
 **Request Body**:
 
@@ -200,6 +215,7 @@ Sends a password reset link to the user's email.
 - **URL**: `/auth/request-password-reset`
 - **Method**: `POST`
 - **Auth Required**: No
+- **Available for**: All roles (user, doctor, admin)
 
 **Request Body**:
 
@@ -228,6 +244,7 @@ Resets a user's password using a token.
 - **URL**: `/auth/reset-password/:token`
 - **Method**: `POST`
 - **Auth Required**: No
+- **Available for**: All roles (user, doctor, admin)
 
 **URL Parameters**:
 - `token`: The reset token sent to the user's email
@@ -251,11 +268,12 @@ Resets a user's password using a token.
 
 ### Resend Verification Email
 
-Resends the email verification link.
+Resends the email verification link (not available for admin role).
 
 - **URL**: `/auth/resend-verification`
 - **Method**: `POST`
 - **Auth Required**: No
+- **Restrictions**: Not available for admin role
 
 **Request Body**:
 
@@ -284,6 +302,7 @@ Retrieves the currently authenticated user's information.
 - **URL**: `/auth/me`
 - **Method**: `GET`
 - **Auth Required**: Yes
+- **Available for**: All authenticated users (user, doctor, admin)
 
 **Success Response**:
 
@@ -319,6 +338,7 @@ Retrieves the authenticated user's profile.
 - **URL**: `/users/profile`
 - **Method**: `GET`
 - **Auth Required**: Yes
+- **Available for**: All authenticated users (user, doctor, admin)
 
 **Success Response**:
 
@@ -348,6 +368,7 @@ Updates the authenticated user's profile.
 - **URL**: `/users/profile`
 - **Method**: `PUT`
 - **Auth Required**: Yes
+- **Available for**: All authenticated users (user, doctor, admin)
 
 **Request Body**:
 
@@ -525,6 +546,25 @@ Deletes a specific user by ID.
   "success": true,
   "message": "User deleted successfully"
 }
+```
+
+## Creating Admin Users
+
+Admin users cannot be registered through the API. They must be created directly in the database using the provided script:
+
+```bash
+npm run create-admin
+```
+
+When running this command, you will be prompted to enter:
+- Admin name
+- Admin email
+- Admin password (minimum 6 characters)
+
+Alternatively, you can provide these details as command-line arguments:
+
+```bash
+npm run create-admin "Admin Name" "admin@example.com" "securePassword123"
 ```
 
 ## Setting Up Postman

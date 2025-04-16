@@ -42,6 +42,14 @@ exports.register = async (req, res, next) => {
   try {
     const { name, email, password, role, specialization } = req.body;
 
+    // Explicitly prevent admin registration through API
+    if (role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin registration is not allowed through the API'
+      });
+    }
+
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
