@@ -52,8 +52,8 @@ const LoginForm = ({
     const { email, password, rememberMe } = formData;
     
     try {
-      // Otherwise use the default login flow
-      const result = await login(email, password, userType);
+      // Pass the rememberMe value to the login function
+      const result = await login(email, password, rememberMe);
       
       if (result.success) {
         const finalRedirectPath = getRedirectPath();
