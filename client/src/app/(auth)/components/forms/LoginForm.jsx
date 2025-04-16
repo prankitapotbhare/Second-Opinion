@@ -10,7 +10,8 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const LoginForm = ({ 
   userType = 'user', // 'user', 'doctor', or 'admin'
-  hideOptions = false
+  hideOptions = false,
+  redirectPath
 }) => {
   const router = useRouter();
   const { login } = useAuth();
@@ -24,6 +25,16 @@ const LoginForm = ({
   const [needsVerification, setNeedsVerification] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
 
+  // Get redirect path from props or URL params
+  const getRedirectPath = () => {
+    // First check if redirectPath prop is provided
+    if (redirectPath) return redirectPath;
+    
+    // Default paths based on user type
+    return userType === 'doctor' ? '/doctor/dashboard' : 
+           userType === 'admin' ? '/admin/dashboard' : '/';
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -32,7 +43,6 @@ const LoginForm = ({
     }));
   };
 
-  // Update the handleSubmit function in LoginForm.jsx
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -42,23 +52,18 @@ const LoginForm = ({
     const { email, password, rememberMe } = formData;
     
     try {
-      // Call the login function from the auth context
+      // Otherwise use the default login flow
       const result = await login(email, password, userType);
       
       if (result.success) {
-        // Get the redirect URL from query parameters if it exists
-        const urlParams = new URLSearchParams(window.location.search);
-        const redirectParam = urlParams.get('redirect');
+        const finalRedirectPath = getRedirectPath();
         
-        // If login is successful, redirect to success page with redirect parameter
-        router.push(`/login/success?type=${userType}${redirectParam ? `&redirect=${redirectParam}` : ''}`);
-        
+        // Redirect to success page with appropriate parameters
+        router.push(`/login/success?type=${userType}${finalRedirectPath !== '/' ? `&redirect=${encodeURIComponent(finalRedirectPath)}` : ''}`);
       } else if (result.needsVerification) {
-        // If user needs to verify email
         setNeedsVerification(true);
-        setVerificationEmail(result.email);
+        setVerificationEmail(email);
       } else {
-        // If login fails, show the error
         setError(result.error || 'Login failed');
       }
     } catch (err) {
@@ -69,20 +74,24 @@ const LoginForm = ({
     }
   };
 
-  const handleGoogleLogin = () => {
-    // Handle Google login
-    console.log('Google login clicked');
-    // For mock purposes, we'll just log in as the default user for this type
-    const mockEmail = userType === 'admin' ? 'admin@example.com' : 
-                     userType === 'doctor' ? 'doctor@example.com' : 
-                     'user@example.com';
-    setFormData({
-      email: mockEmail,
-      password: 'password123',
-      rememberMe: false
-    });
-    // Submit the form
-    handleSubmit({ preventDefault: () => {} });
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    try {
+      // Implement actual Google OAuth login here
+      const result = await login('google', null, userType);
+      
+      if (result.success) {
+        const finalRedirectPath = getRedirectPath();
+        router.push(`/login/success?type=${userType}${finalRedirectPath !== '/' ? `&redirect=${encodeURIComponent(finalRedirectPath)}` : ''}`);
+      } else {
+        setError(result.error || 'Social login failed');
+      }
+    } catch (err) {
+      setError('An error occurred during social login');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleResendVerification = async () => {

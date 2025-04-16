@@ -1,21 +1,10 @@
 "use client";
 
 import React from 'react';
-import { useRouter } from 'next/navigation';
 import { SplitScreen, AuthHeader } from '../../components';
 import { LoginForm } from '../../components';
 
 export default function DoctorLogin() {
-  const router = useRouter();
-
-  const handleSubmit = ({ email, password, rememberMe }) => {
-    // Handle login logic here
-    console.log({ email, password, rememberMe });
-    
-    // Redirect to doctor dashboard after successful login
-    router.push('/doctor/dashboard');
-  };
-
   return (
     <SplitScreen 
       imageSrc="/images/doctor.jpg" 
@@ -33,7 +22,6 @@ export default function DoctorLogin() {
         
       <LoginForm 
         userType="doctor"
-        onSubmit={handleSubmit}
         redirectPath="/doctor/dashboard"
       />
     </SplitScreen>

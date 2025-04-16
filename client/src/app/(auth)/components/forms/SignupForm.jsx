@@ -9,9 +9,7 @@ import AuthDivider from '../common/AuthDivider';
 import { useAuth } from '@/contexts/AuthContext';
 
 const SignupForm = ({ 
-  userType = 'user', // 'user' or 'doctor'
-  onSubmit,
-  redirectPath = '/'
+  userType = 'user' // 'user' or 'doctor'
 }) => {
   const router = useRouter();
   const { signup } = useAuth();
@@ -67,10 +65,6 @@ const SignupForm = ({
         // If signup is successful, redirect to success page
         router.push(`/signup/success?email=${encodeURIComponent(email)}&type=${userType}`);
         
-        // Also call the onSubmit prop if provided
-        if (onSubmit) {
-          onSubmit(formData);
-        }
       } else {
         setError(result.error || 'Failed to create account');
         setIsLoading(false);

@@ -1,22 +1,13 @@
 "use client";
 
 import React, { Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { SplitScreen, AuthHeader, LoginForm } from '../../components';
 
 // Create a client component that uses useSearchParams
 function UserLoginContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/';
-
-  const handleSubmit = ({ email, password, rememberMe }) => {
-    // Handle login logic here
-    console.log({ email, password, rememberMe });
-    
-    // Redirect to home page or the requested page after successful login
-    router.push(redirectTo);
-  };
 
   return (
     <SplitScreen 
