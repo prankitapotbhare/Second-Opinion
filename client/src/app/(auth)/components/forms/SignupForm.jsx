@@ -12,7 +12,7 @@ const SignupForm = ({
   userType = 'user' // 'user' or 'doctor'
 }) => {
   const router = useRouter();
-  const { signup } = useAuth();
+  const { register } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -53,13 +53,13 @@ const SignupForm = ({
     }
   
     try {
-      // Call the signup function from the auth context
+      // Call the register function from the auth context
       const userData = { 
-        name,  // Use displayName instead of name
+        name,
         email, 
         password 
       };
-      const result = await signup(userData, userType);
+      const result = await register(userData, userType);
       
       if (result.success) {
         // If signup is successful, redirect to success page

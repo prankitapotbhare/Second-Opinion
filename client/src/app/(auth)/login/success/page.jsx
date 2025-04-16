@@ -37,6 +37,15 @@ function SuccessContent() {
     return () => clearInterval(timer);
   }, [router, redirectTo, userType]);
 
+  // Define navigation functions outside of render
+  const handlePrimaryButtonClick = () => {
+    router.push(redirectTo !== '/' ? redirectTo : '/');
+  };
+
+  const handleSecondaryButtonClick = () => {
+    router.push('/');
+  };
+
   const alertContent = (
     <div className="flex items-center justify-center">
       <div className="flex-shrink-0 mr-3">
@@ -55,9 +64,9 @@ function SuccessContent() {
       message="Welcome back! You are now logged in."
       alertContent={alertContent}
       primaryButtonText={redirectTo !== '/' ? "Go to Requested Page" : "Go to Home Page"}
-      primaryButtonAction={() => router.push(redirectTo !== '/' ? redirectTo : '/')}
+      primaryButtonAction={handlePrimaryButtonClick}
       secondaryButtonText="Return to Home"
-      secondaryButtonAction={() => router.push('/')}
+      secondaryButtonAction={handleSecondaryButtonClick}
     />
   );
 }

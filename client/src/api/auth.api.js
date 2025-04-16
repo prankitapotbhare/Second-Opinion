@@ -145,7 +145,7 @@ export const verifyEmail = async (token) => {
 };
 
 // Resend verification email
-export const resendVerificationEmail = async (email) => {
+export const resendVerification = async (email) => {
   try {
     const response = await fetch(`${API_URL}/auth/resend-verification`, {
       method: 'POST',

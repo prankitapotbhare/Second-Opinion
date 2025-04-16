@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const ResetPasswordForm = ({ token }) => {
   const router = useRouter();
-  const { setNewPassword } = useAuth();
+  const { resetPassword } = useAuth();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,7 +48,7 @@ const ResetPasswordForm = ({ token }) => {
     setIsSubmitting(true);
     
     try {
-      const result = await setNewPassword(token, password);
+      const result = await resetPassword(token, password);
       
       if (result.success) {
         // Redirect to login page with success message
