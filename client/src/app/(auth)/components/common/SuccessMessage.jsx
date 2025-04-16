@@ -29,7 +29,7 @@ const SuccessMessage = ({
     
     const buttonContent = (
       <button 
-        className="w-full mb-2 py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         disabled={isLoading}
       >
         {isLoading ? (
