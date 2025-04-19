@@ -20,6 +20,9 @@ const DateTimePicker = ({ onSelect, onClose }) => {
     }
   };
 
+  // Format today's date as YYYY-MM-DD for the default value
+  const today = new Date().toISOString().split('T')[0];
+
   return (
     <div className="fixed inset-0 bg-[rgba(0,0,0,0.7)] flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
@@ -31,12 +34,14 @@ const DateTimePicker = ({ onSelect, onClose }) => {
           <div className="relative">
             <input
               type="date"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent cursor-pointer"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
+              min={today}
+              defaultValue={today}
+              required
             />
-            <FaCalendarAlt className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <FaCalendarAlt className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
           </div>
         </div>
         
@@ -64,8 +69,15 @@ const DateTimePicker = ({ onSelect, onClose }) => {
         {/* Divider */}
         <div className="border-t border-gray-200 my-6"></div>
         
-        {/* Send Response Button */}
-        <div className="flex justify-end">
+        {/* Actions */}
+        <div className="flex justify-between">
+          <button
+            type="button"
+            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
           <button
             type="button"
             className="px-6 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:opacity-50 flex items-center"
