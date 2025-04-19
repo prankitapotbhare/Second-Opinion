@@ -1,5 +1,5 @@
 import React from "react";
-
+import { useRouter } from 'next/navigation'; // Import useRouter
 import {
   FaTimes,
   FaFilePdf,
@@ -9,11 +9,27 @@ import {
 
 const PatientDetailModal = ({
   patientId,
-  responseMessage,
+  // responseMessage, // Removed unused prop
   onClose,
-  onSetResponseMessage,
-  onSendResponse,
+  // onSetResponseMessage, // Removed unused prop
 }) => {
+  const router = useRouter(); // Initialize router
+
+  const handleNavigateToResponse = () => {
+    // Close the modal immediately for better perceived responsiveness
+    onClose(); 
+
+    // Define the target route for the Response page
+    const responsePageRoute = '/doctor/response'; 
+    
+    // Initiate navigation
+    // Optionally pass patientId or other relevant data via query params if needed
+    // router.push(`${responsePageRoute}?patientId=${patientId}`); 
+    router.push(responsePageRoute); 
+    // Navigation happens asynchronously after this call
+  };
+
+  
   return (
     <div className="fixed inset-0 flex items-center justify-center px-4 z-50 bg-[rgba(0,0,0,0.5)]">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative">
@@ -157,55 +173,18 @@ const PatientDetailModal = ({
               </div>
             </div>
           </div>
-
-          {/* Response Section */}
-          <div className="mt-6 border-t border-gray-200 pt-6">
-            <h3 className="text-lg font-medium text-gray-800 mb-4">
-              Your Response
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Message
-                </label>
-                <textarea
-                  className="w-full px-4 py-2 border border-gray-300 text-gray-600 placeholder-gray-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-32"
-                  placeholder="Enter your medical opinion, advice, or prescription details..."
-                  value={responseMessage}
-                  onChange={(e) => onSetResponseMessage(e.target.value)}
-                ></textarea>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Upload Files (Prescriptions, Reports, etc.)
-                </label>
-                <div className="border border-dashed border-gray-300 rounded-md p-6 flex flex-col items-center justify-center bg-gray-50">
-                  <svg className="w-10 h-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                  </svg>
-                  <p className="text-sm text-gray-500 mb-1">Click to upload or drag and drop</p>
-                  <p className="text-xs text-gray-400">PDF, DOC, JPG, PNG (MAX. 10MB)</p>
-                  <input type="file" className="hidden" />
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={onClose}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={onSendResponse}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer flex items-center"
-                >
-                  <FaPaperPlane className="inline mr-2 transform rotate-12" />
-                  Send Response
-                </button>
-              </div>
-            </div>
+          {/* Removed Response Section Content */}
+          {/* The container div with top border and padding is removed */}
+          {/* Kept only the button container */}
+          <div className="flex justify-end mt-6 pt-6 border-t border-gray-200"> 
+            {/* Added margin-top, padding-top and border-top here */}
+            <button
+              onClick={handleNavigateToResponse} // Handler remains the same
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer flex items-center"
+            >
+              <FaPaperPlane className="inline mr-2 transform rotate-12" />
+              Send Response
+            </button>
           </div>
         </div>
       </div>

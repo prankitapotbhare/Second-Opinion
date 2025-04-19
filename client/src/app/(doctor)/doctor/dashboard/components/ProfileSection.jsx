@@ -257,11 +257,8 @@ const ProfileSection = () => {
 
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row justify-end gap-4">
-        <button className="w-full sm:w-auto px-6 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">
-          Cancel
-        </button>
         <button className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-          Save Changes
+          Submit
         </button>
       </div>
     </main>
