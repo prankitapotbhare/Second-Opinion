@@ -183,11 +183,24 @@ const ProfileSection = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Registration Certificate Upload<span className="text-red-500">*</span></label>
-            <div className="flex items-center w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700">
-              <span className="text-gray-500">Upload PDF/JPG</span>
-              <button className="ml-2 text-blue-500">
-                <FaUpload />
-              </button>
+            <div className="relative">
+              <input
+                type="file"
+                id="certificate-upload"
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden"
+                onChange={() => {}}
+              />
+              <label 
+                htmlFor="certificate-upload" 
+                className="flex items-center justify-between w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700 cursor-pointer hover:bg-gray-50"
+              >
+                <span className="text-gray-500">Upload PDF/JPG</span>
+                <FaUpload className="text-blue-500" />
+              </label>
+              <div className="mt-2 text-xs text-gray-500">
+                Supported formats: PDF, JPG, JPEG, PNG (Max size: 100MB)
+              </div>
             </div>
           </div>
 
