@@ -14,7 +14,6 @@ import {
 
 const AppointmentSection = () => {
   const [showPatientDetail, setShowPatientDetail] = useState(null);
-  const [showResponseSection, setShowResponseSection] = useState(false);
   const [showResponseSuccess, setShowResponseSuccess] = useState(false);
   const [responseMessage, setResponseMessage] = useState("");
   const [activeFilter, setActiveFilter] = useState("today");
@@ -23,7 +22,6 @@ const AppointmentSection = () => {
     setShowResponseSuccess(true);
     setTimeout(() => {
       setShowResponseSuccess(false);
-      setShowResponseSection(false);
       setShowPatientDetail(null);
       setResponseMessage("");
     }, 2000);
@@ -176,9 +174,7 @@ const AppointmentSection = () => {
         <PatientDetailModal
           patientId={showPatientDetail}
           responseMessage={responseMessage}
-          showResponseSection={showResponseSection}
           onClose={() => setShowPatientDetail(null)}
-          onSetShowResponseSection={setShowResponseSection}
           onSetResponseMessage={setResponseMessage}
           onSendResponse={handleSendResponse}
         />

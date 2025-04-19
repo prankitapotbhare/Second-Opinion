@@ -10,9 +10,7 @@ import {
 const PatientDetailModal = ({
   patientId,
   responseMessage,
-  showResponseSection,
   onClose,
-  onSetShowResponseSection,
   onSetResponseMessage,
   onSendResponse,
 }) => {
@@ -160,55 +158,55 @@ const PatientDetailModal = ({
             </div>
           </div>
 
-          {/* Send Response Button */}
-          {!showResponseSection && (
-            <div className="flex justify-center">
-              <button
-                onClick={() => onSetShowResponseSection(true)}
-                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"
-              >
-                Send Response
-              </button>
-            </div>
-          )}
-
           {/* Response Section */}
-          {showResponseSection && (
-            <div className="mt-6 border-t border-gray-200 pt-6">
-              <h3 className="text-lg font-medium text-gray-800 mb-4">
-                Your Response
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Message
-                  </label>
-                  <textarea
-                    className="w-full px-4 py-2 border border-gray-300 text-gray-600 placeholder-gray-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-32"
-                    placeholder="Enter your medical opinion, advice, or prescription details..."
-                    value={responseMessage}
-                    onChange={(e) => onSetResponseMessage(e.target.value)}
-                  ></textarea>
-                </div>
+          <div className="mt-6 border-t border-gray-200 pt-6">
+            <h3 className="text-lg font-medium text-gray-800 mb-4">
+              Your Response
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Message
+                </label>
+                <textarea
+                  className="w-full px-4 py-2 border border-gray-300 text-gray-600 placeholder-gray-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-32"
+                  placeholder="Enter your medical opinion, advice, or prescription details..."
+                  value={responseMessage}
+                  onChange={(e) => onSetResponseMessage(e.target.value)}
+                ></textarea>
+              </div>
 
-                <div className="flex justify-end space-x-3">
-                  <button
-                    onClick={() => onSetShowResponseSection(false)}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={onSendResponse}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"
-                  >
-                    <FaPaperPlane className="inline mr-2" />
-                    Send Response
-                  </button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Upload Files (Prescriptions, Reports, etc.)
+                </label>
+                <div className="border border-dashed border-gray-300 rounded-md p-6 flex flex-col items-center justify-center bg-gray-50">
+                  <svg className="w-10 h-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                  </svg>
+                  <p className="text-sm text-gray-500 mb-1">Click to upload or drag and drop</p>
+                  <p className="text-xs text-gray-400">PDF, DOC, JPG, PNG (MAX. 10MB)</p>
+                  <input type="file" className="hidden" />
                 </div>
               </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={onSendResponse}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer flex items-center"
+                >
+                  <FaPaperPlane className="inline mr-2 transform rotate-12" />
+                  Send Response
+                </button>
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
