@@ -21,18 +21,6 @@ function ResetPasswordContent() {
       setIsLoading(false);
       return;
     }
-
-    // This is a mock implementation
-    setTimeout(() => {
-      // Check if token is valid
-      if (token && token.length > 10) {
-        setIsValid(true);
-      } else {
-        setIsValid(false);
-        setError('Invalid or expired reset token. Please request a new password reset link.');
-      }
-      setIsLoading(false);
-    }, 1000);
   }, [token]);
 
   if (isLoading) {

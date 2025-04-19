@@ -116,7 +116,12 @@ export const AuthProvider = ({ children }) => {
   // Refresh user token
   const refreshUserToken = async (refresh, rememberMe = localStorage.getItem('rememberMe') === 'true') => {
     try {
+      if (!refresh) {
+        throw new Error('No refresh token available');
+      }
+      
       const response = await authApi.refreshToken(refresh);
+      
       if (response.success) {
         const { accessToken, refreshToken: newRefreshToken } = response.data.tokens;
         

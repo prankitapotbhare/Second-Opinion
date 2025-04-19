@@ -72,7 +72,7 @@ const LoginForm = ({
         setNeedsVerification(true);
         setVerificationEmail(email);
       } else {
-        setError('An unexpected error occurred');
+        setError(err.message || 'An unexpected error occurred');
         console.error(err);
       }
     } finally {
