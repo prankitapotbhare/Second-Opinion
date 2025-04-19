@@ -4,50 +4,51 @@ import React, { useState } from 'react';
 import { Header } from '@/app/(admin)/components';
 import { useAuth } from "@/contexts/AuthContext";
 import { FaSearch, FaFilter, FaCalendarPlus, FaEye, FaCheck, FaTimes } from 'react-icons/fa';
-import { doctors } from '@/data/doctorsData';
+import { doctors as doctorsData } from '@/data/doctorsData'; // Import the consolidated data
 
-// Generate appointments using the doctors data
+// Generate appointments using the consolidated doctors data
 const generateAppointments = () => {
   const patientNames = [
     'John Doe', 'Jane Smith', 'Robert Wilson', 'Emily Davis', 'Michael Johnson',
     'Sarah Williams', 'David Brown', 'Lisa Jones', 'James Miller', 'Jennifer Taylor',
     'Amit Verma', 'Priya Malhotra', 'Rahul Mehta', 'Neha Agarwal', 'Ravi Kumar'
   ];
-  
+
   const appointmentTypes = ['Video Consultation', 'In-Person'];
   const statuses = ['Confirmed', 'Pending', 'Completed', 'Cancelled'];
-  
+
+
   const generatedAppointments = [];
-  
+
   for (let i = 0; i < 20; i++) {
-    const doctor = doctors[Math.floor(Math.random() * doctors.length)];
+    const doctor = doctorsData[Math.floor(Math.random() * doctorsData.length)]; // Use consolidated data
     const patientName = patientNames[Math.floor(Math.random() * patientNames.length)];
     const type = appointmentTypes[Math.floor(Math.random() * appointmentTypes.length)];
     const status = statuses[Math.floor(Math.random() * statuses.length)];
-    
+
     // Generate a random date within the next 14 days
     const date = new Date();
     date.setDate(date.getDate() + Math.floor(Math.random() * 14));
     const formattedDate = date.toISOString().split('T')[0];
-    
+
     // Generate a random time between 9 AM and 5 PM
     const hour = 9 + Math.floor(Math.random() * 8);
     const minute = Math.floor(Math.random() * 4) * 15;
     const formattedTime = `${hour}:${minute.toString().padStart(2, '0')} ${hour >= 12 ? 'PM' : 'AM'}`;
-    
+
     generatedAppointments.push({
       id: `APT-${1000 + i}`,
       patientName,
       patientAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(patientName)}&background=3b82f6&color=fff`,
-      doctorName: doctor.name,
-      doctorAvatar: doctor.imageUrl,
+      doctorName: doctor.name, // Use doctor.name
+      doctorAvatar: doctor.imageUrl, // Use doctor.imageUrl
       date: formattedDate,
       time: formattedTime,
       type,
       status
     });
   }
-  
+
   return generatedAppointments;
 };
 
@@ -59,6 +60,7 @@ const AppointmentsContent = ({ setIsSidebarOpen }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
+
 
   // Filter appointments based on search term, status, and type
   const filteredAppointments = appointments.filter(appointment => {

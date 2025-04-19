@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
-import { doctors } from '@/data/doctorsData';
+// import { doctors } from '@/data/doctorsData'; // Remove old import if it existed
+import { doctors as doctorsData } from '@/data/doctorsData'; // Import the consolidated data
 import SearchBar from './components/SearchBar';
 import DoctorGrid from './components/DoctorGrid';
 import { useSearchParams } from 'next/navigation';
@@ -13,32 +14,36 @@ export default function DoctorsSearchPage() {
 
   // Get filters from query params
   const locationFilter = searchParams.get('location') || '';
-  const departmentFilter = searchParams.get('department') || '';
+  const specializationFilter = searchParams.get('department') || searchParams.get('specialization') || ''; // Accept both for compatibility
 
-  // Filter doctors based on search term, location, and department
-  const filteredDoctors = doctors.filter(doctor => {
+  // Filter doctors based on search term, location, and specialization
+  const filteredDoctors = doctorsData.filter(doctor => { // Use consolidated data
     const matchesSearch =
-      (doctor.name && doctor.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (doctor.specialization && doctor.specialization.toLowerCase().includes(searchTerm.toLowerCase()));
+      (doctor.name && doctor.name.toLowerCase().includes(searchTerm.toLowerCase())) || // Use name
+      (doctor.specialization && doctor.specialization.toLowerCase().includes(searchTerm.toLowerCase())); // Use specialization
     const matchesLocation = locationFilter
-      ? (doctor.location && doctor.location.toLowerCase() === locationFilter.toLowerCase())
+      ? (doctor.location && doctor.location.toLowerCase().includes(locationFilter.toLowerCase())) // Use location, use includes for partial match
       : true;
-    const matchesDepartment = departmentFilter
-      ? (doctor.specialization && doctor.specialization.toLowerCase() === departmentFilter.toLowerCase())
+    const matchesSpecialization = specializationFilter
+      ? (doctor.specialization && doctor.specialization.toLowerCase() === specializationFilter.toLowerCase()) // Use specialization
       : true;
-    return matchesSearch && matchesLocation && matchesDepartment;
+    return matchesSearch && matchesLocation && matchesSpecialization;
   });
 
-  // Determine which doctors to display
-  const displayedDoctors = searchTerm ? filteredDoctors : doctors.filter(doctor => {
+  // Determine which doctors to display based on filters only (search is handled by filteredDoctors)
+  const displayedDoctors = doctorsData.filter(doctor => { // Use consolidated data
     const matchesLocation = locationFilter
-      ? (doctor.location && doctor.location.toLowerCase() === locationFilter.toLowerCase())
+      ? (doctor.location && doctor.location.toLowerCase().includes(locationFilter.toLowerCase())) // Use location, use includes
       : true;
-    const matchesDepartment = departmentFilter
-      ? (doctor.specialization && doctor.specialization.toLowerCase() === departmentFilter.toLowerCase())
+    const matchesSpecialization = specializationFilter
+      ? (doctor.specialization && doctor.specialization.toLowerCase() === specializationFilter.toLowerCase()) // Use specialization
       : true;
-    return matchesLocation && matchesDepartment;
+    return matchesLocation && matchesSpecialization;
   });
+
+  // If there's a search term, use the filtered list, otherwise use the list filtered by params
+  const doctorsToDisplay = searchTerm ? filteredDoctors : displayedDoctors;
+
 
   const toggleShowAll = () => {
     setShowAll(!showAll);
@@ -49,14 +54,20 @@ export default function DoctorsSearchPage() {
       {/* Search Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-6">Find a Doctor</h1>
-        <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+        {/* Pass location and specialization filters to SearchBar if it uses them */}
+        <SearchBar
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            initialLocation={locationFilter}
+            initialSpecialization={specializationFilter}
+         />
       </div>
-      
+
       {/* Doctors Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 my-8">
-        <DoctorGrid 
-          doctors={displayedDoctors} 
-          showAll={showAll} 
+        <DoctorGrid
+          doctors={doctorsToDisplay} // Pass the correctly filtered list
+          showAll={showAll}
           toggleShowAll={toggleShowAll}
         />
       </div>

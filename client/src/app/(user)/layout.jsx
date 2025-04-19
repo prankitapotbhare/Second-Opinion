@@ -2,7 +2,7 @@
 
 import React from 'react';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import Navbar from '@/components/common/Navbar';
+import {Navbar, Footer} from '@/components';
 import { usePathname } from 'next/navigation';
 
 export default function UserLayout({ children }) {
@@ -20,6 +20,17 @@ export default function UserLayout({ children }) {
     "/user/settings"
   ];
 
+  // List of routes where Footer should be hidden
+  const noFooterRoutes = [
+    "/user/responses",
+    "/user/responses/",
+  ];
+
+  // Check if the current path starts with any of the routes in noFooterRoutes
+  const hideFooter = noFooterRoutes.some(route => 
+    pathname === route || pathname.startsWith(`${route}/`)
+  );
+
   // Hide Navbar if the current path matches any of the dashboard routes
   const hideNavbar = dashboardRoutes.includes(pathname);
 
@@ -34,6 +45,8 @@ export default function UserLayout({ children }) {
           />
         )}
         {children}
+        {/* Conditionally render Footer */}
+        {!hideFooter && <Footer/>}
       </div>
     </ProtectedRoute>
   );
