@@ -9,6 +9,7 @@ function SuccessContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get('email') || 'your email';
   const userType = searchParams.get('type') || 'user';
+  const redirectPath = searchParams.get('redirect') || '/dashboard';
   const { resendVerification } = useAuth();
   const [isResending, setIsResending] = useState(false);
   const [resendStatus, setResendStatus] = useState(null);
@@ -24,7 +25,8 @@ function SuccessContent() {
     setResendStatus(null);
     
     try {
-      const result = await resendVerification(email);
+      // Pass the redirectPath to resendVerification
+      const result = await resendVerification(email, redirectPath);
       
       if (result.success) {
         setResendStatus({

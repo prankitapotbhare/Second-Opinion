@@ -13,6 +13,7 @@ This guide provides step-by-step instructions for testing all authentication rou
      - `BASE_URL`: `http://localhost:5000/api`
      - `ACCESS_TOKEN`: (leave empty initially)
      - `REFRESH_TOKEN`: (leave empty initially)
+     - `REDIRECT_PATH`: `/dashboard` (for testing email verification redirects)
 
 3. **Create Environment**
    - Create environments for different user roles:
@@ -55,7 +56,9 @@ Use the registration endpoint to create these users.
     "name": "Regular User",
     "email": "user@example.com",
     "password": "password123",
-    "role": "user"
+    "role": "user",
+    "termsAccepted": true,
+    "redirectPath": "{{REDIRECT_PATH}}"
   }
   ```
 - **Expected Response**: 201 Created
@@ -68,11 +71,11 @@ Use the registration endpoint to create these users.
   pm.test("Registration successful", function() {
     var jsonData = pm.response.json();
     pm.expect(jsonData.success).to.be.true;
-    pm.expect(jsonData.message).to.equal("User registered successfully");
+    pm.expect(jsonData.message).to.include("User registered successfully");
     
-    // Save verification token for later use
-    if (jsonData.data && jsonData.data.verificationToken) {
-      pm.environment.set("USER_VERIFICATION_TOKEN", jsonData.data.verificationToken);
+    // Save user email for later use
+    if (jsonData.data && jsonData.data.email) {
+      pm.environment.set("USER_EMAIL", jsonData.data.email);
     }
   });
   ```
@@ -88,11 +91,13 @@ Use the registration endpoint to create these users.
     "email": "doctor@example.com",
     "password": "password123",
     "role": "doctor",
-    "specialization": "Cardiology"
+    "specialization": "Cardiology",
+    "termsAccepted": true,
+    "redirectPath": "{{REDIRECT_PATH}}"
   }
   ```
 - **Expected Response**: 201 Created
-- **Test Script**: Same as above, but save token as `DOCTOR_VERIFICATION_TOKEN`
+- **Test Script**: Same as above, but save email as `DOCTOR_EMAIL`
 
 #### 1.3 Attempt Admin Registration (Should Fail)
 
@@ -104,7 +109,8 @@ Use the registration endpoint to create these users.
     "name": "Attempted Admin",
     "email": "attempted.admin@example.com",
     "password": "password123",
-    "role": "admin"
+    "role": "admin",
+    "termsAccepted": true
   }
   ```
 - **Expected Response**: 403 Forbidden
@@ -121,9 +127,38 @@ Use the registration endpoint to create these users.
   });
   ```
 
-### 2. Email Verification
+### 2. Resend Verification Email
 
-#### 2.1 Verify Regular User Email
+#### 2.1 Resend Verification Email for Regular User
+
+- **Method**: POST
+- **URL**: `{{BASE_URL}}/auth/resend-verification`
+- **Body** (JSON):
+  ```json
+  {
+    "email": "{{USER_EMAIL}}",
+    "redirectPath": "{{REDIRECT_PATH}}"
+  }
+  ```
+- **Expected Response**: 200 OK
+- **Test Script**:
+  ```javascript
+  pm.test("Status code is 200", function() {
+    pm.response.to.have.status(200);
+  });
+  
+  pm.test("Verification email resent successfully", function() {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData.success).to.be.true;
+    pm.expect(jsonData.message).to.include("If your email is unverified, a new verification email has been sent");
+  });
+  ```
+
+### 3. Email Verification
+
+**Note**: In a real testing scenario, you would need to extract the verification token from the email or database. For this guide, we'll assume you have access to the token.
+
+#### 3.1 Verify Regular User Email
 
 - **Method**: GET
 - **URL**: `{{BASE_URL}}/auth/verify-email/{{USER_VERIFICATION_TOKEN}}`
@@ -138,26 +173,27 @@ Use the registration endpoint to create these users.
     var jsonData = pm.response.json();
     pm.expect(jsonData.success).to.be.true;
     pm.expect(jsonData.message).to.equal("Email verified successfully");
+    pm.expect(jsonData.email).to.equal(pm.environment.get("USER_EMAIL"));
   });
   ```
 
-#### 2.2 Verify Doctor User Email
+#### 3.2 Verify Doctor User Email
 
 - **Method**: GET
 - **URL**: `{{BASE_URL}}/auth/verify-email/{{DOCTOR_VERIFICATION_TOKEN}}`
 - **Expected Response**: 200 OK
-- **Test Script**: Same as above
+- **Test Script**: Same as above, but check against `DOCTOR_EMAIL`
 
-### 3. User Login
+### 4. User Login
 
-#### 3.1 Login as Regular User
+#### 4.1 Login as Regular User
 
 - **Method**: POST
 - **URL**: `{{BASE_URL}}/auth/login`
 - **Body** (JSON):
   ```json
   {
-    "email": "user@example.com",
+    "email": "{{USER_EMAIL}}",
     "password": "password123"
   }
   ```
@@ -182,21 +218,21 @@ Use the registration endpoint to create these users.
   });
   ```
 
-#### 3.2 Login as Doctor
+#### 4.2 Login as Doctor
 
 - **Method**: POST
 - **URL**: `{{BASE_URL}}/auth/login`
 - **Body** (JSON):
   ```json
   {
-    "email": "doctor@example.com",
+    "email": "{{DOCTOR_EMAIL}}",
     "password": "password123"
   }
   ```
 - **Expected Response**: 200 OK
 - **Test Script**: Similar to above, but check for doctor role
 
-#### 3.3 Login as Admin
+#### 4.3 Login as Admin
 
 - **Method**: POST
 - **URL**: `{{BASE_URL}}/auth/login`
@@ -210,9 +246,9 @@ Use the registration endpoint to create these users.
 - **Expected Response**: 200 OK
 - **Test Script**: Similar to above, but check for admin role
 
-### 4. Get Current User
+### 5. Get Current User
 
-#### 4.1 Get Regular User Profile
+#### 5.1 Get Regular User Profile
 
 - **Method**: GET
 - **URL**: `{{BASE_URL}}/auth/me`
@@ -228,21 +264,21 @@ Use the registration endpoint to create these users.
   pm.test("User profile retrieved successfully", function() {
     var jsonData = pm.response.json();
     pm.expect(jsonData.success).to.be.true;
-    pm.expect(jsonData.data.user.email).to.equal("user@example.com");
+    pm.expect(jsonData.data.user.email).to.equal(pm.environment.get("USER_EMAIL"));
   });
   ```
 
-#### 4.2 Get Doctor Profile
+#### 5.2 Get Doctor Profile
 
 - Same as above but with doctor's access token
 
-#### 4.3 Get Admin Profile
+#### 5.3 Get Admin Profile
 
 - Same as above but with admin's access token
 
-### 5. Refresh Token
+### 6. Refresh Token
 
-#### 5.1 Refresh Regular User Token
+#### 6.1 Refresh Regular User Token
 
 - **Method**: POST
 - **URL**: `{{BASE_URL}}/auth/refresh-token`
@@ -272,24 +308,24 @@ Use the registration endpoint to create these users.
   });
   ```
 
-#### 5.2 Refresh Doctor Token
+#### 6.2 Refresh Doctor Token
 
 - Same as above but with doctor's refresh token
 
-#### 5.3 Refresh Admin Token
+#### 6.3 Refresh Admin Token
 
 - Same as above but with admin's refresh token
 
-### 6. Password Reset Flow
+### 7. Password Reset Flow
 
-#### 6.1 Request Password Reset for Regular User
+#### 7.1 Request Password Reset for Regular User
 
 - **Method**: POST
 - **URL**: `{{BASE_URL}}/auth/request-password-reset`
 - **Body** (JSON):
   ```json
   {
-    "email": "user@example.com"
+    "email": "{{USER_EMAIL}}"
   }
   ```
 - **Expected Response**: 200 OK
@@ -302,16 +338,13 @@ Use the registration endpoint to create these users.
   pm.test("Password reset requested successfully", function() {
     var jsonData = pm.response.json();
     pm.expect(jsonData.success).to.be.true;
-    pm.expect(jsonData.message).to.equal("Password reset link sent to email");
-    
-    // Save reset token
-    if (jsonData.data && jsonData.data.resetToken) {
-      pm.environment.set("USER_RESET_TOKEN", jsonData.data.resetToken);
-    }
+    pm.expect(jsonData.message).to.include("If your email is registered with us, you will receive a password reset link shortly");
   });
   ```
 
-#### 6.2 Reset Password for Regular User
+#### 7.2 Reset Password for Regular User
+
+**Note**: In a real testing scenario, you would need to extract the reset token from the email or database. For this guide, we'll assume you have access to the token.
 
 - **Method**: POST
 - **URL**: `{{BASE_URL}}/auth/reset-password/{{USER_RESET_TOKEN}}`
@@ -335,115 +368,19 @@ Use the registration endpoint to create these users.
   });
   ```
 
-#### 6.3 Login with New Password
+#### 7.3 Login with New Password
 
 - **Method**: POST
 - **URL**: `{{BASE_URL}}/auth/login`
 - **Body** (JSON):
   ```json
   {
-    "email": "user@example.com",
+    "email": "{{USER_EMAIL}}",
     "password": "newPassword123"
   }
   ```
 - **Expected Response**: 200 OK
 - **Test Script**: Same as regular login test
-
-#### 6.4 Request Password Reset for Admin
-
-- **Method**: POST
-- **URL**: `{{BASE_URL}}/auth/request-password-reset`
-- **Body** (JSON):
-  ```json
-  {
-    "email": "admin@example.com"
-  }
-  ```
-- **Expected Response**: 200 OK
-- **Test Script**: Same as above, save token as `ADMIN_RESET_TOKEN`
-
-#### 6.5 Reset Password for Admin
-
-- **Method**: POST
-- **URL**: `{{BASE_URL}}/auth/reset-password/{{ADMIN_RESET_TOKEN}}`
-- **Body** (JSON):
-  ```json
-  {
-    "password": "newAdminPassword123"
-  }
-  ```
-- **Expected Response**: 200 OK
-- **Test Script**: Same as above
-
-### 7. Resend Verification Email
-
-#### 7.1 Create Unverified User
-
-- **Method**: POST
-- **URL**: `{{BASE_URL}}/auth/register`
-- **Body** (JSON):
-  ```json
-  {
-    "name": "Unverified User",
-    "email": "unverified@example.com",
-    "password": "password123",
-    "role": "user"
-  }
-  ```
-- **Expected Response**: 201 Created
-
-#### 7.2 Resend Verification Email
-
-- **Method**: POST
-- **URL**: `{{BASE_URL}}/auth/resend-verification`
-- **Body** (JSON):
-  ```json
-  {
-    "email": "unverified@example.com"
-  }
-  ```
-- **Expected Response**: 200 OK
-- **Test Script**:
-  ```javascript
-  pm.test("Status code is 200", function() {
-    pm.response.to.have.status(200);
-  });
-  
-  pm.test("Verification email resent successfully", function() {
-    var jsonData = pm.response.json();
-    pm.expect(jsonData.success).to.be.true;
-    pm.expect(jsonData.message).to.equal("Verification email sent");
-    
-    // Save new verification token
-    if (jsonData.data && jsonData.data.verificationToken) {
-      pm.environment.set("NEW_VERIFICATION_TOKEN", jsonData.data.verificationToken);
-    }
-  });
-  ```
-
-#### 7.3 Attempt to Resend Verification for Admin (Should Fail)
-
-- **Method**: POST
-- **URL**: `{{BASE_URL}}/auth/resend-verification`
-- **Body** (JSON):
-  ```json
-  {
-    "email": "admin@example.com"
-  }
-  ```
-- **Expected Response**: 403 Forbidden
-- **Test Script**:
-  ```javascript
-  pm.test("Status code is 403", function() {
-    pm.response.to.have.status(403);
-  });
-  
-  pm.test("Admin restricted from resend verification", function() {
-    var jsonData = pm.response.json();
-    pm.expect(jsonData.success).to.be.false;
-    pm.expect(jsonData.message).to.equal("Admin users can only use specific authentication routes");
-  });
-  ```
 
 ### 8. Logout
 
@@ -478,6 +415,39 @@ Use the registration endpoint to create these users.
 #### 8.2 Logout Admin
 
 - Same as above but with admin's refresh token
+
+### 9. Google Authentication
+
+#### 9.1 Google Auth for Regular User
+
+- **Method**: POST
+- **URL**: `{{BASE_URL}}/auth/google`
+- **Body** (JSON):
+  ```json
+  {
+    "idToken": "{{GOOGLE_ID_TOKEN}}",
+    "userType": "user",
+    "redirectPath": "{{REDIRECT_PATH}}"
+  }
+  ```
+- **Expected Response**: 200 OK
+- **Test Script**:
+  ```javascript
+  pm.test("Status code is 200", function() {
+    pm.response.to.have.status(200);
+  });
+  
+  pm.test("Google authentication successful", function() {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData.success).to.be.true;
+    
+    // Save tokens if available
+    if (jsonData.data && jsonData.data.tokens) {
+      pm.environment.set("ACCESS_TOKEN", jsonData.data.tokens.accessToken);
+      pm.environment.set("REFRESH_TOKEN", jsonData.data.tokens.refreshToken);
+    }
+  });
+  ```
 
 ## Testing Admin Restrictions
 
@@ -602,3 +572,9 @@ if (tokenExpiry && currentTime > tokenExpiry) {
 - Make sure to save tokens after login and refresh operations
 - Check that you're using the correct environment variables
 - Verify that tokens are properly formatted in requests
+
+### Email Verification Issues
+
+- The verification URL now includes both the token and email parameters
+- Make sure to include the redirectPath parameter when testing registration and resend verification
+- The verification URL format is now: `/verify-email?token={token}&email={email}&redirectPath={redirectPath}`

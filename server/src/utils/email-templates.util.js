@@ -9,10 +9,13 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
  * Generate verification email template
  * @param {string} name - Recipient name
  * @param {string} token - Verification token
+ * @param {string} email - Recipient email
+ * @param {string} redirectPath - Path to redirect after verification
  * @returns {Object} Email subject and HTML content
  */
-const verificationEmailTemplate = (name, token, email) => {
-  const verificationUrl = `${CLIENT_URL}/verify-email?token=${token}&email=${email}`;
+const verificationEmailTemplate = (name, token, email, redirectPath) => {
+  // Build the verification URL with email and redirectPath directly in the URL
+  const verificationUrl = `${CLIENT_URL}/verify-email?token=${token}&email=${encodeURIComponent(email)}${redirectPath ? `&redirectPath=${encodeURIComponent(redirectPath)}` : ''}`;
   
   return {
     subject: 'Verify Your Email Address',

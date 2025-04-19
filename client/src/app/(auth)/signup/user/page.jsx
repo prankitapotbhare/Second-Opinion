@@ -1,21 +1,10 @@
 "use client";
 
 import React from 'react';
-import { useRouter } from 'next/navigation';
 import { SplitScreen, AuthHeader } from '../../components';
 import SignupForm from '../../components/forms/SignupForm';
 
 export default function UserSignup() {
-  const router = useRouter();
-
-  const handleSubmit = (formData) => {
-    // Handle signup logic here
-    console.log(formData);
-    
-    // Redirect to home page after successful signup
-    router.push('/');
-  };
-
   return (
     <SplitScreen 
       imageSrc="/images/microscope.jpg" 
@@ -30,7 +19,6 @@ export default function UserSignup() {
       
       <SignupForm 
         userType="user"
-        onSubmit={handleSubmit}
         redirectPath="/"
       />
     </SplitScreen>

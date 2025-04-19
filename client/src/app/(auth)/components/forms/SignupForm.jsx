@@ -9,7 +9,8 @@ import AuthDivider from '../common/AuthDivider';
 import { useAuth } from '@/contexts/AuthContext';
 
 const SignupForm = ({ 
-  userType = 'user' // 'user' or 'doctor'
+  userType = 'user', // 'user' or 'doctor'
+  redirectPath
 }) => {
   const router = useRouter();
   const { register, googleAuth } = useAuth();
@@ -53,6 +54,10 @@ const SignupForm = ({
     }
   
     try {
+      // Determine the redirect path
+      const defaultRedirect = userType === 'doctor' ? '/doctor/portal' : '/';
+      const finalRedirectPath = redirectPath || defaultRedirect;
+      
       // Call the register function from the auth context
       const userData = { 
         name,
@@ -62,12 +67,11 @@ const SignupForm = ({
         termsAccepted: agreeTerms
       };
       
-      const result = await register(userData);
+      const result = await register(userData, finalRedirectPath);
       
       if (result.success) {
-        // If signup is successful, redirect to success page
-        router.push(`/signup/success?email=${encodeURIComponent(email)}&type=${userType}`);
-        
+        // If signup is successful, redirect to success page with redirect path
+        router.push(`/signup/success?email=${encodeURIComponent(email)}&type=${userType}&redirect=${encodeURIComponent(finalRedirectPath)}`);
       } else {
         setError(result.error || 'Failed to create account');
         setIsLoading(false);
@@ -116,21 +120,24 @@ const SignupForm = ({
         throw new Error('Google authentication failed');
       }
       
-      // Call the googleAuth method from AuthContext
+      // Determine the redirect path
+      const defaultRedirect = userType === 'doctor' ? '/doctor/portal' : '/';
+      const finalRedirectPath = redirectPath || defaultRedirect;
+      
+      // Call the googleAuth method from AuthContext with redirectPath
       const result = await googleAuth(
         response.credential, 
         userType,
-        true // Remember me for signup
+        finalRedirectPath
       );
       
       if (result.success) {
         if (result.isNewUser) {
           // If it's a new user, redirect to signup success page
-          router.push(`/signup/success?email=${encodeURIComponent(result.user.email)}&type=${userType}`);
+          router.push(`/signup/success?email=${encodeURIComponent(result.user.email)}&type=${userType}&redirect=${encodeURIComponent(finalRedirectPath)}`);
         } else {
           // If existing user, redirect to dashboard
-          const redirectPath = userType === 'doctor' ? '/doctor/dashboard' : '/';
-          router.push(`/login/success?type=${userType}&redirect=${encodeURIComponent(redirectPath)}`);
+          router.push(finalRedirectPath);
         }
       } else {
         setError(result.error || 'Google authentication failed');

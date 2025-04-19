@@ -52,7 +52,7 @@ const registerUser = async (userData) => {
     throw errorUtil.validationError(Object.values(validation.errors)[0]);
   }
 
-  const { name, email, password, role, termsAccepted } = userData;
+  const { name, email, password, role, termsAccepted, redirectPath } = userData;
 
   // Check if user already exists
   const existingUser = await User.findOne({ email });
@@ -66,7 +66,7 @@ const registerUser = async (userData) => {
     email, 
     password, 
     role,
-    termsAccepted: true,
+    termsAccepted,
     termsAcceptedAt: new Date()
   };
   
@@ -82,7 +82,7 @@ const registerUser = async (userData) => {
 
   // Send verification email
   try {
-    await emailService.sendVerificationEmail(user.email, user.name, verificationToken);
+    await emailService.sendVerificationEmail(user.email, user.name, verificationToken, redirectPath);
   } catch (error) {
     logger.error('Failed to send verification email:', error);
     // Continue with registration even if email fails
@@ -299,9 +299,10 @@ const resetPassword = async (token, password) => {
 /**
  * Resend verification email
  * @param {string} email - User email
+ * @param {string} redirectPath - Path to redirect after verification
  * @returns {string} Verification token
  */
-const resendVerification = async (email) => {
+const resendVerification = async (email, redirectPath) => {
   // Check if user exists
   const user = await User.findOne({ email });
   if (!user) {
@@ -333,7 +334,7 @@ const resendVerification = async (email) => {
 
   // Send verification email
   try {
-    await emailService.sendVerificationEmail(user.email, user.name, verificationToken);
+    await emailService.sendVerificationEmail(user.email, user.name, verificationToken, redirectPath);
   } catch (error) {
     console.error('Failed to send verification email:', error);
     // Continue with process even if email fails

@@ -1,3 +1,8 @@
+I'll update the api-documentation.md file to reflect the recent changes in the authentication flow, particularly regarding the verification URL structure, redirectPath parameter, and terms acceptance requirement.
+
+Here are the necessary updates:
+
+```markdown:c:\Users\manis\Projects\Second-Opinion\docs\api-documentation.md
 # Second Opinion API Documentation
 
 This document provides details about all available API endpoints for the Second Opinion application.
@@ -57,7 +62,9 @@ Creates a new user account (not available for admin role).
   "name": "John Doe",
   "email": "john@example.com",
   "password": "password123",
-  "role": "user" // Only "user" or "doctor" roles allowed
+  "role": "user", // Only "user" or "doctor" roles allowed
+  "termsAccepted": true, // Required
+  "redirectPath": "/dashboard" // Optional, path to redirect after email verification
 }
 ```
 
@@ -69,7 +76,9 @@ For doctor registration, include specialization:
   "email": "jane@example.com",
   "password": "password123",
   "role": "doctor",
-  "specialization": "Cardiology"
+  "specialization": "Cardiology",
+  "termsAccepted": true,
+  "redirectPath": "/doctor-dashboard"
 }
 ```
 
@@ -78,11 +87,12 @@ For doctor registration, include specialization:
 ```json
 {
   "success": true,
-  "message": "User registered successfully",
+  "message": "User registered successfully. Please check your email to verify your account.",
   "data": {
     "userId": "60d21b4667d0d8992e610c85",
     "email": "john@example.com",
-    "verificationToken": "a1b2c3d4e5f6..." // In production, this would be sent via email
+    "termsAccepted": true,
+    "termsAcceptedAt": "2023-06-22T10:00:00.000Z"
   }
 }
 ```
@@ -129,6 +139,17 @@ Authenticates a user and returns tokens.
 }
 ```
 
+**Error Response (Email Not Verified)**:
+
+```json
+{
+  "success": false,
+  "message": "Please verify your email before logging in",
+  "needsVerification": true,
+  "email": "john@example.com"
+}
+```
+
 ### Verify Email
 
 Verifies a user's email address using the token sent during registration (not available for admin role).
@@ -146,8 +167,14 @@ Verifies a user's email address using the token sent during registration (not av
 ```json
 {
   "success": true,
-  "message": "Email verified successfully"
+  "message": "Email verified successfully",
+  "email": "john@example.com"
 }
+```
+
+**Note**: The verification link sent to users will be in the format:
+```
+http://localhost:3000/verify-email?token=<token>&email=<email>&redirectPath=<redirectPath>
 ```
 
 ### Refresh Token
@@ -230,10 +257,7 @@ Sends a password reset link to the user's email.
 ```json
 {
   "success": true,
-  "message": "Password reset link sent to email",
-  "data": {
-    "resetToken": "a1b2c3d4e5f6..." // In production, this would be sent via email
-  }
+  "message": "If your email is registered with us, you will receive a password reset link shortly."
 }
 ```
 
@@ -279,7 +303,8 @@ Resends the email verification link (not available for admin role).
 
 ```json
 {
-  "email": "john@example.com"
+  "email": "john@example.com",
+  "redirectPath": "/dashboard" // Optional, path to redirect after verification
 }
 ```
 
@@ -288,10 +313,7 @@ Resends the email verification link (not available for admin role).
 ```json
 {
   "success": true,
-  "message": "Verification email sent",
-  "data": {
-    "verificationToken": "a1b2c3d4e5f6..." // In production, this would be sent via email
-  }
+  "message": "If your email is unverified, a new verification email has been sent."
 }
 ```
 
@@ -321,6 +343,49 @@ Retrieves the currently authenticated user's information.
       "createdAt": "2023-06-22T10:00:00.000Z",
       "updatedAt": "2023-06-22T10:00:00.000Z"
     }
+  }
+}
+```
+
+### Google Authentication
+
+Authenticates or registers a user using Google OAuth.
+
+- **URL**: `/auth/google`
+- **Method**: `POST`
+- **Auth Required**: No
+- **Restrictions**: Not available for admin role
+
+**Request Body**:
+
+```json
+{
+  "idToken": "Google-provided-id-token",
+  "userType": "user", // "user" or "doctor", defaults to "user" if not specified
+  "redirectPath": "/dashboard" // Optional, path to redirect after email verification if needed
+}
+```
+
+**Success Response**:
+
+```json
+{
+  "success": true,
+  "message": "Google login successful", // or "Google signup successful" for new users
+  "data": {
+    "user": {
+      "id": "60d21b4667d0d8992e610c85",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "role": "user",
+      "photoURL": "https://lh3.googleusercontent.com/a/photo",
+      "emailVerified": true
+    },
+    "tokens": {
+      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    },
+    "isNewUser": false // true if this is the first time the user has logged in with Google
   }
 }
 ```
@@ -398,194 +463,5 @@ Updates the authenticated user's profile.
       "updatedAt": "2023-06-22T11:00:00.000Z"
     }
   }
-}
-```
-
----
-
-## Admin Routes
-
-All admin routes require authentication with an admin role.
-
-### Get All Users
-
-Retrieves a list of all users.
-
-- **URL**: `/users`
-- **Method**: `GET`
-- **Auth Required**: Yes (Admin only)
-
-**Success Response**:
-
-```json
-{
-  "success": true,
-  "count": 2,
-  "data": {
-    "users": [
-      {
-        "_id": "60d21b4667d0d8992e610c85",
-        "name": "John Doe",
-        "email": "john@example.com",
-        "role": "user",
-        "photoURL": "https://ui-avatars.com/api/?name=John%20Doe&background=3b82f6&color=fff",
-        "emailVerified": true,
-        "specialization": null,
-        "createdAt": "2023-06-22T10:00:00.000Z",
-        "updatedAt": "2023-06-22T10:00:00.000Z"
-      },
-      {
-        "_id": "60d21b4667d0d8992e610c86",
-        "name": "Dr. Jane Smith",
-        "email": "jane@example.com",
-        "role": "doctor",
-        "photoURL": "https://ui-avatars.com/api/?name=Jane%20Smith&background=3b82f6&color=fff",
-        "emailVerified": true,
-        "specialization": "Cardiology",
-        "createdAt": "2023-06-22T10:00:00.000Z",
-        "updatedAt": "2023-06-22T10:00:00.000Z"
-      }
-    ]
-  }
-}
-```
-
-### Get User by ID
-
-Retrieves a specific user by ID.
-
-- **URL**: `/users/:id`
-- **Method**: `GET`
-- **Auth Required**: Yes (Admin only)
-
-**URL Parameters**:
-- `id`: The ID of the user to retrieve
-
-**Success Response**:
-
-```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "_id": "60d21b4667d0d8992e610c85",
-      "name": "John Doe",
-      "email": "john@example.com",
-      "role": "user",
-      "photoURL": "https://ui-avatars.com/api/?name=John%20Doe&background=3b82f6&color=fff",
-      "emailVerified": true,
-      "specialization": null,
-      "createdAt": "2023-06-22T10:00:00.000Z",
-      "updatedAt": "2023-06-22T10:00:00.000Z"
-    }
-  }
-}
-```
-
-### Update User
-
-Updates a specific user by ID.
-
-- **URL**: `/users/:id`
-- **Method**: `PUT`
-- **Auth Required**: Yes (Admin only)
-
-**URL Parameters**:
-- `id`: The ID of the user to update
-
-**Request Body**:
-
-```json
-{
-  "name": "John Smith",
-  "email": "john.smith@example.com",
-  "role": "user",
-  "emailVerified": true,
-  "photoURL": "https://example.com/photo.jpg",
-  "specialization": null
-}
-```
-
-**Success Response**:
-
-```json
-{
-  "success": true,
-  "message": "User updated successfully",
-  "data": {
-    "user": {
-      "_id": "60d21b4667d0d8992e610c85",
-      "name": "John Smith",
-      "email": "john.smith@example.com",
-      "role": "user",
-      "photoURL": "https://example.com/photo.jpg",
-      "emailVerified": true,
-      "specialization": null,
-      "createdAt": "2023-06-22T10:00:00.000Z",
-      "updatedAt": "2023-06-22T11:00:00.000Z"
-    }
-  }
-}
-```
-
-### Delete User
-
-Deletes a specific user by ID.
-
-- **URL**: `/users/:id`
-- **Method**: `DELETE`
-- **Auth Required**: Yes (Admin only)
-
-**URL Parameters**:
-- `id`: The ID of the user to delete
-
-**Success Response**:
-
-```json
-{
-  "success": true,
-  "message": "User deleted successfully"
-}
-```
-
-## Creating Admin Users
-
-Admin users cannot be registered through the API. They must be created directly in the database using the provided script:
-
-```bash
-npm run create-admin
-```
-
-When running this command, you will be prompted to enter:
-- Admin name
-- Admin email
-- Admin password (minimum 6 characters)
-
-Alternatively, you can provide these details as command-line arguments:
-
-```bash
-npm run create-admin "Admin Name" "admin@example.com" "securePassword123"
-```
-
-## Setting Up Postman
-
-1. Create a new Postman collection named "Second Opinion API"
-2. Set up environment variables:
-   - `BASE_URL`: http://localhost:5000/api
-   - `ACCESS_TOKEN`: (to be filled after login)
-   - `REFRESH_TOKEN`: (to be filled after login)
-
-3. For authenticated requests, add this to the Authorization tab:
-   - Type: Bearer Token
-   - Token: {{ACCESS_TOKEN}}
-
-4. Create a login request and add this script to the "Tests" tab to automatically save tokens:
-```javascript
-if (pm.response.code === 200) {
-    var jsonData = pm.response.json();
-    if (jsonData.success && jsonData.data && jsonData.data.tokens) {
-        pm.environment.set("ACCESS_TOKEN", jsonData.data.tokens.accessToken);
-        pm.environment.set("REFRESH_TOKEN", jsonData.data.tokens.refreshToken);
-    }
 }
 ```

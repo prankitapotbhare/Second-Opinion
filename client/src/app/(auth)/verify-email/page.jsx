@@ -1,22 +1,37 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { StatusMessage } from '../components';
 import { AuthLoading } from '@/components';
 import { useAuth } from '@/contexts/AuthContext';
 
 // Create a separate component for the verification content
 function VerificationContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams?.get('token');
   const email = searchParams?.get('email');
+  const redirectPath = searchParams?.get('redirect') || '/';
+  const userType = searchParams?.get('type') || 'user';
   const { verifyEmail, resendVerification } = useAuth();
   const [isVerifying, setIsVerifying] = useState(true);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState('');
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
+
+  // Get the appropriate redirect path based on user type
+  const getRedirectPath = () => {
+    if (redirectPath) return redirectPath;
+    return userType === 'doctor' ? '/doctor/portal' : '/';
+  };
+
+  // Handle redirect after successful verification
+  const handleSuccessRedirect = () => {
+    const finalRedirectPath = getRedirectPath();
+    router.push(finalRedirectPath);
+  };
 
   // Handle resend verification email
   const handleResendVerification = async () => {
@@ -27,7 +42,8 @@ function VerificationContent() {
 
     setIsResending(true);
     try {
-      const result = await resendVerification(email);
+      // Pass the redirectPath to resendVerification
+      const result = await resendVerification(email, redirectPath);
       
       if (result.success) {
         setResendSuccess(true);
@@ -101,7 +117,7 @@ function VerificationContent() {
           message="A new verification email has been sent to your email address. Please check your inbox and click the verification link."
           primaryButton={{
             text: "Go to Login",
-            href: "/login"
+            href: `/login/${userType}?redirect=${encodeURIComponent(getRedirectPath())}`
           }}
           secondaryButton={{
             text: "Return to Home",
@@ -120,19 +136,23 @@ function VerificationContent() {
           title="Email Verified!"
           message="Your email has been successfully verified. You can now log in to your account."
           primaryButton={{
-            text: "Go to Login",
-            href: "/login"
+            text: "Continue to Login",
+            href: `/login/${userType}?redirect=${encodeURIComponent(redirectPath)}`
+          }}
+          secondaryButton={{
+            text: "Go to Dashboard",
+            action: handleSuccessRedirect
           }}
         />
       ) : (
         <StatusMessage
           status="error"
           title="Verification Failed"
-          message={error}
+          message={error || "We couldn't verify your email. The link may be invalid or expired."}
           primaryButton={{
             text: email ? "Resend Verification Email" : "Go to Login",
             onClick: email ? handleResendVerification : undefined,
-            href: email ? undefined : "/login",
+            href: email ? undefined : `/login/${userType}`,
             loading: isResending
           }}
           secondaryButton={{

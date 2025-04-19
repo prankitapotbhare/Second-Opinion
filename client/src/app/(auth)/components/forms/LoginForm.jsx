@@ -57,9 +57,7 @@ const LoginForm = ({
       
       if (result.success) {
         const finalRedirectPath = getRedirectPath();
-        
-        // Redirect to success page with appropriate parameters
-        router.push(`/login/success?type=${userType}${finalRedirectPath !== '/' ? `&redirect=${encodeURIComponent(finalRedirectPath)}` : ''}`);
+        router.push(finalRedirectPath);
       } else if (result.needsVerification) {
         setNeedsVerification(true);
         setVerificationEmail(email);
@@ -117,16 +115,16 @@ const LoginForm = ({
         throw new Error('Google authentication failed');
       }
       
-      // Call the googleAuth method from AuthContext
+      // Call the googleAuth method from AuthContext with redirectPath
+      const finalRedirectPath = getRedirectPath();
       const result = await googleAuth(
         response.credential, 
         userType,
-        formData.rememberMe
+        finalRedirectPath
       );
       
       if (result.success) {
-        const finalRedirectPath = getRedirectPath();
-        router.push(`/login/success?type=${userType}${finalRedirectPath !== '/' ? `&redirect=${encodeURIComponent(finalRedirectPath)}` : ''}`);
+        router.push(finalRedirectPath);
       } else {
         setError(result.error || 'Google authentication failed');
       }
@@ -141,8 +139,11 @@ const LoginForm = ({
   const handleResendVerification = async () => {
     setIsLoading(true);
     try {
-      // Use the resendVerification function from the auth context
-      const result = await resendVerification(verificationEmail);
+      // Get the redirect path to include in the verification email
+      const finalRedirectPath = getRedirectPath();
+      
+      // Use the resendVerification function from the auth context with redirectPath
+      const result = await resendVerification(verificationEmail, finalRedirectPath);
       
       if (result.success) {
         setError('');

@@ -262,25 +262,24 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Register function
-  const register = async (userData) => {
+  const register = async (userData, redirectPath = '/dashboard') => {
     setAuthError(null);
     setLoading(true);
     
     try {
-      const response = await authApi.register(userData);
+      
+      const response = await authApi.register(...userData, redirectPath);
+      
+      setLoading(false);
       
       if (response.success) {
-        setLoading(false);
         return { 
           success: true, 
           message: response.message,
-          email: response.data.email,
-          termsAccepted: response.data.termsAccepted,
-          termsAcceptedAt: response.data.termsAcceptedAt
+          email: response.data.email
         };
       }
       
-      setLoading(false);
       return { success: false, error: response.message };
     } catch (error) {
       console.error('Registration error:', error);
@@ -313,7 +312,6 @@ export const AuthProvider = ({ children }) => {
     } finally {
       clearAuthData();
       setLoading(false);
-      router.push('/login');
     }
   };
 
@@ -330,7 +328,7 @@ export const AuthProvider = ({ children }) => {
         return { 
           success: true, 
           message: response.message,
-          email: response.email // Include the email from the response
+          email: response.email
         };
       }
       
@@ -345,20 +343,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Resend verification email
-  const resendVerification = async (email) => {
-    setAuthError(null);
+  // Resend verification email function
+  const resendVerification = async (email, redirectPath = '/dashboard') => {
     setLoading(true);
     
     try {
-      const response = await authApi.resendVerification(email);
+      const response = await authApi.resendVerification(email, redirectPath);
+      setLoading(false);
       
       if (response.success) {
-        setLoading(false);
         return { success: true, message: response.message };
       }
       
-      setLoading(false);
       return { success: false, error: response.message };
     } catch (error) {
       console.error('Resend verification error:', error);
@@ -369,61 +365,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Request password reset
-  const requestPasswordReset = async (email) => {
+  // Google authentication function
+  const googleAuth = async (idToken, userType = 'user', redirectPath = '/dashboard') => {
     setAuthError(null);
     setLoading(true);
     
     try {
-      const response = await authApi.requestPasswordReset(email);
-      
-      if (response.success) {
-        setLoading(false);
-        return { success: true, message: response.message };
-      }
-      
-      setLoading(false);
-      return { success: false, error: response.message };
-    } catch (error) {
-      console.error('Password reset request error:', error);
-      const errorMessage = error.message || 'An error occurred while requesting password reset';
-      setAuthError({ message: errorMessage });
-      setLoading(false);
-      return { success: false, error: errorMessage };
-    }
-  };
-
-  // Reset password
-  const resetPassword = async (token, password) => {
-    setAuthError(null);
-    setLoading(true);
-    
-    try {
-      const response = await authApi.resetPassword(token, password);
-      
-      if (response.success) {
-        setLoading(false);
-        return { success: true, message: response.message };
-      }
-      
-      setLoading(false);
-      return { success: false, error: response.message };
-    } catch (error) {
-      console.error('Password reset error:', error);
-      const errorMessage = error.message || 'An error occurred while resetting password';
-      setAuthError({ message: errorMessage });
-      setLoading(false);
-      return { success: false, error: errorMessage };
-    }
-  };
-
-  // Google authentication
-  const googleAuth = async (idToken, userType = 'user', rememberMe = false) => {
-    setAuthError(null);
-    setLoading(true);
-    
-    try {
-      const response = await authApi.googleAuth(idToken, userType);
+      const response = await authApi.googleAuth(idToken, userType, redirectPath);
       
       if (response.success) {
         const { user, tokens, isNewUser } = response.data;
@@ -436,23 +384,11 @@ export const AuthProvider = ({ children }) => {
         setAuthToken(accessToken);
         setRefreshToken(newRefreshToken);
         
-        // Store in appropriate storage based on rememberMe
-        const storage = rememberMe ? localStorage : sessionStorage;
-        storage.setItem('currentUser', JSON.stringify(userData));
-        storage.setItem('authToken', accessToken);
-        storage.setItem('refreshToken', newRefreshToken);
-        
-        if (rememberMe) {
-          localStorage.setItem('rememberMe', 'true');
-        } else {
-          localStorage.removeItem('rememberMe');
-          // Clear localStorage if not using remember me
-          if (!localStorage.getItem('rememberMe')) {
-            localStorage.removeItem('currentUser');
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('refreshToken');
-          }
-        }
+        // Store in localStorage (Google auth typically uses remember me)
+        localStorage.setItem('currentUser', JSON.stringify(userData));
+        localStorage.setItem('authToken', accessToken);
+        localStorage.setItem('refreshToken', newRefreshToken);
+        localStorage.setItem('rememberMe', 'true');
         
         setLoading(false);
         return { 
@@ -473,13 +409,55 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Request password reset function
+  const requestPasswordReset = async (email) => {
+    setLoading(true);
+    
+    try {
+      const response = await authApi.requestPasswordReset(email);
+      setLoading(false);
+      
+      if (response.success) {
+        return { success: true, message: response.message };
+      }
+      
+      return { success: false, error: response.message };
+    } catch (error) {
+      console.error('Password reset request error:', error);
+      const errorMessage = error.message || 'An error occurred while requesting password reset';
+      setLoading(false);
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  // Reset password function
+  const resetPassword = async (token, password) => {
+    setLoading(true);
+    
+    try {
+      const response = await authApi.resetPassword(token, password);
+      setLoading(false);
+      
+      if (response.success) {
+        return { success: true, message: response.message };
+      }
+      
+      return { success: false, error: response.message };
+    } catch (error) {
+      console.error('Password reset error:', error);
+      const errorMessage = error.message || 'An error occurred while resetting password';
+      setLoading(false);
+      return { success: false, error: errorMessage };
+    }
+  };
+
   // Context value
   const value = {
     currentUser,
-    authToken,
-    refreshToken,
     loading,
     authError,
+    authToken,
+    refreshToken,
     login,
     register,
     logout,

@@ -171,9 +171,9 @@ exports.resetPassword = async (req, res, next) => {
 // Resend verification email
 exports.resendVerification = async (req, res, next) => {
   try {
-    const { email } = req.body;
+    const { email, redirectPath } = req.body;
     
-    await authService.resendVerification(email);
+    await authService.resendVerification(email, redirectPath);
 
     res.status(200).json({
       success: true,

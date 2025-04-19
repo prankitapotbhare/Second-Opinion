@@ -92,10 +92,11 @@ const sendEmail = async (to, subject, html) => {
  * @param {string} to - Recipient email
  * @param {string} name - Recipient name
  * @param {string} token - Verification token
+ * @param {string} redirectPath - Path to redirect after verification
  * @returns {Promise} Nodemailer info
  */
-const sendVerificationEmail = async (to, name, token) => {
-  const { subject, html } = emailTemplates.verificationEmailTemplate(name, token, to);
+const sendVerificationEmail = async (to, name, token, redirectPath) => {
+  const { subject, html } = emailTemplates.verificationEmailTemplate(name, token, to, redirectPath);
   return await sendEmail(to, subject, html);
 };
 
