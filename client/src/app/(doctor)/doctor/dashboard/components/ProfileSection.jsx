@@ -96,25 +96,20 @@ const ProfileSection = () => {
         </div>
       </section>
 
-      {/* Professional Details */}
+      {/* Doctor's Details */}
       <section className="bg-white rounded-lg shadow-sm p-4 sm:p-6 border border-gray-100 mb-8">
-        <h2 className="text-xl font-medium text-gray-800 mb-6">Professional Details</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Medical License Number</label>
-            <input
-              type="text"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
-              value="ML-12345678"
-              onChange={() => {}}
-            />
+          
+          {/* Professional Information */}
+          <div className="col-span-1 lg:col-span-2">
+            <h3 className="text-xl font-medium text-gray-800">Professional Information</h3>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Specialization</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Specialization<span className="text-red-500">*</span></label>
             <div className="relative">
               <select className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700 appearance-none">
-                <option>Cardiology</option>
+                <option>Eg. Cardiology</option>
                 <option>Neurology</option>
                 <option>Pediatrics</option>
                 <option>Dermatology</option>
@@ -127,123 +122,133 @@ const ProfileSection = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Years of Experience</label>
-            <input
-              type="number"
-              min="0"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
-              value="12"
-              onChange={() => {}}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Affiliated Hospitals/Clinics</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Years of Experience<span className="text-red-500">*</span></label>
             <input
               type="text"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
-              value="City General Hospital, Heart Care Clinic"
+              placeholder="Eg. 5,8,10"
               onChange={() => {}}
             />
           </div>
 
-          {/* Certifications */}
-          <div className="col-span-1 lg:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Medical Degrees & Certifications
-            </label>
-            <div className="border border-gray-300 rounded-md p-4 bg-gray-50">
-              {[
-                { name: "Medical_Degree_Certificate.pdf", size: "2.4 MB" },
-                { name: "Cardiology_Specialization.pdf", size: "1.8 MB" },
-              ].map((doc, index) => (
-                <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
-                  <div className="flex items-center">
-                    <FaFilePdf className="text-red-500 text-xl mr-3" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">{doc.name}</p>
-                      <p className="text-xs text-gray-500">{doc.size}</p>
-                    </div>
-                  </div>
-                  <button className="text-gray-500 hover:text-red-500 cursor-pointer">
-                    <FaTrash />
-                  </button>
-                </div>
-              ))}
-              <button className="mt-4 flex items-center justify-center w-full py-2 border border-dashed border-gray-300 rounded-md text-sm text-gray-600 hover:bg-gray-100 transition">
-                <FaPlus className="mr-2" />
-                Add More Documents
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Consultation Settings */}
-      <section className="bg-white rounded-lg shadow-sm p-4 sm:p-6 border border-gray-100 mb-8">
-        <h2 className="text-xl font-medium text-gray-800 mb-6">Consultation Settings</h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Available Consultation Modes</label>
-            <label className="flex items-center">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Current Hospital/Clinic Affiliation<span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+              placeholder="Eg. Apollo Hospitals, Chennai"
+              onChange={() => {}}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Hospital Address</label>
+            <input
+              type="text"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+              placeholder="Eg. AIIMS Delhi, India"
+              onChange={() => {}}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Medical License Number<span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+              placeholder="Eg. 4455648"
+              onChange={() => {}}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Issuing Medical Council<span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+              placeholder="Eg. Medical Council of India (MCI) / USMLE (USA)"
+              onChange={() => {}}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Consultation Fee<span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+              placeholder="Eg. 984XXXXXXX"
+              onChange={() => {}}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Registration Certificate Upload<span className="text-red-500">*</span></label>
+            <div className="relative">
               <input
-                type="checkbox"
-                checked
-                className="h-4 w-4 text-blue-600 border-gray-300"
+                type="file"
+                id="certificate-upload"
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden"
                 onChange={() => {}}
               />
-              <span className="ml-2 text-sm text-gray-700">Report Review</span>
-            </label>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Languages Spoken</label>
-            <div className="flex flex-wrap gap-2">
-              {["English", "Spanish"].map((lang, i) => (
-                <div
-                  key={i}
-                  className="flex items-center bg-blue-100 text-blue-800 px-4 py-1 rounded-full text-sm"
-                >
-                  {lang}
-                  <button className="ml-2 text-blue-600 hover:text-blue-800">
-                    <FaTimesCircle />
-                  </button>
-                </div>
-              ))}
-              <button className="flex items-center px-3 py-1 border border-dashed border-gray-300 rounded-full text-sm text-gray-600 hover:bg-gray-100">
-                <FaPlus className="mr-1" />
-                Add
-              </button>
+              <label 
+                htmlFor="certificate-upload" 
+                className="flex items-center justify-between w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700 cursor-pointer hover:bg-gray-50"
+              >
+                <span className="text-gray-500">Upload PDF/JPG</span>
+                <FaUpload className="text-blue-500" />
+              </label>
+              <div className="mt-2 text-xs text-gray-500">
+                Supported formats: PDF, JPG, JPEG, PNG (Max size: 100MB)
+              </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Availability / Working Hours
-            </label>
-            <div className="space-y-2">
-              {[
-                ["Monday - Friday", "9:00 AM - 5:00 PM"],
-                ["Saturday", "10:00 AM - 2:00 PM"],
-                ["Sunday", "Closed"],
-              ].map(([day, time], i) => (
-                <div key={i} className="flex justify-between text-sm text-gray-700">
-                  <span>{day}</span>
-                  <span>{time}</span>
-                </div>
-              ))}
-              <button className="mt-2 text-sm text-blue-600 hover:text-blue-800">
-                <FaEdit className="inline mr-1" />
-                Edit Schedule
-              </button>
-            </div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Phone number<span className="text-red-500">*</span></label>
+            <input
+              type="tel"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+              placeholder="Eg. 984XXXXXXX"
+              onChange={() => {}}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address<span className="text-red-500">*</span></label>
+            <input
+              type="email"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+              placeholder="Eg. gurusharan@gmail.com"
+              onChange={() => {}}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Emergency Contact number<span className="text-red-500">*</span></label>
+            <input
+              type="tel"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+              placeholder="Eg. 784XXXXXXX"
+              onChange={() => {}}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Consultation Address</label>
+            <input
+              type="text"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+              placeholder="Eg. Fortis Hospital, Bandra, Mumbai"
+              onChange={() => {}}
+            />
           </div>
 
           <div className="col-span-1 lg:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Short Bio</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Bio<span className="text-red-500">*</span></label>
             <textarea
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700 h-32"
-              value="Dr. Jane Doe is a board-certified cardiologist with over 12 years of experience..."
+              placeholder="Eg. I am a licensed doctor with 10 years of experience in the field."
               onChange={() => {}}
             ></textarea>
           </div>

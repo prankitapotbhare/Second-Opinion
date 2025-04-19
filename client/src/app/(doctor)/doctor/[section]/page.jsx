@@ -62,7 +62,7 @@ export default function DoctorSectionPage() {
   };
 
   return (
-    <div className="flex h-screen bg-[#f0f8ff] relative overflow-hidden">
+    <div className="flex h-screen bg-gray-50 relative overflow-hidden">
       <Sidebar 
         activeTab={section} 
         handleTabClick={(tab) => window.location.href = `/doctor/${tab}`}

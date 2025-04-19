@@ -80,7 +80,7 @@ const Sidebar = ({
           isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
-        <div className={`flex flex-col h-screen ${isCollapsed ? 'w-20' : 'w-72'} bg-gradient-to-br from-blue-100 via-blue-50 to-white text-blue-800 shadow-xl overflow-y-auto transition-all duration-300`}>
+        <div className={`flex flex-col h-screen ${isCollapsed ? 'w-20' : 'w-72'} bg-white text-blue-800 shadow-xl overflow-y-auto transition-all duration-300`}>
           {/* Sidebar Header with Enhanced Logo */}
           <div className={`mt-2 p-4 flex flex-col ${isCollapsed ? 'items-center' : ''}`}>
             <div className="flex items-center justify-between w-full">
