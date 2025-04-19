@@ -7,7 +7,7 @@ import { FaBars, FaTimes, FaUser, FaSignOutAlt } from 'react-icons/fa';
 import { useOnClickOutside } from '@/hooks/useOnClickOutside';
 
 const Navbar = ({ scrollToFAQs, simplifiedNav = false }) => {
-  const { currentUser, logout, isAuthenticated } = useAuth();
+  const { currentUser, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   
@@ -27,6 +27,11 @@ const Navbar = ({ scrollToFAQs, simplifiedNav = false }) => {
   useOnClickOutside(profileRef, () => {
     if (isProfileOpen) setIsProfileOpen(false);
   });
+
+  // Add isAuthenticated function
+  const isAuthenticated = () => {
+    return !!currentUser;
+  };
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);

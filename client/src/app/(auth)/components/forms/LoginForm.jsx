@@ -10,12 +10,11 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const LoginForm = ({ 
   userType = 'user', // 'user', 'doctor', or 'admin'
-  onSubmit,
-  redirectPath = '/',
-  hideOptions = false
+  hideOptions = false,
+  redirectPath
 }) => {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, resendVerification, googleAuth } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -26,6 +25,16 @@ const LoginForm = ({
   const [needsVerification, setNeedsVerification] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
 
+  // Get redirect path from props or URL params
+  const getRedirectPath = () => {
+    // First check if redirectPath prop is provided
+    if (redirectPath) return redirectPath;
+    
+    // Default paths based on user type
+    return userType === 'doctor' ? '/doctor/dashboard' : 
+           userType === 'admin' ? '/admin/dashboard' : '/';
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -34,7 +43,6 @@ const LoginForm = ({
     }));
   };
 
-  // Update the handleSubmit function in LoginForm.jsx
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -44,58 +52,104 @@ const LoginForm = ({
     const { email, password, rememberMe } = formData;
     
     try {
-      // Call the login function from the auth context
-      const result = await login(email, password, userType);
+      // Pass the userType as the expected role
+      const result = await login(email, password, rememberMe, userType);
       
       if (result.success) {
-        // Get the redirect URL from query parameters if it exists
-        const urlParams = new URLSearchParams(window.location.search);
-        const redirectParam = urlParams.get('redirect');
-        
-        // If login is successful, redirect to success page with redirect parameter
-        router.push(`/login/success?type=${userType}${redirectParam ? `&redirect=${redirectParam}` : ''}`);
-        
-        // Also call the onSubmit prop if provided
-        if (onSubmit) {
-          onSubmit({ email, password, rememberMe });
-        }
+        const finalRedirectPath = getRedirectPath();
+        router.push(finalRedirectPath);
       } else if (result.needsVerification) {
-        // If user needs to verify email
         setNeedsVerification(true);
-        setVerificationEmail(result.email);
+        setVerificationEmail(email);
+      } else if (result.wrongRole && result.actualRole) {
+        // Handle wrong role error - redirect to correct login page
+        setError(`This account is registered as a ${result.actualRole}. Redirecting to the correct login page...`);
+        setTimeout(() => {
+          router.push(`/login/${result.actualRole}`);
+        }, 2000);
       } else {
-        // If login fails, show the error
         setError(result.error || 'Login failed');
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      // Check if the error contains verification information
+      if (err.response && err.response.data && err.response.data.needsVerification) {
+        setNeedsVerification(true);
+        setVerificationEmail(email);
+      } else {
+        setError(err.message || 'An unexpected error occurred');
+        console.error(err);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      // Load the Google Identity Services script
+      const googleScript = document.createElement('script');
+      googleScript.src = 'https://accounts.google.com/gsi/client';
+      googleScript.async = true;
+      googleScript.defer = true;
+      document.head.appendChild(googleScript);
+      
+      googleScript.onload = () => {
+        // Initialize Google Identity Services
+        window.google.accounts.id.initialize({
+          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+          callback: handleGoogleCredentialResponse,
+          cancel_on_tap_outside: true
+        });
+        
+        // Prompt the user to select an account
+        window.google.accounts.id.prompt();
+      };
+    } catch (err) {
+      setError('Failed to initialize Google authentication');
+      console.error(err);
+      setIsLoading(false);
+    }
+  };
+  
+  // Handle the credential response from Google
+  const handleGoogleCredentialResponse = async (response) => {
+    try {
+      if (!response || !response.credential) {
+        throw new Error('Google authentication failed');
+      }
+      
+      // Call the googleAuth method from AuthContext with redirectPath
+      const finalRedirectPath = getRedirectPath();
+      const result = await googleAuth(
+        response.credential, 
+        userType,
+        finalRedirectPath
+      );
+      
+      if (result.success) {
+        router.push(finalRedirectPath);
+      } else {
+        setError(result.error || 'Google authentication failed');
+      }
+    } catch (err) {
+      setError('An error occurred during Google authentication');
       console.error(err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleLogin = () => {
-    // Handle Google login
-    console.log('Google login clicked');
-    // For mock purposes, we'll just log in as the default user for this type
-    const mockEmail = userType === 'admin' ? 'admin@example.com' : 
-                     userType === 'doctor' ? 'doctor@example.com' : 
-                     'user@example.com';
-    setFormData({
-      email: mockEmail,
-      password: 'password123',
-      rememberMe: false
-    });
-    // Submit the form
-    handleSubmit({ preventDefault: () => {} });
-  };
-
   const handleResendVerification = async () => {
     setIsLoading(true);
     try {
-      const { resendVerificationEmail } = useAuth();
-      const result = await resendVerificationEmail(verificationEmail);
+      // Get the redirect path to include in the verification email
+      const finalRedirectPath = getRedirectPath();
+      
+      // Use the resendVerification function from the auth context with redirectPath
+      const result = await resendVerification(verificationEmail, finalRedirectPath);
       
       if (result.success) {
         setError('');
@@ -105,6 +159,7 @@ const LoginForm = ({
       }
     } catch (err) {
       setError('An unexpected error occurred');
+      console.error(err);
     } finally {
       setIsLoading(false);
     }
@@ -248,6 +303,8 @@ const LoginForm = ({
           <SocialLoginButton 
             provider="Google" 
             onClick={handleGoogleLogin}
+            isLoading={isLoading && !formData.email && !formData.password}
+            disabled={userType === 'admin'} // Disable for admin users
           />
           
           <div className="text-center">

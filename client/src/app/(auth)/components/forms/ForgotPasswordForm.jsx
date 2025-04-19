@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
 const ForgotPasswordForm = ({ onSuccess }) => {
-  const { resetPassword } = useAuth();
+  const { requestPasswordReset } = useAuth();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -16,7 +16,7 @@ const ForgotPasswordForm = ({ onSuccess }) => {
     setIsLoading(true);
 
     try {
-      const result = await resetPassword(email);
+      const result = await requestPasswordReset(email);
       
       if (result.success) {
         if (onSuccess) {

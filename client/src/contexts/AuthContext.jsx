@@ -2,294 +2,507 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import * as authApi from '@/api/auth.api';
 
 // Create the auth context
 const AuthContext = createContext();
 
-// Mock user data
-const mockUsers = {
-  admin: {
-    uid: 'admin-123',
-    displayName: 'Admin User',
-    email: 'admin@example.com',
-    password: 'password123',
-    role: 'admin',
-    photoURL: 'https://ui-avatars.com/api/?name=Admin+User&background=6366f1&color=fff',
-    emailVerified: true
-  },
-  doctor: {
-    uid: 'doctor-123',
-    displayName: 'Dr. John Smith',
-    email: 'doctor@example.com',
-    password: 'password123',
-    role: 'doctor',
-    specialization: 'Cardiology',
-    photoURL: 'https://ui-avatars.com/api/?name=Dr+John+Smith&background=10b981&color=fff',
-    emailVerified: true
-  },
-  user: {
-    uid: 'user-123',
-    displayName: 'Jane Doe',
-    email: 'user@example.com',
-    password: 'password123',
-    role: 'user',
-    photoURL: 'https://ui-avatars.com/api/?name=Jane+Doe&background=3b82f6&color=fff',
-    emailVerified: true
-  }
-};
-
 export const AuthProvider = ({ children }) => {
-  const router = useRouter();
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
   const [authToken, setAuthToken] = useState(null);
+  const [refreshToken, setRefreshToken] = useState(null);
+  const [tokenRefreshTimer, setTokenRefreshTimer] = useState(null);
+  const [verificationState, setVerificationState] = useState({
+    needsVerification: false,
+    email: null
+  });
 
-  // Check if user is already logged in (from localStorage)
+  // Check if user is already logged in (from localStorage or sessionStorage)
   useEffect(() => {
-    const storedUser = localStorage.getItem('currentUser');
-    const storedToken = localStorage.getItem('authToken');
+    const rememberMe = localStorage.getItem('rememberMe') === 'true';
+    const storage = rememberMe ? localStorage : sessionStorage;
     
-    if (storedUser && storedToken) {
+    const storedUser = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+    const storedToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    const storedRefreshToken = localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken');
+    
+    if (storedUser && storedToken && storedRefreshToken) {
       try {
         setCurrentUser(JSON.parse(storedUser));
         setAuthToken(storedToken);
+        setRefreshToken(storedRefreshToken);
+        
+        // Validate token and refresh if needed
+        validateToken(storedToken, storedRefreshToken, rememberMe);
       } catch (error) {
         console.error("Failed to parse stored user:", error);
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('authToken');
+        clearAuthData();
       }
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
+    
+    // Clean up token refresh timer on unmount
+    return () => {
+      if (tokenRefreshTimer) {
+        clearTimeout(tokenRefreshTimer);
+      }
+    };
   }, []);
-
-  // Login function
-  const login = async (email, password, userType) => {
-    setAuthError(null);
+  
+  // Set up token refresh timer when authToken changes
+  useEffect(() => {
+    if (authToken) {
+      setupTokenRefreshTimer(authToken);
+    }
+  }, [authToken]);
+  
+  // Setup token refresh timer
+  const setupTokenRefreshTimer = (token) => {
+    // Clear any existing timer
+    if (tokenRefreshTimer) {
+      clearTimeout(tokenRefreshTimer);
+    }
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Decode token to get expiration time
+      const tokenData = JSON.parse(atob(token.split('.')[1]));
+      const expirationTime = tokenData.exp * 1000; // Convert to milliseconds
+      const currentTime = Date.now();
       
-      // For demo purposes, we'll just check if the email contains the userType
-      // In a real app, you would validate credentials against your backend
-      const mockUser = mockUsers[userType];
+      // Calculate time until token needs refresh (5 minutes before expiration)
+      const timeUntilRefresh = Math.max(0, expirationTime - currentTime - 5 * 60 * 1000);
       
-      if (mockUser && (email.includes(userType) || email === mockUser.email) && password === mockUser.password) {
-        // Check if user is verified
-        if (!mockUser.emailVerified) {
+      // Set timer to refresh token
+      const timer = setTimeout(() => {
+        if (refreshToken) {
+          refreshUserToken(refreshToken);
+        }
+      }, timeUntilRefresh);
+      
+      setTokenRefreshTimer(timer);
+    } catch (error) {
+      console.error("Error setting up token refresh timer:", error);
+    }
+  };
+  
+  // Validate token and refresh if needed
+  const validateToken = async (token, refresh, rememberMe = false) => {
+    try {
+      // Try to get current user with token
+      const response = await authApi.getCurrentUser(token);
+      if (response.success) {
+        // Update user data if needed
+        const userData = formatUserData(response.data.user);
+        setCurrentUser(userData);
+        
+        // Store updated user data
+        const storage = rememberMe ? localStorage : sessionStorage;
+        storage.setItem('currentUser', JSON.stringify(userData));
+      }
+      setLoading(false);
+    } catch (error) {
+      // If token is expired, try to refresh
+      try {
+        await refreshUserToken(refresh, rememberMe);
+      } catch (refreshError) {
+        // If refresh fails, clear auth data
+        clearAuthData();
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+  
+  // Refresh user token
+  const refreshUserToken = async (refresh, rememberMe = localStorage.getItem('rememberMe') === 'true') => {
+    try {
+      if (!refresh) {
+        throw new Error('No refresh token available');
+      }
+      
+      const response = await authApi.refreshToken(refresh);
+      
+      if (response.success) {
+        const { accessToken, refreshToken: newRefreshToken } = response.data.tokens;
+        
+        setAuthToken(accessToken);
+        setRefreshToken(newRefreshToken);
+        
+        // Update storage
+        const storage = rememberMe ? localStorage : sessionStorage;
+        storage.setItem('authToken', accessToken);
+        storage.setItem('refreshToken', newRefreshToken);
+        
+        // Try to get user data with new token
+        try {
+          const userResponse = await authApi.getCurrentUser(accessToken);
+          if (userResponse.success) {
+            const userData = formatUserData(userResponse.data.user);
+            setCurrentUser(userData);
+            storage.setItem('currentUser', JSON.stringify(userData));
+          }
+        } catch (userError) {
+          console.error("Failed to get user data after token refresh:", userError);
+        }
+        
+        return true;
+      } else {
+        throw new Error('Token refresh failed');
+      }
+    } catch (error) {
+      console.error("Token refresh error:", error);
+      clearAuthData();
+      throw error;
+    }
+  };
+  
+  // Format user data to match our app's structure
+  const formatUserData = (user) => {
+    return {
+      uid: user._id || user.id,
+      displayName: user.name,
+      email: user.email,
+      role: user.role,
+      photoURL: user.photoURL,
+      emailVerified: user.emailVerified,
+      termsAccepted: user.termsAccepted,
+      termsAcceptedAt: user.termsAcceptedAt
+    };
+  };
+  
+  // Clear all auth data
+  const clearAuthData = () => {
+    setCurrentUser(null);
+    setAuthToken(null);
+    setRefreshToken(null);
+    
+    // Clear token refresh timer
+    if (tokenRefreshTimer) {
+      clearTimeout(tokenRefreshTimer);
+      setTokenRefreshTimer(null);
+    }
+    
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('rememberMe');
+    sessionStorage.removeItem('currentUser');
+    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem('refreshToken');
+  };
+
+  // Login function
+  const login = async (email, password, rememberMe = false, expectedRole = null) => {
+    setAuthError(null);
+    setLoading(true);
+    
+    try {
+      const response = await authApi.login(email, password);
+      
+      if (response.success) {
+        const { user, tokens } = response.data;
+        const { accessToken, refreshToken: newRefreshToken } = tokens;
+        
+        // Format user data
+        const userData = formatUserData(user);
+        
+        // Check if user role matches expected role
+        if (expectedRole && userData.role !== expectedRole) {
+          setLoading(false);
           return { 
             success: false, 
-            error: 'Please verify your email before logging in',
-            needsVerification: true,
-            email: email
+            error: `This account is registered as a ${userData.role}. Please use the ${userData.role} login page.`,
+            wrongRole: true,
+            actualRole: userData.role
           };
         }
         
-        setCurrentUser(mockUser);
+        setCurrentUser(userData);
+        setAuthToken(accessToken);
+        setRefreshToken(newRefreshToken);
         
-        // Generate a mock token
-        const token = `mock-token-${Date.now()}`;
-        setAuthToken(token);
+        // Store in appropriate storage based on rememberMe
+        const storage = rememberMe ? localStorage : sessionStorage;
+        storage.setItem('currentUser', JSON.stringify(userData));
+        storage.setItem('authToken', accessToken);
+        storage.setItem('refreshToken', newRefreshToken);
         
-        // Store in localStorage for persistence
-        localStorage.setItem('currentUser', JSON.stringify(mockUser));
-        localStorage.setItem('authToken', token);
+        if (rememberMe) {
+          localStorage.setItem('rememberMe', 'true');
+        } else {
+          localStorage.removeItem('rememberMe');
+          // Clear localStorage if not using remember me
+          if (!localStorage.getItem('rememberMe')) {
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('refreshToken');
+          }
+        }
         
-        // Return success
-        return { success: true, user: mockUser };
+        setLoading(false);
+        return { success: true, user: userData };
       }
       
-      setAuthError('Invalid credentials');
-      return { success: false, error: 'Invalid credentials' };
+      setLoading(false);
+      return { success: false, error: response.message };
     } catch (error) {
       console.error('Login error:', error);
-      setAuthError('An error occurred during login');
-      return { success: false, error: 'An error occurred during login' };
+      
+      // Handle verification needed error
+      if (error.status === 401 && error.data && error.data.needsVerification) {
+        setAuthError({
+          message: 'Please verify your email before logging in',
+          needsVerification: true,
+          email: error.data.email
+        });
+        
+        setVerificationState({
+          needsVerification: true,
+          email: error.data.email
+        });
+        
+        setLoading(false);
+        return { 
+          success: false, 
+          error: error.data.message,
+          needsVerification: true,
+          email: error.data.email
+        };
+      }
+      
+      const errorMessage = error.message || 'An error occurred during login';
+      setAuthError({ message: errorMessage });
+      setLoading(false);
+      return { success: false, error: errorMessage };
     }
   };
 
-  // Signup function
-  const signup = async (userData, userType) => {
+  // Register function
+  const register = async (userData, redirectPath = '/dashboard') => {
     setAuthError(null);
+    setLoading(true);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Check if email already exists
-      const emailExists = Object.values(mockUsers).some(user => user.email === userData.email);
-      
-      if (emailExists) {
-        const error = 'Email already exists';
-        setAuthError(error);
-        return { success: false, error };
-      }
-      
-      // In a real app, you would send this data to your backend
-      // For mock purposes, we'll just create a new user object
-      const newUser = {
-        uid: `${userType}-${Date.now()}`,
-        displayName: userData.name,
-        email: userData.email,
-        password: userData.password,
-        role: userType,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=3b82f6&color=fff`,
-        emailVerified: false // User needs to verify email
+      // Ensure redirectPath is included in userData
+      const userDataWithRedirect = {
+        ...userData,
+        redirectPath
       };
       
-      // In a real app, you would send this to your backend
-      console.log('New user registered:', newUser);
+      const response = await authApi.register(userDataWithRedirect);
       
-      // Add user to mock database
-      mockUsers[`${userType}-${Date.now()}`] = newUser;
+      setLoading(false);
       
-      // Don't log in the user yet - they need to verify email first
-      return { success: true, email: userData.email };
+      if (response.success) {
+        // Set verification state to show verification message
+        setVerificationState({
+          needsVerification: true,
+          email: response.data.email
+        });
+        
+        return { 
+          success: true, 
+          message: response.message,
+          email: response.data.email
+        };
+      }
+      
+      return { success: false, error: response.message };
     } catch (error) {
-      console.error('Signup error:', error);
-      setAuthError('An error occurred during signup');
-      return { success: false, error: 'An error occurred during signup' };
+      console.error('Registration error:', error);
+      
+      // Handle admin registration attempt
+      if (error.status === 403) {
+        const errorMessage = 'Admin registration is not allowed through the API';
+        setAuthError({ message: errorMessage });
+        setLoading(false);
+        return { success: false, error: errorMessage };
+      }
+      
+      const errorMessage = error.message || 'An error occurred during registration';
+      setAuthError({ message: errorMessage });
+      setLoading(false);
+      return { success: false, error: errorMessage };
     }
   };
 
   // Logout function
   const logout = async () => {
+    setLoading(true);
+    
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Clear the current user and token
-      setCurrentUser(null);
-      setAuthToken(null);
-      
-      // Remove from localStorage
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('authToken');
-      
-      // Return success
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: 'Failed to logout' };
-    }
-  };
-
-  // Reset password function
-  const resetPassword = async (email) => {
-    try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Check if email exists in our mock users
-      const userExists = Object.values(mockUsers).some(user => user.email === email);
-      
-      if (!userExists) {
-        return { success: false, error: 'Email not found in our records' };
+      if (refreshToken) {
+        await authApi.logout(refreshToken);
       }
       
-      // In a real app, you would send a reset link to the user's email
-      console.log(`Password reset link sent to: ${email}`);
-      
-      // Generate a mock reset token
-      const resetToken = `reset-token-${Date.now()}`;
-      
-      return { success: true, resetToken };
+      clearAuthData();
+      setLoading(false);
+      return { success: true };
     } catch (error) {
-      console.error('Reset password error:', error);
-      return { success: false, error: 'Failed to send reset link' };
+      console.error('Logout error:', error);
+      // Even if logout fails on server, clear local data
+      clearAuthData();
+      setLoading(false);
+      return { success: true };
     }
   };
 
   // Verify email function
   const verifyEmail = async (token) => {
+    setLoading(true);
+    
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const response = await authApi.verifyEmail(token);
       
-      // In a real app, you would validate the token with your backend
-      // For demo purposes, we'll consider tokens longer than 10 chars as valid
-      if (token && token.length > 10) {
-        console.log(`Email verified with token: ${token}`);
+      setLoading(false);
+      
+      if (response.success) {
+        // Clear verification state
+        setVerificationState({
+          needsVerification: false,
+          email: null
+        });
         
-        // Find the user with this token and mark as verified
-        // In a real app, the token would be linked to a specific user
-        // For mock purposes, we'll just assume it worked
-        
-        return { success: true };
+        return { 
+          success: true, 
+          message: response.message,
+          email: response.email,
+          role: response.role
+        };
       }
       
-      return { success: false, error: 'Invalid verification token' };
+      return { success: false, error: response.message };
     } catch (error) {
       console.error('Email verification error:', error);
-      return { success: false, error: 'An error occurred during verification' };
-    }
-  };
-
-  // Set new password after reset
-  const setNewPassword = async (token, newPassword) => {
-    try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // In a real app, you would validate the token and update the user's password
-      // For demo purposes, we'll consider tokens longer than 10 chars as valid
-      if (token && token.length > 10) {
-        console.log(`Password reset with token: ${token}`);
-        return { success: true };
-      }
-      
-      return { success: false, error: 'Invalid reset token' };
-    } catch (error) {
-      console.error('Set new password error:', error);
-      return { success: false, error: 'Failed to reset password' };
+      setLoading(false);
+      return { success: false, error: error.message };
     }
   };
 
   // Resend verification email
-  const resendVerificationEmail = async (email) => {
+  const resendVerification = async (email, redirectPath = '/dashboard') => {
+    setLoading(true);
+    
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await authApi.resendVerification(email, redirectPath);
       
-      // Check if email exists
-      const userExists = Object.values(mockUsers).some(user => user.email === email);
+      setLoading(false);
       
-      if (!userExists) {
-        return { success: false, error: 'Email not found' };
+      if (response.success) {
+        return { success: true, message: response.message };
       }
       
-      console.log(`Verification email resent to: ${email}`);
-      return { success: true };
+      return { success: false, error: response.message };
     } catch (error) {
       console.error('Resend verification error:', error);
-      return { success: false, error: 'Failed to resend verification email' };
+      setLoading(false);
+      return { success: false, error: error.message };
     }
   };
 
-  // Check if user is authenticated
-  const isAuthenticated = () => {
-    return !!currentUser && !!authToken;
+  // Request password reset
+  const requestPasswordReset = async (email) => {
+    setLoading(true);
+    
+    try {
+      const response = await authApi.requestPasswordReset(email);
+      
+      setLoading(false);
+      
+      if (response.success) {
+        return { success: true, message: response.message };
+      }
+      
+      return { success: false, error: response.message };
+    } catch (error) {
+      console.error('Password reset request error:', error);
+      setLoading(false);
+      return { success: false, error: error.message };
+    }
   };
 
-  // Check if user has a specific role
-  const hasRole = (role) => {
-    return currentUser?.role === role;
+  // Reset password
+  const resetPassword = async (token, password) => {
+    setLoading(true);
+    
+    try {
+      const response = await authApi.resetPassword(token, password);
+      
+      setLoading(false);
+      
+      if (response.success) {
+        return { success: true, message: response.message };
+      }
+      
+      return { success: false, error: response.message };
+    } catch (error) {
+      console.error('Password reset error:', error);
+      setLoading(false);
+      return { success: false, error: error.message };
+    }
   };
 
+  // Google authentication
+  const googleAuth = async (idToken, userType = 'user', redirectPath = '/dashboard') => {
+    setLoading(true);
+    
+    try {
+      const response = await authApi.googleAuth(idToken, userType, redirectPath);
+      
+      if (response.success) {
+        const { user, tokens, isNewUser } = response.data;
+        const { accessToken, refreshToken: newRefreshToken } = tokens;
+        
+        // Format user data
+        const userData = formatUserData(user);
+        
+        setCurrentUser(userData);
+        setAuthToken(accessToken);
+        setRefreshToken(newRefreshToken);
+        
+        // Store in localStorage (Google auth typically uses remember me)
+        localStorage.setItem('currentUser', JSON.stringify(userData));
+        localStorage.setItem('authToken', accessToken);
+        localStorage.setItem('refreshToken', newRefreshToken);
+        localStorage.setItem('rememberMe', 'true');
+        
+        setLoading(false);
+        return { 
+          success: true, 
+          user: userData, 
+          isNewUser 
+        };
+      }
+      
+      setLoading(false);
+      return { success: false, error: response.message };
+    } catch (error) {
+      console.error('Google auth error:', error);
+      setLoading(false);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Context value
   const value = {
     currentUser,
     loading,
     authError,
     authToken,
+    refreshToken,
+    verificationState,
     login,
-    signup,
+    register,
     logout,
-    resetPassword,
     verifyEmail,
-    setNewPassword,
-    resendVerificationEmail,
-    isAuthenticated,
-    hasRole
+    resendVerification,
+    requestPasswordReset,
+    resetPassword,
+    googleAuth,
+    refreshUserToken
   };
 
   return (
@@ -299,9 +512,10 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// Custom hook to use auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;

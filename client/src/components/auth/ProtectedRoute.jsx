@@ -10,8 +10,16 @@ const ProtectedRoute = ({
   allowedRoles = [], 
   redirectTo = '/login' 
 }) => {
-  const { isAuthenticated, hasRole, loading, currentUser } = useAuth();
+  const { currentUser, loading } = useAuth();
   const router = useRouter();
+
+  // Helper function to check if user is authenticated
+  const isAuthenticated = () => !!currentUser;
+  
+  // Helper function to check if user has a specific role
+  const hasRole = (role) => {
+    return currentUser && currentUser.role === role;
+  };
 
   useEffect(() => {
     if (!loading) {
@@ -24,7 +32,7 @@ const ProtectedRoute = ({
         router.push('/unauthorized');
       }
     }
-  }, [isAuthenticated, hasRole, loading, router, redirectTo, allowedRoles]);
+  }, [loading, router, redirectTo, allowedRoles, currentUser]);
 
   if (loading) {
     return <LoadingSpinner />;
