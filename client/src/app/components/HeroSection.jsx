@@ -103,7 +103,7 @@ export default function HeroSection() {
   if (!mounted) {
     return (
       <section className="relative overflow-hidden py-6 sm:py-10 md:py-14 lg:py-20 px-4">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="container mx-auto">
           <div className="flex flex-col md:flex-row items-center">
             <div className="w-full md:w-1/2 z-10">
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 mb-2 sm:mb-3 md:mb-4">
@@ -131,7 +131,7 @@ export default function HeroSection() {
 
   return (
     <section className="relative overflow-hidden py-6 sm:py-10 md:py-14 lg:py-20 px-4">
-      <div className="container mx-auto px-2 xs:px-3 sm:px-4 md:px-6 lg:px-8">
+      <div className="container mx-auto">
         {/* Background decorative elements */}
         <div className="absolute top-0 right-0 -mt-10 -mr-10 xs:-mt-12 xs:-mr-12 sm:-mt-16 sm:-mr-16 hidden lg:block">
           <div className="w-32 h-32 xs:w-40 xs:h-40 sm:w-48 sm:h-48 xl:w-64 xl:h-64 rounded-full bg-teal-50 opacity-70"></div>
