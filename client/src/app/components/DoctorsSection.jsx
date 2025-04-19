@@ -107,14 +107,6 @@ export default function DoctorsSection() {
             ) : null // Don't render if doctor.id is missing
           ))}
         </div>
-        {/* Add a button to see all doctors */}
-        <div className="text-center mt-8 sm:mt-12">
-            <Link href="/user/doctors">
-                <button className="bg-white border border-teal-600 text-teal-600 px-8 py-3 rounded-lg hover:bg-teal-50 transition-colors duration-200 text-lg font-semibold">
-                    View All Doctors
-                </button>
-            </Link>
-        </div>
       </div>
     </section>
   );

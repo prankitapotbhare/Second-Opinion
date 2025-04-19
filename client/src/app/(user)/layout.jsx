@@ -2,7 +2,7 @@
 
 import React from 'react';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import Navbar from '@/components/common/Navbar';
+import {Navbar, Footer} from '@/components';
 import { usePathname } from 'next/navigation';
 
 export default function UserLayout({ children }) {
@@ -34,6 +34,7 @@ export default function UserLayout({ children }) {
           />
         )}
         {children}
+        <Footer/>
       </div>
     </ProtectedRoute>
   );
