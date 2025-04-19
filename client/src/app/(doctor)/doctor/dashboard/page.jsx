@@ -48,7 +48,7 @@ const DoctorDashboard = () => {
   ];
 
   return (
-    <div className="flex h-screen bg-[#f0f8ff] relative overflow-hidden">
+    <div className="flex h-screen bg-gray-50 relative overflow-hidden">
       <Sidebar 
         activeTab={activeTab} 
         handleTabClick={handleTabClick} 
