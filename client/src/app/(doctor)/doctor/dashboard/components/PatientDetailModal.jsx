@@ -15,7 +15,7 @@ const PatientDetailModal = ({
   onSendResponse,
 }) => {
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 bg-[rgba(0,0,0,0.5)]">
+    <div className="fixed inset-0 flex items-center justify-center px-4 z-50 bg-[rgba(0,0,0,0.5)]">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative">
         {/* Header */}
         <div className="p-6 border-b border-gray-200">
