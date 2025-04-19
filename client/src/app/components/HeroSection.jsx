@@ -107,7 +107,7 @@ export default function HeroSection() {
           <div className="flex flex-col md:flex-row items-center">
             <div className="w-full md:w-1/2 z-10">
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 mb-2 sm:mb-3 md:mb-4">
-                Get Trusted Medical Second Opinions
+                Best Recommended Doctors 
               </h1>
               <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 mb-3 sm:mb-4 md:mb-6 lg:mb-8">
                 Expert advice, Trusted decision!
@@ -143,7 +143,7 @@ export default function HeroSection() {
           {/* Left content - Text and search */}
           <div className="w-full md:w-1/2 z-10">
             <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 mb-2 xs:mb-2.5 sm:mb-3 md:mb-4">
-              Get Trusted Medical Second Opinions
+              Best Recommended Doctors 
             </h1>
             <h2 className="text-base xs:text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 mb-2 xs:mb-3 sm:mb-4 md:mb-6 lg:mb-8">
               Expert advice, Trusted decision!

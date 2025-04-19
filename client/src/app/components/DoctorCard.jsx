@@ -74,17 +74,17 @@ export default function DoctorCard({ doctor }) {
               </Link>
               <Link href={`/user/appointment/booking?doctorId=${doctor.uid || doctor.id}`} className="col-span-1">
                 <button className="w-full bg-green-600 text-white hover:bg-green-700 font-medium py-2 px-3 rounded-lg text-sm transition-colors duration-200">
-                  Book Consultation
+                  Book Now
                 </button>
               </Link>
             </div>
           ) : (
             <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 sm:gap-3">
               <div className="col-span-1 w-full bg-white border border-green-600 text-green-600 font-medium py-2 px-3 rounded-lg text-sm text-center">
-                View Profile
+                Know more
               </div>
               <div className="col-span-1 w-full bg-green-600 text-white font-medium py-2 px-3 rounded-lg text-sm text-center">
-                Book Consultation
+                Book Now
               </div>
             </div>
           )}

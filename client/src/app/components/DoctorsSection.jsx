@@ -17,7 +17,7 @@ export default function DoctorsSection() {
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
             <span className="text-gray-800">Our </span>
             <span className="text-teal-600">Recommended</span>
-            <span className="text-gray-800"> Best Doctors</span>
+            <span className="text-gray-800"> Best Doctors....</span>
           </h2>
         </div>
         
@@ -63,22 +63,22 @@ export default function DoctorsSection() {
                       <>
                         <Link href={`/user/doctors/${doctor.uid || doctor.id || index}`} className="w-full">
                           <button className="w-full bg-teal-600 text-white px-4 py-2 rounded-md text-sm hover:bg-teal-700 transition-colors whitespace-nowrap font-medium">
-                            View Profile
+                            Know more
                           </button>
                         </Link>
                         <Link href={`/user/appointment/booking?doctorId=${doctor.uid || doctor.id || index}`} className="w-full">
                           <button className="w-full border border-teal-600 text-teal-600 px-4 py-2 rounded-md text-sm hover:bg-teal-50 transition-colors whitespace-nowrap font-medium">
-                            Book Consultation
+                            Book a consultant
                           </button>
                         </Link>
                       </>
                     ) : (
                       <>
                         <div className="w-full bg-teal-600 text-white px-4 py-2 rounded-md text-sm whitespace-nowrap text-center font-medium">
-                          View Profile
+                          Know more
                         </div>
                         <div className="w-full border border-teal-600 text-teal-600 px-4 py-2 rounded-md text-sm whitespace-nowrap text-center font-medium">
-                          Book Consultation
+                          Book Now
                         </div>
                       </>
                     )}

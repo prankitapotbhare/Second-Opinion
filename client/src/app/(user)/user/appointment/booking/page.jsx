@@ -19,7 +19,7 @@ export default function AppointmentBookingPage() {
   const [selectedTime, setSelectedTime] = useState('');
   const [gender, setGender] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [currentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(new Date());
   
   useEffect(() => {
     if (!doctorId) {
@@ -40,14 +40,38 @@ export default function AppointmentBookingPage() {
     setLoading(false);
     
     // Set default selected date to today
-    setSelectedDate(currentDate.getDate());
+    const today = new Date();
+    setSelectedDate(today.getDate());
+    
+    // Initialize currentViewStartDate to today for current month view
+    const viewStartDate = new Date(currentDate);
+    if (currentDate.getMonth() === today.getMonth() && 
+        currentDate.getFullYear() === today.getFullYear()) {
+      viewStartDate.setDate(today.getDate());
+    } else {
+      viewStartDate.setDate(1);
+    }
+    setCurrentViewStartDate(viewStartDate);
   }, [doctorId, currentDate, router]);
+  
+  // Add state to track the current view's start date
+  const [currentViewStartDate, setCurrentViewStartDate] = useState(new Date());
   
   const getDates = () => {
     const dates = [];
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(currentDate);
-      date.setDate(currentDate.getDate() + i);
+    
+    // Start from the currentViewStartDate
+    const startingDate = new Date(currentViewStartDate);
+    
+    // Get the last day of the month
+    const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+    
+    // Calculate how many days to show (up to 7 at a time)
+    const daysToShow = Math.min(7, lastDay - startingDate.getDate() + 1);
+    
+    for (let i = 0; i < daysToShow; i++) {
+      const date = new Date(startingDate);
+      date.setDate(startingDate.getDate() + i);
       dates.push({
         day: date.toLocaleDateString('en-US', { weekday: 'short' }),
         date: date.getDate(),
@@ -58,6 +82,80 @@ export default function AppointmentBookingPage() {
     return dates;
   };
   
+  // Navigate to previous set of dates
+  const goToPreviousDates = () => {
+    const today = new Date();
+    const isCurrentMonth = currentDate.getMonth() === today.getMonth() && 
+                           currentDate.getFullYear() === today.getFullYear();
+    
+    // Calculate new start date
+    const newStartDate = new Date(currentViewStartDate);
+    newStartDate.setDate(Math.max(newStartDate.getDate() - 7, isCurrentMonth ? today.getDate() : 1));
+    
+    setCurrentViewStartDate(newStartDate);
+    setSelectedDate(null);
+  };
+  
+  // Navigate to next set of dates
+  const goToNextDates = () => {
+    const newStartDate = new Date(currentViewStartDate);
+    
+    // Get the last day of the current month
+    const lastDay = new Date(newStartDate.getFullYear(), newStartDate.getMonth() + 1, 0).getDate();
+    
+    // If adding 7 days would exceed the month, stop at the last day
+    if (newStartDate.getDate() + 7 > lastDay) {
+      // We've reached the end of the month
+      return;
+    }
+    
+    // Otherwise, advance by 7 days
+    newStartDate.setDate(newStartDate.getDate() + 7);
+    setCurrentViewStartDate(newStartDate);
+    setSelectedDate(null);
+  };
+  
+  // Navigate to previous month
+  const goToPreviousMonth = () => {
+    const today = new Date();
+    const prevMonth = new Date(currentDate);
+    prevMonth.setMonth(prevMonth.getMonth() - 1);
+    
+    // Don't allow navigation to months before the current month
+    if (prevMonth.getMonth() < today.getMonth() && prevMonth.getFullYear() <= today.getFullYear()) {
+      return;
+    }
+    
+    setCurrentDate(prevMonth);
+    
+    // Set the start date appropriately
+    const newViewStartDate = new Date(prevMonth);
+    if (prevMonth.getMonth() === today.getMonth() && 
+        prevMonth.getFullYear() === today.getFullYear()) {
+      // If navigating to current month, start from today
+      newViewStartDate.setDate(today.getDate());
+    } else {
+      // Otherwise start from the 1st
+      newViewStartDate.setDate(1);
+    }
+    
+    setCurrentViewStartDate(newViewStartDate);
+    setSelectedDate(null);
+  };
+  
+  // Navigate to next month
+  const goToNextMonth = () => {
+    const nextMonth = new Date(currentDate);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    setCurrentDate(nextMonth);
+    
+    // When changing to a new month, always start from the 1st
+    const newViewStartDate = new Date(nextMonth);
+    newViewStartDate.setDate(1);
+    setCurrentViewStartDate(newViewStartDate);
+    setSelectedDate(null);
+  };
+
   const timeSlots = [
     '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM',
     '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM',
@@ -88,16 +186,6 @@ export default function AppointmentBookingPage() {
     const newFiles = [...uploadedFiles];
     newFiles.splice(index, 1);
     setUploadedFiles(newFiles);
-  };
-  
-  const handleClearForm = () => {
-    setSelectedDate(currentDate.getDate());
-    setSelectedTime('');
-    setGender('');
-    setUploadedFiles([]);
-    // Reset form fields
-    const form = document.getElementById('patientForm');
-    if (form) form.reset();
   };
   
   const handleSubmit = (e) => {
@@ -165,8 +253,44 @@ export default function AppointmentBookingPage() {
           <form id="patientForm" onSubmit={handleSubmit} className="space-y-8">
             {/* Date Selection */}
             <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Select Date</h3>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3">
+              <h3 className="text-2xl font-medium text-gray-900 mb-4 text-center">Choose Date and Time</h3>
+              
+              {/* Month and Year Navigation */}
+              <div className="flex justify-between items-center mb-4">
+                <button 
+                  type="button" 
+                  onClick={goToPreviousMonth}
+                  className="p-2 rounded-full hover:bg-gray-100"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                <h4 className="text-lg font-medium">
+                  {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </h4>
+                <button 
+                  type="button" 
+                  onClick={goToNextMonth}
+                  className="p-2 rounded-full hover:bg-gray-100"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3 relative">
+                <button
+                  type="button"
+                  onClick={goToPreviousDates}
+                  className="absolute left-0 top-1/2 transform -translate-y-1/2 -ml-4 p-2 rounded-full hover:bg-gray-100 z-10"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                
                 {getDates().map((date, index) => (
                   <button
                     key={index}
@@ -185,12 +309,22 @@ export default function AppointmentBookingPage() {
                     </span>
                   </button>
                 ))}
+                
+                <button
+                  type="button"
+                  onClick={goToNextDates}
+                  className="absolute right-0 top-1/2 transform -translate-y-1/2 -mr-4 p-2 rounded-full hover:bg-gray-100 z-10"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                </button>
               </div>
             </div>
             
             {/* Time Selection */}
             <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Select Time</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Available Time Slots</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 {timeSlots.map((time, index) => (
                   <button
@@ -289,9 +423,9 @@ export default function AppointmentBookingPage() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
                   />
                 </div>
-                <div className="md:col-span-2">
+                <div>
                   <label htmlFor="patientEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                    Email <span className="text-red-500">*</span>
+                    Email Address <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="email"
@@ -300,9 +434,36 @@ export default function AppointmentBookingPage() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
                   />
                 </div>
+                <div>
+                  <label htmlFor="emergencyContact" className="block text-sm font-medium text-gray-700 mb-1">
+                    Emergency Contact Number
+                  </label>
+                  <input
+                    type="tel"
+                    id="emergencyContact"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="relationWithPatient" className="block text-sm font-medium text-gray-700 mb-1">
+                    Relation with Patient
+                  </label>
+                  <select
+                    id="relationWithPatient"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                  >
+                    <option value="">Select relation</option>
+                    <option value="self">Self</option>
+                    <option value="parent">Parent</option>
+                    <option value="child">Child</option>
+                    <option value="spouse">Spouse</option>
+                    <option value="sibling">Sibling</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
                 <div className="md:col-span-2">
                   <label htmlFor="symptoms" className="block text-sm font-medium text-gray-700 mb-1">
-                    Symptoms/Reason for Visit <span className="text-red-500">*</span>
+                    Describe Patient's Problem <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     id="symptoms"
@@ -370,14 +531,7 @@ export default function AppointmentBookingPage() {
             </div>
             
             {/* Form Actions */}
-            <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3">
-              <button
-                type="button"
-                onClick={handleClearForm}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50"
-              >
-                Clear Form
-              </button>
+            <div className="flex justify-end">
               <button
                 type="submit"
                 className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
