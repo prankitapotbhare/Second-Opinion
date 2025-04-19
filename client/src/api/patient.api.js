@@ -55,35 +55,30 @@ export const submitPatientDetails = async (patientData, documents, doctorId) => 
 };
 
 /**
- * Get doctor's response for a patient submission
+ * Get doctor's response for a submission
  * @param {string} submissionId - ID of the patient submission
  * @returns {Promise<Object>} Doctor's response
  */
 export const getDoctorResponse = async (submissionId) => {
   try {
-    // For mock implementation, we'll check our mock data first
-    const existingResponse = getResponseBySubmissionId(submissionId);
-    
+    // For mock implementation, we'll use the mock data
     return new Promise((resolve) => {
       setTimeout(() => {
-        if (existingResponse) {
-          // Return the existing response
-          resolve(existingResponse);
+        const response = getResponseBySubmissionId(submissionId);
+        if (response) {
+          resolve(response);
         } else {
-          // Generate a mock response
+          // If no response found, create a mock response
           resolve({
             id: 'resp_' + Math.random().toString(36).substr(2, 9),
             submissionId: submissionId,
-            requiredSecondOpinion: Math.random() > 0.7, // 30% chance of requiring second opinion
-            responseText: "As a precaution, please avoid heavy activities and ensure proper rest. Let's do a detailed evaluation soon. In the meantime, maintain a healthy diet and stay hydrated. If symptoms worsen suddenly, don't hesitate to seek immediate medical attention. Keep a daily log of your symptoms to help us understand any patterns. Avoid screen time and loud environments if they trigger discomfort.",
+            requiredSecondOpinion: true, // Set to true to test the second opinion flow
+            responseText: "Based on your symptoms and the provided documents, I recommend a second opinion. Please schedule an appointment at your earliest convenience so we can discuss your condition in more detail. In the meantime, continue with your current medications and avoid strenuous activities.",
             documents: [
-              { id: 1, name: "File.pdf", url: "/mock-files/file1.pdf" },
-              { id: 2, name: "Report.pdf", url: "/mock-files/report1.pdf" },
-              { id: 3, name: "File.pdf", url: "/mock-files/file2.pdf" },
-              { id: 4, name: "Report.pdf", url: "/mock-files/report2.pdf" }
-            ],
-            doctorId: "1",
-            createdAt: new Date().toISOString()
+              { id: 1, name: "Prescription.pdf", url: "/mock-files/prescription.pdf" },
+              { id: 2, name: "Treatment_Plan.pdf", url: "/mock-files/treatment_plan.pdf" },
+              { id: 3, name: "Medical_Report.pdf", url: "/mock-files/medical_report.pdf" }
+            ]
           });
         }
       }, 1000);
@@ -95,11 +90,11 @@ export const getDoctorResponse = async (submissionId) => {
 };
 
 /**
- * Submit patient rating and comment for a doctor's response
+ * Submit feedback for a doctor's response
  * @param {string} responseId - ID of the doctor's response
  * @param {number} rating - Rating (1-5)
- * @param {string} comment - Patient's comment
- * @returns {Promise<Object>} Submission response
+ * @param {string} comment - Comment text
+ * @returns {Promise<Object>} Feedback submission response
  */
 export const submitFeedback = async (responseId, rating, comment) => {
   try {
@@ -109,7 +104,10 @@ export const submitFeedback = async (responseId, rating, comment) => {
         resolve({
           success: true,
           message: 'Your feedback has been submitted successfully',
-          feedbackId: 'feed_' + Math.random().toString(36).substr(2, 9)
+          feedbackId: 'feed_' + Math.random().toString(36).substr(2, 9),
+          responseId,
+          rating,
+          comment
         });
       }, 800);
     });
@@ -122,19 +120,22 @@ export const submitFeedback = async (responseId, rating, comment) => {
 /**
  * Request a second opinion appointment
  * @param {string} responseId - ID of the doctor's response
+ * @param {Object} appointmentDetails - Date and time for the appointment
  * @returns {Promise<Object>} Appointment request response
  */
-export const requestSecondOpinion = async (responseId) => {
+export const requestSecondOpinion = async (responseId, appointmentDetails) => {
   try {
     // For mock implementation, we'll simulate a successful response
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve({
           success: true,
-          message: 'Your request for a second opinion has been submitted',
-          appointmentId: 'apt_' + Math.random().toString(36).substr(2, 9)
+          message: 'Your appointment request has been submitted successfully',
+          appointmentId: 'appt_' + Math.random().toString(36).substr(2, 9),
+          appointmentDetails,
+          status: 'approved'
         });
-      }, 1000);
+      }, 800);
     });
   } catch (error) {
     console.error('Error requesting second opinion:', error);

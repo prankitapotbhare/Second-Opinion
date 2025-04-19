@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getDoctorResponse } from '@/api/patient.api';
+import { getDoctorResponse, submitFeedback, requestSecondOpinion } from '@/api/patient.api';
 
 // Create the context
 const PatientContext = createContext();
@@ -20,6 +20,9 @@ export const PatientProvider = ({ children }) => {
   const [doctorResponse, setDoctorResponse] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [appointmentRequested, setAppointmentRequested] = useState(false);
+  const [appointmentDetails, setAppointmentDetails] = useState(null);
 
   // Load submission from sessionStorage on mount
   useEffect(() => {
@@ -49,19 +52,15 @@ export const PatientProvider = ({ children }) => {
   };
 
   // Set current submission
-  const setSubmission = (submissionData) => {
-    setCurrentSubmission(submissionData);
+  const setSubmission = (submission) => {
+    setCurrentSubmission(submission);
     
-    // Store in sessionStorage
-    if (submissionData && submissionData.id) {
-      sessionStorage.setItem('patientSubmissionId', submissionData.id);
-    } else {
-      sessionStorage.removeItem('patientSubmissionId');
-    }
-    
-    // Fetch the doctor's response if we have a submission ID
-    if (submissionData && submissionData.id) {
-      fetchDoctorResponse(submissionData.id);
+    if (submission && submission.id) {
+      // Store submission ID in sessionStorage for persistence
+      sessionStorage.setItem('patientSubmissionId', submission.id);
+      
+      // Fetch doctor's response for this submission
+      fetchDoctorResponse(submission.id);
     }
   };
 
@@ -69,29 +68,56 @@ export const PatientProvider = ({ children }) => {
   const clearSubmission = () => {
     setCurrentSubmission(null);
     setDoctorResponse(null);
+    setFeedbackSubmitted(false);
+    setAppointmentRequested(false);
+    setAppointmentDetails(null);
     sessionStorage.removeItem('patientSubmissionId');
   };
 
-  // Refresh doctor's response
-  const refreshResponse = () => {
-    if (currentSubmission && currentSubmission.id) {
-      fetchDoctorResponse(currentSubmission.id);
+  // Submit feedback
+  const submitFeedbackToDoctor = async (responseId, rating, comment) => {
+    try {
+      await submitFeedback(responseId, rating, comment);
+      setFeedbackSubmitted(true);
+      return true;
+    } catch (err) {
+      console.error('Error submitting feedback:', err);
+      return false;
     }
   };
 
-  // Context value
-  const value = {
-    currentSubmission,
-    doctorResponse,
-    loading,
-    error,
-    setSubmission,
-    clearSubmission,
-    refreshResponse
+  // Request second opinion appointment
+  const requestAppointment = async (responseId, dateTimeDetails) => {
+    try {
+      const response = await requestSecondOpinion(responseId, dateTimeDetails);
+      setAppointmentRequested(true);
+      setAppointmentDetails(dateTimeDetails);
+      return response;
+    } catch (err) {
+      console.error('Error requesting appointment:', err);
+      throw err;
+    }
   };
 
   return (
-    <PatientContext.Provider value={value}>
+    <PatientContext.Provider
+      value={{
+        currentSubmission,
+        doctorResponse,
+        loading,
+        error,
+        feedbackSubmitted,
+        appointmentRequested,
+        appointmentDetails,
+        setSubmission,
+        clearSubmission,
+        submitFeedbackToDoctor,
+        requestAppointment,
+        setFeedbackSubmitted,
+        setAppointmentRequested,
+        setAppointmentDetails
+      }}
+    >
       {children}
     </PatientContext.Provider>
   );
