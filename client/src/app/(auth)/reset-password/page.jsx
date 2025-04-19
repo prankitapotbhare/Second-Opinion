@@ -21,6 +21,9 @@ function ResetPasswordContent() {
       setIsLoading(false);
       return;
     }
+    
+    // Set loading to false since we have a token
+    setIsLoading(false);
   }, [token]);
 
   if (isLoading) {

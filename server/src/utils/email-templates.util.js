@@ -11,11 +11,12 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
  * @param {string} token - Verification token
  * @param {string} email - Recipient email
  * @param {string} redirectPath - Path to redirect after verification
+ * @param {string} userType - Type of user (user, doctor)
  * @returns {Object} Email subject and HTML content
  */
-const verificationEmailTemplate = (name, token, email, redirectPath) => {
-  // Build the verification URL with email and redirectPath directly in the URL
-  const verificationUrl = `${CLIENT_URL}/verify-email?token=${token}&email=${encodeURIComponent(email)}${redirectPath ? `&redirectPath=${encodeURIComponent(redirectPath)}` : ''}`;
+const verificationEmailTemplate = (name, token, email, redirectPath, userType = 'user') => {
+  // Build the verification URL with email, redirectPath, and userType directly in the URL
+  const verificationUrl = `${CLIENT_URL}/verify-email?token=${token}&email=${encodeURIComponent(email)}${redirectPath ? `&redirect=${encodeURIComponent(redirectPath)}` : ''}&type=${userType}`;
   
   return {
     subject: 'Verify Your Email Address',
@@ -41,10 +42,12 @@ const verificationEmailTemplate = (name, token, email, redirectPath) => {
  * Generate password reset email template
  * @param {string} name - Recipient name
  * @param {string} token - Reset token
+ * @param {string} email - Recipient email
+ * @param {string} userType - Type of user (user, doctor, admin)
  * @returns {Object} Email subject and HTML content
  */
-const passwordResetEmailTemplate = (name, token) => {
-  const resetUrl = `${CLIENT_URL}/reset-password?token=${token}`;
+const passwordResetEmailTemplate = (name, token, email, userType = 'user') => {
+  const resetUrl = `${CLIENT_URL}/reset-password?token=${token}&email=${encodeURIComponent(email)}&type=${userType}`;
   
   return {
     subject: 'Reset Your Password',

@@ -52,8 +52,8 @@ const LoginForm = ({
     const { email, password, rememberMe } = formData;
     
     try {
-      // Pass the rememberMe value to the login function
-      const result = await login(email, password, rememberMe);
+      // Pass the userType as the expected role
+      const result = await login(email, password, rememberMe, userType);
       
       if (result.success) {
         const finalRedirectPath = getRedirectPath();
@@ -61,6 +61,12 @@ const LoginForm = ({
       } else if (result.needsVerification) {
         setNeedsVerification(true);
         setVerificationEmail(email);
+      } else if (result.wrongRole && result.actualRole) {
+        // Handle wrong role error - redirect to correct login page
+        setError(`This account is registered as a ${result.actualRole}. Redirecting to the correct login page...`);
+        setTimeout(() => {
+          router.push(`/login/${result.actualRole}`);
+        }, 2000);
       } else {
         setError(result.error || 'Login failed');
       }

@@ -246,6 +246,33 @@ Use the registration endpoint to create these users.
 - **Expected Response**: 200 OK
 - **Test Script**: Similar to above, but check for admin role
 
+#### 4.4 Login with Unverified Email (Should Fail)
+
+- **Method**: POST
+- **URL**: `{{BASE_URL}}/auth/login`
+- **Body** (JSON):
+  ```json
+  {
+    "email": "unverified@example.com",
+    "password": "password123"
+  }
+  ```
+- **Expected Response**: 401 Unauthorized
+- **Test Script**:
+  ```javascript
+  pm.test("Status code is 401", function() {
+    pm.response.to.have.status(401);
+  });
+  
+  pm.test("Login fails due to unverified email", function() {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData.success).to.be.false;
+    pm.expect(jsonData.message).to.include("Please verify your email");
+    pm.expect(jsonData.needsVerification).to.be.true;
+    pm.expect(jsonData.email).to.exist;
+  });
+  ```
+
 ### 5. Get Current User
 
 #### 5.1 Get Regular User Profile
@@ -494,6 +521,25 @@ Test that admin-only routes are properly restricted:
   });
   ```
 
+## Email Verification and Password Reset URLs
+
+When testing with a real frontend, note that the verification and password reset emails will contain URLs with the following formats:
+
+### Email Verification URL
+```
+http://localhost:3000/verify-email?token=<verification_token>&email=<user_email>&redirectPath=<redirect_path>&type=<user_type>
+```
+
+### Password Reset URL
+```
+http://localhost:3000/reset-password?token=<reset_token>&email=<user_email>&type=<user_type>
+```
+
+To test these URLs in Postman:
+
+1. For email verification, extract the token from the URL and use it in the `/auth/verify-email/:token` endpoint
+2. For password reset, extract the token from the URL and use it in the `/auth/reset-password/:token` endpoint
+
 ## Postman Collection Setup Tips
 
 ### Using Environment Variables
@@ -577,4 +623,10 @@ if (tokenExpiry && currentTime > tokenExpiry) {
 
 - The verification URL now includes both the token and email parameters
 - Make sure to include the redirectPath parameter when testing registration and resend verification
-- The verification URL format is now: `/verify-email?token={token}&email={email}&redirectPath={redirectPath}`
+- The URL also includes the user type (user, doctor, admin)
+
+### Password Reset Issues
+
+- The reset password URL now includes the token, email, and user type parameters
+- Make sure to test the complete flow from request to reset
+- Verify that the new password works by logging in after reset

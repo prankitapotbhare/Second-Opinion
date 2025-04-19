@@ -8,13 +8,16 @@ import * as authApi from '@/api/auth.api';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const router = useRouter();
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
   const [authToken, setAuthToken] = useState(null);
   const [refreshToken, setRefreshToken] = useState(null);
   const [tokenRefreshTimer, setTokenRefreshTimer] = useState(null);
+  const [verificationState, setVerificationState] = useState({
+    needsVerification: false,
+    email: null
+  });
 
   // Check if user is already logged in (from localStorage or sessionStorage)
   useEffect(() => {
@@ -192,7 +195,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Login function
-  const login = async (email, password, rememberMe = false) => {
+  const login = async (email, password, rememberMe = false, expectedRole = null) => {
     setAuthError(null);
     setLoading(true);
     
@@ -205,6 +208,17 @@ export const AuthProvider = ({ children }) => {
         
         // Format user data
         const userData = formatUserData(user);
+        
+        // Check if user role matches expected role
+        if (expectedRole && userData.role !== expectedRole) {
+          setLoading(false);
+          return { 
+            success: false, 
+            error: `This account is registered as a ${userData.role}. Please use the ${userData.role} login page.`,
+            wrongRole: true,
+            actualRole: userData.role
+          };
+        }
         
         setCurrentUser(userData);
         setAuthToken(accessToken);
@@ -245,6 +259,11 @@ export const AuthProvider = ({ children }) => {
           email: error.data.email
         });
         
+        setVerificationState({
+          needsVerification: true,
+          email: error.data.email
+        });
+        
         setLoading(false);
         return { 
           success: false, 
@@ -267,12 +286,23 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     
     try {
+      // Ensure redirectPath is included in userData
+      const userDataWithRedirect = {
+        ...userData,
+        redirectPath
+      };
       
-      const response = await authApi.register(...userData, redirectPath);
+      const response = await authApi.register(userDataWithRedirect);
       
       setLoading(false);
       
       if (response.success) {
+        // Set verification state to show verification message
+        setVerificationState({
+          needsVerification: true,
+          email: response.data.email
+        });
+        
         return { 
           success: true, 
           message: response.message,
@@ -307,48 +337,58 @@ export const AuthProvider = ({ children }) => {
       if (refreshToken) {
         await authApi.logout(refreshToken);
       }
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
+      
       clearAuthData();
       setLoading(false);
+      return { success: true };
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if logout fails on server, clear local data
+      clearAuthData();
+      setLoading(false);
+      return { success: true };
     }
   };
 
   // Verify email function
   const verifyEmail = async (token) => {
-    setAuthError(null);
     setLoading(true);
     
     try {
       const response = await authApi.verifyEmail(token);
       
+      setLoading(false);
+      
       if (response.success) {
-        setLoading(false);
+        // Clear verification state
+        setVerificationState({
+          needsVerification: false,
+          email: null
+        });
+        
         return { 
           success: true, 
           message: response.message,
-          email: response.email
+          email: response.email,
+          role: response.role
         };
       }
       
-      setLoading(false);
       return { success: false, error: response.message };
     } catch (error) {
       console.error('Email verification error:', error);
-      const errorMessage = error.message || 'An error occurred during email verification';
-      setAuthError({ message: errorMessage });
       setLoading(false);
-      return { success: false, error: errorMessage };
+      return { success: false, error: error.message };
     }
   };
 
-  // Resend verification email function
+  // Resend verification email
   const resendVerification = async (email, redirectPath = '/dashboard') => {
     setLoading(true);
     
     try {
       const response = await authApi.resendVerification(email, redirectPath);
+      
       setLoading(false);
       
       if (response.success) {
@@ -358,16 +398,55 @@ export const AuthProvider = ({ children }) => {
       return { success: false, error: response.message };
     } catch (error) {
       console.error('Resend verification error:', error);
-      const errorMessage = error.message || 'An error occurred while resending verification email';
-      setAuthError({ message: errorMessage });
       setLoading(false);
-      return { success: false, error: errorMessage };
+      return { success: false, error: error.message };
     }
   };
 
-  // Google authentication function
+  // Request password reset
+  const requestPasswordReset = async (email) => {
+    setLoading(true);
+    
+    try {
+      const response = await authApi.requestPasswordReset(email);
+      
+      setLoading(false);
+      
+      if (response.success) {
+        return { success: true, message: response.message };
+      }
+      
+      return { success: false, error: response.message };
+    } catch (error) {
+      console.error('Password reset request error:', error);
+      setLoading(false);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Reset password
+  const resetPassword = async (token, password) => {
+    setLoading(true);
+    
+    try {
+      const response = await authApi.resetPassword(token, password);
+      
+      setLoading(false);
+      
+      if (response.success) {
+        return { success: true, message: response.message };
+      }
+      
+      return { success: false, error: response.message };
+    } catch (error) {
+      console.error('Password reset error:', error);
+      setLoading(false);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Google authentication
   const googleAuth = async (idToken, userType = 'user', redirectPath = '/dashboard') => {
-    setAuthError(null);
     setLoading(true);
     
     try {
@@ -402,52 +481,8 @@ export const AuthProvider = ({ children }) => {
       return { success: false, error: response.message };
     } catch (error) {
       console.error('Google auth error:', error);
-      const errorMessage = error.message || 'An error occurred during Google authentication';
-      setAuthError({ message: errorMessage });
       setLoading(false);
-      return { success: false, error: errorMessage };
-    }
-  };
-
-  // Request password reset function
-  const requestPasswordReset = async (email) => {
-    setLoading(true);
-    
-    try {
-      const response = await authApi.requestPasswordReset(email);
-      setLoading(false);
-      
-      if (response.success) {
-        return { success: true, message: response.message };
-      }
-      
-      return { success: false, error: response.message };
-    } catch (error) {
-      console.error('Password reset request error:', error);
-      const errorMessage = error.message || 'An error occurred while requesting password reset';
-      setLoading(false);
-      return { success: false, error: errorMessage };
-    }
-  };
-
-  // Reset password function
-  const resetPassword = async (token, password) => {
-    setLoading(true);
-    
-    try {
-      const response = await authApi.resetPassword(token, password);
-      setLoading(false);
-      
-      if (response.success) {
-        return { success: true, message: response.message };
-      }
-      
-      return { success: false, error: response.message };
-    } catch (error) {
-      console.error('Password reset error:', error);
-      const errorMessage = error.message || 'An error occurred while resetting password';
-      setLoading(false);
-      return { success: false, error: errorMessage };
+      return { success: false, error: error.message };
     }
   };
 
@@ -458,6 +493,7 @@ export const AuthProvider = ({ children }) => {
     authError,
     authToken,
     refreshToken,
+    verificationState,
     login,
     register,
     logout,
@@ -465,9 +501,8 @@ export const AuthProvider = ({ children }) => {
     resendVerification,
     requestPasswordReset,
     resetPassword,
-    refreshUserToken,
-    clearAuthData,
-    googleAuth
+    googleAuth,
+    refreshUserToken
   };
 
   return (

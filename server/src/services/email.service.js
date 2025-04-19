@@ -93,10 +93,11 @@ const sendEmail = async (to, subject, html) => {
  * @param {string} name - Recipient name
  * @param {string} token - Verification token
  * @param {string} redirectPath - Path to redirect after verification
+ * @param {string} userType - Type of user (user, doctor)
  * @returns {Promise} Nodemailer info
  */
-const sendVerificationEmail = async (to, name, token, redirectPath) => {
-  const { subject, html } = emailTemplates.verificationEmailTemplate(name, token, to, redirectPath);
+const sendVerificationEmail = async (to, name, token, redirectPath, userType = 'user') => {
+  const { subject, html } = emailTemplates.verificationEmailTemplate(name, token, to, redirectPath, userType);
   return await sendEmail(to, subject, html);
 };
 
@@ -105,10 +106,11 @@ const sendVerificationEmail = async (to, name, token, redirectPath) => {
  * @param {string} to - Recipient email
  * @param {string} name - Recipient name
  * @param {string} token - Reset token
+ * @param {string} userType - Type of user (user, doctor, admin)
  * @returns {Promise} Nodemailer info
  */
-const sendPasswordResetEmail = async (to, name, token) => {
-  const { subject, html } = emailTemplates.passwordResetEmailTemplate(name, token);
+const sendPasswordResetEmail = async (to, name, token, userType = 'user') => {
+  const { subject, html } = emailTemplates.passwordResetEmailTemplate(name, token, to, userType);
   return await sendEmail(to, subject, html);
 };
 

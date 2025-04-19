@@ -82,7 +82,7 @@ const registerUser = async (userData) => {
 
   // Send verification email
   try {
-    await emailService.sendVerificationEmail(user.email, user.name, verificationToken, redirectPath);
+    await emailService.sendVerificationEmail(user.email, user.name, verificationToken, redirectPath, user.role);
   } catch (error) {
     logger.error('Failed to send verification email:', error);
     // Continue with registration even if email fails
@@ -256,7 +256,7 @@ const requestPasswordReset = async (email) => {
 
   // Send password reset email
   try {
-    await emailService.sendPasswordResetEmail(user.email, user.name, resetToken);
+    await emailService.sendPasswordResetEmail(user.email, user.name, resetToken, user.role);
   } catch (error) {
     console.error('Failed to send password reset email:', error);
     // Continue with reset process even if email fails
@@ -334,7 +334,7 @@ const resendVerification = async (email, redirectPath) => {
 
   // Send verification email
   try {
-    await emailService.sendVerificationEmail(user.email, user.name, verificationToken, redirectPath);
+    await emailService.sendVerificationEmail(user.email, user.name, verificationToken, redirectPath, user.role);
   } catch (error) {
     console.error('Failed to send verification email:', error);
     // Continue with process even if email fails

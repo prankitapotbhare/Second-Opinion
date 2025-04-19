@@ -56,16 +56,22 @@ export const register = async (userData) => {
  * Login user
  * @param {string} email - User email
  * @param {string} password - User password
+ * @param {string} expectedRole - Expected user role (optional)
  * @returns {Promise<Object>} Login response with user data and tokens
  */
-export const login = async (email, password) => {
+export const login = async (email, password, expectedRole = null) => {
   try {
+    const body = { email, password };
+    if (expectedRole) {
+      body.expectedRole = expectedRole;
+    }
+    
     const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify(body)
     });
     
     return handleResponse(response);
@@ -167,7 +173,7 @@ export const resetPassword = async (token, password) => {
 /**
  * Verify email
  * @param {string} token - Email verification token
- * @returns {Promise<Object>} Email verification response
+ * @returns {Promise<Object>} Email verification response with user email and role
  */
 export const verifyEmail = async (token) => {
   try {
@@ -191,7 +197,7 @@ export const verifyEmail = async (token) => {
  * @param {string} redirectPath - Path to redirect after verification
  * @returns {Promise<Object>} Resend verification response
  */
-export const resendVerification = async (email, redirectPath) => {
+export const resendVerification = async (email, redirectPath = '/dashboard') => {
   try {
     const response = await fetch(`${API_URL}/auth/resend-verification`, {
       method: 'POST',

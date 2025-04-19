@@ -1,10 +1,14 @@
 "use client";
 
-import React from 'react';
+import React, { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { SplitScreen, AuthHeader } from '../../components';
 import { LoginForm } from '../../components';
 
-export default function DoctorLogin() {
+function  DoctorLoginContent() {
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/doctor/dashboard';
+
   return (
     <SplitScreen 
       imageSrc="/images/doctor.jpg" 
@@ -22,8 +26,17 @@ export default function DoctorLogin() {
         
       <LoginForm 
         userType="doctor"
-        redirectPath="/doctor/dashboard"
+        redirectPath={redirectTo}
       />
     </SplitScreen>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function DoctorLogin() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <DoctorLoginContent />
+    </Suspense>
   );
 }

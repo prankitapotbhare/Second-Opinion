@@ -27,12 +27,6 @@ function VerificationContent() {
     return userType === 'doctor' ? '/doctor/portal' : '/';
   };
 
-  // Handle redirect after successful verification
-  const handleSuccessRedirect = () => {
-    const finalRedirectPath = getRedirectPath();
-    router.push(finalRedirectPath);
-  };
-
   // Handle resend verification email
   const handleResendVerification = async () => {
     if (!email) {
@@ -138,10 +132,6 @@ function VerificationContent() {
           primaryButton={{
             text: "Continue to Login",
             href: `/login/${userType}?redirect=${encodeURIComponent(redirectPath)}`
-          }}
-          secondaryButton={{
-            text: "Go to Dashboard",
-            action: handleSuccessRedirect
           }}
         />
       ) : (
