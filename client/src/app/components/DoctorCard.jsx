@@ -56,7 +56,7 @@ export default function DoctorCard({ doctor }) {
                     Know More
                   </button>
                 </Link>
-                <Link href={`/user/appointment/booking?doctorId=${doctor.id}`} className="w-full">
+                <Link href={`/user/patient-details?doctorId=${doctor.id}`} className="w-full">
                   <button className="w-full border border-teal-600 text-teal-600 px-4 py-2 rounded-md text-sm hover:bg-teal-50 transition-colors font-medium">
                     Book a consultant
                   </button>

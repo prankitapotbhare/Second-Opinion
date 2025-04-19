@@ -28,8 +28,8 @@ const DoctorCard = ({ doctor }) => {
             Know More
           </button>
         </Link>
-         {/* Use doctor.id in query param */}
-        <Link href={`/user/appointment/booking?doctorId=${doctor.id}`} className="w-full">
+         {/* Changed link to patient-details */}
+        <Link href={`/user/patient-details?doctorId=${doctor.id}`} className="w-full">
           <button className="w-full bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 transition-colors duration-200 whitespace-nowrap">
             Book Now
           </button>
