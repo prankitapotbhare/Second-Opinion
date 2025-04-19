@@ -2,13 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-// Assuming doctors data includes all fields from the image
-import { doctors } from '@/data/staticData'; // Or your API fetch logic
+// Update the import to use the consolidated data
+import { doctors as doctorsData } from '@/data/doctorsData';
 import { LoadingSpinner } from '@/components';
 import Link from 'next/link';
-// Removed inline icon imports as they are now in child components
 
-// Import new or modified components from their files
+// Import components from their files
 import DoctorHeader from '../components/DoctorHeader';
 import ProfessionalDetails from '../components/ProfessionalDetails';
 import AboutSection from '../components/AboutSection';
@@ -20,32 +19,28 @@ export default function DoctorProfilePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // --- Fetch Doctor Data ---
-    // Replace with your actual API call or data fetching logic
-    // Ensure the fetched 'foundDoctor' object has all fields from the image:
-    // name, photoURL, specialization, degree, experience, hospitalAffiliation,
-    // qualification, license, licenseVerified, awards, languages, availability,
-    // consultOptions, rating, reviewCount, address, about, reviews (array)
-    const foundDoctor = doctors.find(doc => doc.id === id);
+    // Find doctor using the consolidated data
+    const foundDoctor = doctorsData.find(doc => doc.id === id);
 
-    // --- Mock Data Augmentation (Remove this when using real data) ---
+    // Mock Data Augmentation (Remove this when using real data)
     if (foundDoctor) {
         // Add mock data based on the image for demonstration
         const mockDetails = {
-            photoURL: foundDoctor.photoURL || "https://via.placeholder.com/150", // Placeholder image
-            degree: foundDoctor.degree || 'M.B.B.S',
-            hospitalAffiliation: 'Fortis Hospital, Mumbai',
-            qualification: 'DM (Interventional Cardiology), Johns Hopkins University',
+            specialization: foundDoctor.specialization,
+            imageUrl: foundDoctor.imageUrl || "https://via.placeholder.com/150",
+            degree: foundDoctor.qualification || 'M.B.B.S',
+            hospitalAffiliation: foundDoctor.hospitalAffiliation || 'Fortis Hospital, Mumbai',
+            qualification: foundDoctor.qualification || 'DM (Interventional Cardiology), Johns Hopkins University',
             license: 'MCI No: 123456789',
             licenseVerified: true,
             awards: ['Excellence in Cardiac Care – 2021 (Fortis Healthcare)'],
             languages: ['English', 'Hindi', 'Marathi'],
             availability: 'Mon – Sat, 10:00 AM – 6:00 PM',
             consultOptions: ['Video Call', 'Chat', 'In-Person Visit'],
-            rating: 4.9,
-            reviewCount: 500,
-            address: 'Fortis Hospital, Bandra West, Mumbai',
-            about: `Dr. ${foundDoctor.name || 'Sunil Kumar'} is a dedicated Cardiologist with over ${foundDoctor.experience || '4.5'} years of experience in diagnosing and treating a wide range of heart conditions. He currently practices at Fortis Hospital, Mumbai, where he has established himself as a trusted healthcare provider known for his patient-centered approach and clinical excellence.\n\nAfter completing his M.B.B.S, Dr. Kumar pursued specialized training in Interventional Cardiology from Johns Hopkins University, where he gained extensive knowledge in advanced cardiac procedures and treatments. His educational background and continuous professional development have equipped him with the skills necessary to address complex cardiovascular issues with precision and care.`,
+            rating: foundDoctor.rating || 4.9,
+            reviewCount: foundDoctor.reviewCount || 500,
+            address: foundDoctor.location || 'Fortis Hospital, Bandra West, Mumbai',
+            about: `Dr. ${foundDoctor.name} is a dedicated ${foundDoctor.specialization} with over ${foundDoctor.experience} of experience in diagnosing and treating a wide range of conditions. ${foundDoctor.hospitalAffiliation ? `They currently practice at ${foundDoctor.hospitalAffiliation}` : ''}, where they have established themselves as a trusted healthcare provider known for their patient-centered approach and clinical excellence.\n\nAfter completing their ${foundDoctor.qualification}, Dr. ${foundDoctor.name.split(' ')[1] || foundDoctor.name.split(' ')[0]} gained extensive knowledge in advanced procedures and treatments. Their educational background and continuous professional development have equipped them with the skills necessary to address complex issues with precision and care.`,
             reviews: [
                 { id: 1, name: 'Amit Verma', text: 'Very professional, explained everything.' },
                 { id: 2, name: 'Priya Malhotra', text: 'Saved me from unnecessary surgery.' },
@@ -56,7 +51,7 @@ export default function DoctorProfilePage() {
         };
         setDoctor({ ...foundDoctor, ...mockDetails });
     }
-    // --- End Mock Data Augmentation ---
+    // End Mock Data Augmentation
 
     setLoading(false);
   }, [id]);

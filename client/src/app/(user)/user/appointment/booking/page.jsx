@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { doctors } from '@/data/staticData';
+// Update the import to use the consolidated data
+import { doctors as doctorsData } from '@/data/doctorsData';
 import Link from 'next/link';
 
 export default function AppointmentBookingPage() {
@@ -27,8 +28,8 @@ export default function AppointmentBookingPage() {
       return;
     }
     
-    // Find the doctor based on the ID
-    const foundDoctor = doctors.find(doc => doc.id === doctorId);
+    // Find the doctor based on the ID using consolidated data
+    const foundDoctor = doctorsData.find(doc => doc.id === doctorId);
     if (foundDoctor) {
       setDoctor(foundDoctor);
     } else {

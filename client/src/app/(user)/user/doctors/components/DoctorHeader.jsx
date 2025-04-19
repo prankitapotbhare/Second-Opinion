@@ -4,30 +4,40 @@ import { FaBriefcaseMedical } from 'react-icons/fa';
 
 // Doctor Header Component
 const DoctorHeader = ({ doctor }) => (
-  <div className="bg-white rounded-lg shadow-md p-6 md:p-8 mb-6 flex flex-col md:flex-row items-center md:items-start text-center md:text-left">
+  // Add 'relative' and potentially 'pb-16' or similar padding-bottom to make space for the absolute button
+  <div className="relative bg-white rounded-lg shadow-md p-6 md:p-8 mb-6 flex flex-col md:flex-row items-center md:items-start text-center md:text-left pb-20 md:pb-8"> {/* Increased bottom padding */}
     <img
-      src={doctor.photoURL}
-      alt={doctor.name}
-      className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover mb-4 md:mb-0 md:mr-8 border-4 border-gray-100"
+      src={doctor.imageUrl || "https://via.placeholder.com/160"} // Use imageUrl
+      alt={doctor.name || 'Doctor'} // Use name
+      className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover mb-4 md:mb-0 md:mr-8 border-4 border-gray-100 flex-shrink-0" // Added flex-shrink-0
     />
     <div className="flex-grow">
-      <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-1">{doctor.name}</h1>
-      <p className="text-teal-600 font-medium text-lg mb-2">{doctor.specialization}</p>
-      <p className="text-gray-600 text-sm mb-1">{doctor.degree}</p>
-      <p className="text-gray-600 text-sm mb-1">Experience: {doctor.experience}</p>
+      <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-1">{doctor.name || 'Dr. Anonymous'}</h1> {/* Use name */}
+      {/* Use specialization */}
+      {doctor.specialization && <p className="text-teal-600 font-medium text-lg mb-2">{doctor.specialization}</p>}
+      {/* Use degree or qualification */}
+      {(doctor.degree || doctor.qualification) && <p className="text-gray-600 text-sm mb-1">{doctor.degree || doctor.qualification}</p>}
+      {/* Use experience */}
+      {doctor.experience && <p className="text-gray-600 text-sm mb-1">Experience: {doctor.experience}</p>}
+      {/* Use hospitalAffiliation */}
       {doctor.hospitalAffiliation && (
          <p className="text-gray-600 text-sm mb-4 flex items-center justify-center md:justify-start">
             <FaBriefcaseMedical className="mr-2 text-gray-500" /> {doctor.hospitalAffiliation}
          </p>
       )}
     </div>
-    <div className="mt-4 md:mt-0 md:ml-auto flex-shrink-0">
-      <Link href={`/user/appointment/booking?doctorId=${doctor.id}`}>
-        <button className="bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700 transition-colors duration-200 font-medium shadow-sm whitespace-nowrap w-full md:w-auto">
-          Book a Consultation
-        </button>
-      </Link>
-    </div>
+    {/* Change container to absolute positioning, place at bottom-right */}
+    {/* Use padding of parent (p-6/p-8) for positioning */}
+    {/* Ensure doctor.id exists before rendering link */}
+    {doctor.id && (
+        <div className="absolute bottom-6 right-6 md:bottom-8 md:right-8 mt-4 md:mt-0 w-[calc(100%-3rem)] md:w-auto"> {/* Adjusted width for mobile */}
+            <Link href={`/user/appointment/booking?doctorId=${doctor.id}`} className="block w-full md:w-auto"> {/* Use id */}
+                <button className="w-full bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700 transition-colors duration-200 font-medium shadow-sm whitespace-nowrap">
+                Book a Consultation
+                </button>
+            </Link>
+        </div>
+    )}
   </div>
 );
 

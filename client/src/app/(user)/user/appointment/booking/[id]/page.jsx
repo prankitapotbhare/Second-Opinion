@@ -1,12 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import { doctors } from '@/data/staticData';
+import { useParams, useSearchParams } from 'next/navigation'; // Import useSearchParams
+// import { doctors } from '@/data/staticData'; // Remove old import
+import { doctors as doctorsData } from '@/data/doctorsData'; // Import the consolidated data
 import Link from 'next/link';
 
 export default function AppointmentBookingPage() {
-  const { id } = useParams();
+  const { id: pathId } = useParams(); // Get id from path if available
+  const searchParams = useSearchParams(); // Get query parameters
+  const doctorId = searchParams.get('doctorId') || pathId; // Prioritize query param, fallback to path param
+
   const [doctor, setDoctor] = useState(null);
   const [loading, setLoading] = useState(true);
   
@@ -18,16 +22,13 @@ export default function AppointmentBookingPage() {
   const [currentDate] = useState(new Date());
   
   useEffect(() => {
-    // Find the doctor based on the ID
-    const foundDoctor = doctors.find(doc => doc.id === id);
+    // Find the doctor based on the ID from query or path
+    const foundDoctor = doctorsData.find(doc => doc.id === doctorId); // Use consolidated data and check doc.id
     if (foundDoctor) {
       setDoctor(foundDoctor);
     }
     setLoading(false);
-    
-    // Set default selected date to today
-    setSelectedDate(currentDate.getDate());
-  }, [id, currentDate]);
+  }, [doctorId, currentDate]); // Depend on doctorId
   
   const getDates = () => {
     const dates = [];
@@ -71,9 +72,7 @@ export default function AppointmentBookingPage() {
   };
   
   const removeFile = (index) => {
-    const newFiles = [...uploadedFiles];
-    newFiles.splice(index, 1);
-    setUploadedFiles(newFiles);
+    setUploadedFiles(uploadedFiles.filter((_, i) => i !== index));
   };
   
   const handleClearForm = () => {
@@ -105,22 +104,11 @@ export default function AppointmentBookingPage() {
   };
   
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
-      </div>
-    );
+    return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
   
   if (!doctor) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">Doctor Not Found</h1>
-        <Link href="/" className="text-green-600 hover:underline">
-          Return to Home
-        </Link>
-      </div>
-    );
+    return <div className="flex justify-center items-center h-screen">Doctor not found.</div>;
   }
   
   return (
