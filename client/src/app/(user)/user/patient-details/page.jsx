@@ -3,11 +3,14 @@
 import React, { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FaUpload } from 'react-icons/fa';
+import { submitPatientDetails } from '@/api/patient.api';
+import { usePatient } from '@/contexts/PatientContext';
 
 export default function PatientDetailsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const doctorId = searchParams.get('doctorId');
+  const { setSubmission } = usePatient();
   
   const [formData, setFormData] = useState({
     fullName: '',
@@ -22,6 +25,8 @@ export default function PatientDetailsPage() {
   });
 
   const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -52,12 +57,44 @@ export default function PatientDetailsPage() {
     }, 1000);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Patient details submitted:', formData);
+    setIsSubmitting(true);
+    setError(null);
     
-    // Redirect to appointment booking with the collected data
-    router.push(`/user/appointment/booking?doctorId=${doctorId}`);
+    try {
+      console.log('Patient details submitted:', formData);
+      
+      // Call the API to submit patient details
+      const response = await submitPatientDetails(
+        {
+          fullName: formData.fullName,
+          age: formData.age,
+          relation: formData.relation,
+          contactNumber: formData.contactNumber,
+          email: formData.email,
+          emergencyContact: formData.emergencyContact,
+          gender: formData.gender,
+          problem: formData.problem
+        },
+        formData.documents,
+        doctorId
+      );
+      
+      // Store the submission in context
+      setSubmission({
+        id: response.submissionId,
+        doctorId: doctorId
+      });
+      
+      // Redirect to success page instead of directly to responses
+      router.push('/user/response');
+    } catch (err) {
+      console.error('Error submitting patient details:', err);
+      setError(err.message || 'Failed to submit patient details. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -65,6 +102,12 @@ export default function PatientDetailsPage() {
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h1 className="text-2xl font-semibold text-gray-800 mb-6">Patient's Details</h1>
+          
+          {error && (
+            <div className="bg-red-50 text-red-700 p-4 rounded-md mb-6">
+              {error}
+            </div>
+          )}
           
           <form onSubmit={handleSubmit} className="relative">
             <div className="space-y-4">
@@ -221,13 +264,14 @@ export default function PatientDetailsPage() {
                 )}
               </div>
               
-              {/* Submit Button - Fixed positioning */}
+              {/* Submit Button */}
               <div className="pt-4 flex justify-end">
                 <button
                   type="submit"
-                  className="px-8 py-3 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors"
+                  disabled={isSubmitting}
+                  className={`px-8 py-3 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
-                  Submit Documents
+                  {isSubmitting ? 'Submitting...' : 'Submit Documents'}
                 </button>
               </div>
             </div>

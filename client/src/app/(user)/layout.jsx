@@ -22,8 +22,8 @@ export default function UserLayout({ children }) {
 
   // List of routes where Footer should be hidden
   const noFooterRoutes = [
-    "/user/responses",
-    "/user/responses/",
+    "/user/response",
+    "/user/response/",
   ];
 
   // Check if the current path starts with any of the routes in noFooterRoutes
