@@ -16,15 +16,15 @@ export default function DoctorsSection() {
   return (
     <section className="py-8 sm:py-12 lg:py-16 bg-white px-4">
       <div className="container mx-auto">
-        <div className="text-center sm:text-left mb-8 sm:mb-12">
+        <div className="text-center sm:text-left mb-8">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
             <span className="text-gray-800">Our </span>
-            <span className="text-teal-600">Recommended</span>
-            <span className="text-gray-800"> Best Doctors....</span>
+            <span className="text-teal-600">Recommended </span>
+            <span className="text-gray-800">Best Doctors....</span>
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {recommendedDoctors.map((doctor) => (
             doctor.id ? (
               <div key={doctor.id}>

@@ -44,7 +44,7 @@ export default function Home() {
         </>
       ) : (
         // Simple loading state or skeleton for SSR
-        <div className="flex-grow flex items-center justify-center">
+        <div className="flex-grow flex items-center justify-center h-screen">
           <div className="p-4">Loading content...</div>
         </div>
       )}
