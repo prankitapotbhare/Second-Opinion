@@ -24,7 +24,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <h3 className="text-xl font-semibold mb-4 flex items-center">
-              <i className="fas fa-comment-medical mr-2"></i>
+              <i className="fas fa-comment-medical"></i>
               Second Opinion
             </h3>
             <p className="text-teal-100 mb-4">
