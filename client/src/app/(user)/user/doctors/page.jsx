@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-// import { doctors } from '@/data/doctorsData'; // Remove old import if it existed
-import { doctors as doctorsData } from '@/data/doctorsData'; // Import the consolidated data
+import { doctors as doctorsData } from '@/data/doctorsData';
 import SearchBar from './components/SearchBar';
 import DoctorGrid from './components/DoctorGrid';
 import { useSearchParams } from 'next/navigation';

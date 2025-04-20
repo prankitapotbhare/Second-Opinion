@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getDoctorResponse, submitFeedback, requestSecondOpinion } from '@/api/patient.api';
+import { getDoctorResponse, submitFeedback, requestSecondOpinion, checkAppointmentStatus } from '@/api/patient.api';
 
 // Create the context
 const PatientContext = createContext();
@@ -23,15 +23,80 @@ export const PatientProvider = ({ children }) => {
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [appointmentRequested, setAppointmentRequested] = useState(false);
   const [appointmentDetails, setAppointmentDetails] = useState(null);
+  const [appointmentStatus, setAppointmentStatus] = useState(null); // 'pending', 'approved', 'rejected'
 
-  // Load submission from sessionStorage on mount
+  // Load submission from localStorage on mount for better persistence
   useEffect(() => {
-    const submissionId = sessionStorage.getItem('patientSubmissionId');
+    const submissionId = localStorage.getItem('patientSubmissionId');
+    const feedbackStatus = localStorage.getItem('feedbackSubmitted');
+    const appointmentStatus = localStorage.getItem('appointmentRequested');
+    const appointmentData = localStorage.getItem('appointmentDetails');
+    const apptStatus = localStorage.getItem('appointmentStatus');
+    
     if (submissionId) {
       setCurrentSubmission({ id: submissionId });
       fetchDoctorResponse(submissionId);
     }
+    
+    if (feedbackStatus === 'true') {
+      setFeedbackSubmitted(true);
+    }
+    
+    if (appointmentStatus === 'true') {
+      setAppointmentRequested(true);
+    }
+    
+    if (appointmentData) {
+      try {
+        setAppointmentDetails(JSON.parse(appointmentData));
+      } catch (err) {
+        console.error('Error parsing appointment details:', err);
+      }
+    }
+    
+    if (apptStatus) {
+      setAppointmentStatus(apptStatus);
+    }
   }, []);
+
+  // Periodically check appointment status if an appointment has been requested
+  useEffect(() => {
+    let intervalId;
+    
+    if (appointmentRequested && appointmentStatus !== 'approved' && appointmentStatus !== 'rejected') {
+      // Check status immediately
+      checkAppointmentStatusUpdate();
+      
+      // Then set up interval to check every 30 seconds
+      intervalId = setInterval(checkAppointmentStatusUpdate, 30000);
+    }
+    
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [appointmentRequested, appointmentStatus]);
+
+  // Check appointment status
+  const checkAppointmentStatusUpdate = async () => {
+    if (!doctorResponse || !appointmentRequested) return;
+    
+    try {
+      const status = await checkAppointmentStatus(doctorResponse.id);
+      setAppointmentStatus(status.status);
+      localStorage.setItem('appointmentStatus', status.status);
+      
+      // If approved, update the appointment details with any additional info from doctor
+      if (status.status === 'approved' && status.appointmentDetails) {
+        setAppointmentDetails(prev => ({...prev, ...status.appointmentDetails}));
+        localStorage.setItem('appointmentDetails', JSON.stringify({
+          ...appointmentDetails,
+          ...status.appointmentDetails
+        }));
+      }
+    } catch (err) {
+      console.error('Error checking appointment status:', err);
+    }
+  };
 
   // Fetch doctor's response
   const fetchDoctorResponse = async (submissionId) => {
@@ -43,6 +108,17 @@ export const PatientProvider = ({ children }) => {
     try {
       const response = await getDoctorResponse(submissionId);
       setDoctorResponse(response);
+      
+      // Check if appointment was already requested in the response
+      if (response.appointmentRequested) {
+        setAppointmentRequested(true);
+        setAppointmentDetails(response.appointmentDetails);
+        setAppointmentStatus(response.appointmentStatus || 'pending');
+        
+        localStorage.setItem('appointmentRequested', 'true');
+        localStorage.setItem('appointmentDetails', JSON.stringify(response.appointmentDetails));
+        localStorage.setItem('appointmentStatus', response.appointmentStatus || 'pending');
+      }
     } catch (err) {
       console.error('Error fetching doctor response:', err);
       setError('Failed to load doctor\'s response');
@@ -56,8 +132,8 @@ export const PatientProvider = ({ children }) => {
     setCurrentSubmission(submission);
     
     if (submission && submission.id) {
-      // Store submission ID in sessionStorage for persistence
-      sessionStorage.setItem('patientSubmissionId', submission.id);
+      // Store submission ID in localStorage for better persistence
+      localStorage.setItem('patientSubmissionId', submission.id);
       
       // Fetch doctor's response for this submission
       fetchDoctorResponse(submission.id);
@@ -71,31 +147,53 @@ export const PatientProvider = ({ children }) => {
     setFeedbackSubmitted(false);
     setAppointmentRequested(false);
     setAppointmentDetails(null);
-    sessionStorage.removeItem('patientSubmissionId');
+    setAppointmentStatus(null);
+    
+    // Clear from localStorage
+    localStorage.removeItem('patientSubmissionId');
+    localStorage.removeItem('feedbackSubmitted');
+    localStorage.removeItem('appointmentRequested');
+    localStorage.removeItem('appointmentDetails');
+    localStorage.removeItem('appointmentStatus');
   };
 
-  // Submit feedback
+  // Submit feedback to doctor
   const submitFeedbackToDoctor = async (responseId, rating, comment) => {
     try {
       await submitFeedback(responseId, rating, comment);
       setFeedbackSubmitted(true);
+      localStorage.setItem('feedbackSubmitted', 'true');
       return true;
-    } catch (err) {
-      console.error('Error submitting feedback:', err);
-      return false;
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      throw error;
     }
   };
 
-  // Request second opinion appointment
-  const requestAppointment = async (responseId, dateTimeDetails) => {
+  // Request appointment for second opinion
+  const requestAppointment = async (responseId, dateTime) => {
     try {
-      const response = await requestSecondOpinion(responseId, dateTimeDetails);
+      const result = await requestSecondOpinion(responseId, dateTime);
       setAppointmentRequested(true);
-      setAppointmentDetails(dateTimeDetails);
-      return response;
-    } catch (err) {
-      console.error('Error requesting appointment:', err);
-      throw err;
+      setAppointmentDetails(dateTime);
+      setAppointmentStatus('pending');
+      
+      // Store in localStorage
+      localStorage.setItem('appointmentRequested', 'true');
+      localStorage.setItem('appointmentDetails', JSON.stringify(dateTime));
+      localStorage.setItem('appointmentStatus', 'pending');
+      
+      return result;
+    } catch (error) {
+      console.error('Error requesting appointment:', error);
+      throw error;
+    }
+  };
+
+  // Refresh doctor response data
+  const refreshResponse = () => {
+    if (currentSubmission && currentSubmission.id) {
+      fetchDoctorResponse(currentSubmission.id);
     }
   };
 
@@ -107,15 +205,16 @@ export const PatientProvider = ({ children }) => {
         loading,
         error,
         feedbackSubmitted,
+        setFeedbackSubmitted,
         appointmentRequested,
         appointmentDetails,
+        appointmentStatus,
         setSubmission,
         clearSubmission,
         submitFeedbackToDoctor,
         requestAppointment,
-        setFeedbackSubmitted,
-        setAppointmentRequested,
-        setAppointmentDetails
+        refreshResponse,
+        checkAppointmentStatusUpdate
       }}
     >
       {children}

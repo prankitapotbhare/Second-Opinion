@@ -1,9 +1,9 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { FaFileAlt, FaStar, FaSpinner, FaCalendarAlt, FaCheckCircle, FaHome } from 'react-icons/fa';
 import { usePatient } from '@/contexts/PatientContext';
-import DateTimePicker from '@/components/common/DateTimePicker';
+import DateTimePicker from './components/DateTimePicker';
 
 export default function ResponsePage() {
   const { 
@@ -14,8 +14,10 @@ export default function ResponsePage() {
     setFeedbackSubmitted,
     appointmentRequested,
     appointmentDetails,
+    appointmentStatus,
     submitFeedbackToDoctor,
-    requestAppointment
+    requestAppointment,
+    checkAppointmentStatusUpdate
   } = usePatient();
   
   const [activeTab, setActiveTab] = useState('response');
@@ -24,6 +26,11 @@ export default function ResponsePage() {
   const [hover, setHover] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [showDateTimePicker, setShowDateTimePicker] = useState(false);
+
+  // Fetch response data on mount if needed
+  useEffect(() => {
+    // You could add additional logic here if needed
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -69,6 +76,21 @@ export default function ResponsePage() {
     }
   };
 
+  // Add a useEffect to periodically check appointment status
+  useEffect(() => {
+    // Check appointment status when the page loads
+    if (appointmentRequested && appointmentStatus === 'pending') {
+      checkAppointmentStatusUpdate();
+      
+      // Set up an interval to check every 10 seconds (for demo purposes)
+      const intervalId = setInterval(() => {
+        checkAppointmentStatusUpdate();
+      }, 10000);
+      
+      return () => clearInterval(intervalId);
+    }
+  }, [appointmentRequested, appointmentStatus, checkAppointmentStatusUpdate]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -101,17 +123,14 @@ export default function ResponsePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <header className="bg-white border-b border-gray-200 py-4">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-xl font-semibold text-gray-800">Second Opinion</h1>
-            <Link href="/user/doctors" className="text-teal-600 hover:underline flex items-center">
-              <FaHome className="mr-1" /> Home
-            </Link>
-          </div>
-        </div>
-      </header>
-
+      {/* Date Time Picker Modal */}
+      {showDateTimePicker && (
+        <DateTimePicker
+          onSelect={handleDateTimeSelect}
+          onClose={() => setShowDateTimePicker(false)}
+        />
+      )}
+      
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {/* Tabs */}
@@ -133,15 +152,57 @@ export default function ResponsePage() {
         {/* Response Section */}
         {activeTab === 'response' && (
           <div>
-            {/* Appointment Confirmation Section (if appointment requested) */}
+            {/* Appointment Status Section */}
             {appointmentRequested && (
               <div className="mb-6">
-                <h3 className="text-xl font-medium mb-2">Confirmed! <span className="text-teal-600">✓</span></h3>
-                <div className="bg-white border border-gray-200 rounded-lg p-6 mb-8 shadow-sm">
-                  <p className="text-teal-600">
-                    Your appointment request for {appointmentDetails?.time} has been Approved
-                  </p>
-                </div>
+                {appointmentStatus === 'approved' ? (
+                  <>
+                    <h3 className="text-xl font-medium mb-2">Confirmed! <span className="text-teal-600">✓</span></h3>
+                    <div className="bg-white border border-gray-200 rounded-lg p-6 mb-8 shadow-sm">
+                      <p className="text-teal-600">
+                        Your appointment request for {appointmentDetails?.date} at {appointmentDetails?.time} has been approved.
+                      </p>
+                      {appointmentDetails?.doctorNotes && (
+                        <p className="mt-2 text-gray-700">
+                          <strong>Doctor's note:</strong> {appointmentDetails.doctorNotes}
+                        </p>
+                      )}
+                    </div>
+                  </>
+                ) : appointmentStatus === 'rejected' ? (
+                  <>
+                    <h3 className="text-xl font-medium mb-2">Appointment Rejected</h3>
+                    <div className="bg-white border border-red-200 rounded-lg p-6 mb-8 shadow-sm">
+                      <p className="text-red-600">
+                        Your appointment request for {appointmentDetails?.date} at {appointmentDetails?.time} was not approved.
+                      </p>
+                      {appointmentDetails?.rejectionReason && (
+                        <p className="mt-2 text-gray-700">
+                          <strong>Reason:</strong> {appointmentDetails.rejectionReason}
+                        </p>
+                      )}
+                      <button 
+                        onClick={handleRequestAppointment}
+                        className="mt-4 bg-teal-600 text-white px-6 py-2 rounded-md hover:bg-teal-700 transition-colors flex items-center"
+                      >
+                        <FaCalendarAlt className="mr-2" />
+                        Choose Another Time
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-xl font-medium mb-2">Appointment Pending</h3>
+                    <div className="bg-white border border-yellow-200 rounded-lg p-6 mb-8 shadow-sm">
+                      <div className="flex items-center">
+                        <FaSpinner className="animate-spin text-yellow-500 mr-2" />
+                        <p className="text-yellow-700">
+                          Your appointment request for {appointmentDetails?.date} at {appointmentDetails?.time} is pending approval.
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
             
@@ -150,29 +211,31 @@ export default function ResponsePage() {
               <h3 className="text-xl font-medium mb-2">Required(Yes or No)</h3>
               <div className="bg-white border border-gray-200 rounded-lg p-6 mb-8 shadow-sm">
                 <div className={`w-full text-gray-800 ${doctorResponse.requiredSecondOpinion ? 'text-teal-600' : ''}`}>
-                  {doctorResponse.requiredSecondOpinion ? (
-                    <div>
+                  <div className="flex justify-between items-center">
+                    {doctorResponse.requiredSecondOpinion ? (
                       <p>Yes, Second opinion needed. Please choose a date and time.</p>
-                      {!appointmentRequested && (
-                        <button 
-                          onClick={handleRequestAppointment}
-                          className="mt-4 bg-teal-600 text-white px-6 py-2 rounded-md hover:bg-teal-700 transition-colors flex items-center"
-                          disabled={submitting}
-                        >
-                          {submitting ? (
-                            <FaSpinner className="animate-spin mr-2" />
-                          ) : (
-                            <FaCalendarAlt className="mr-2" />
-                          )}
-                          Choose Date & Time
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <p>No, a second opinion is not required at this time.</p>
-                  )}
+                    ) : (
+                      <p>No, a second opinion is not required at this time.</p>
+                    )}
+                  </div>
                 </div>
               </div>
+              {doctorResponse.requiredSecondOpinion && !appointmentRequested && (
+                <div className="flex justify-end mb-4">
+                  <button 
+                    onClick={handleRequestAppointment}
+                    className="bg-teal-600 text-white px-6 py-2 rounded-md hover:bg-teal-700 transition-colors flex items-center"
+                    disabled={submitting}
+                  >
+                    {submitting ? (
+                      <FaSpinner className="animate-spin mr-2" />
+                    ) : (
+                      <FaCalendarAlt className="mr-2" />
+                    )}
+                    Choose Date & Time
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Message Section */}
@@ -186,15 +249,19 @@ export default function ResponsePage() {
             {/* Documents Section */}
             <h3 className="text-xl font-medium mb-2">Documents</h3>
             <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-              <div className="grid grid-cols-3 gap-6">
-                {doctorResponse.documents.map((doc) => (
-                  <div key={doc.id} className="bg-purple-50 rounded-lg p-4 flex flex-col items-center cursor-pointer hover:shadow-md transition-shadow">
-                    <div className="bg-teal-600 text-white p-3 rounded-lg mb-2">
-                      <FaFileAlt className="text-xl" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                {doctorResponse.documents && doctorResponse.documents.length > 0 ? (
+                  doctorResponse.documents.map((doc) => (
+                    <div key={doc.id} className="bg-purple-50 rounded-lg p-4 flex flex-col items-center cursor-pointer hover:shadow-md transition-shadow">
+                      <div className="bg-teal-600 text-white p-3 rounded-lg mb-2">
+                        <FaFileAlt className="text-xl" />
+                      </div>
+                      <span className="text-gray-800 font-medium text-sm text-center">{doc.name}</span>
                     </div>
-                    <span className="text-gray-800 font-medium text-sm text-center">{doc.name}</span>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-gray-500 col-span-3 text-center py-4">No documents available</p>
+                )}
               </div>
             </div>
           </div>
@@ -214,14 +281,14 @@ export default function ResponsePage() {
               <form onSubmit={handleSubmit}>
                 <div className="mb-6">
                   <label htmlFor="comments" className="block text-sm font-medium text-gray-700 mb-2">
-                    Comments :-
+                    Comments
                   </label>
                   <textarea
                     id="comments"
                     name="comments"
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    placeholder="Great service and smooth experience. Will book again!"
+                    placeholder="Share your experience with the doctor's response..."
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
                     disabled={submitting}
@@ -230,7 +297,7 @@ export default function ResponsePage() {
                 
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ratings :-
+                    Rating
                   </label>
                   <div className="flex items-center">
                     {[...Array(5)].map((_, index) => {
@@ -251,6 +318,9 @@ export default function ResponsePage() {
                         </button>
                       );
                     })}
+                    <span className="ml-2 text-gray-600">
+                      {rating} out of 5
+                    </span>
                   </div>
                 </div>
                 
@@ -263,15 +333,10 @@ export default function ResponsePage() {
                     {submitting ? (
                       <>
                         <FaSpinner className="animate-spin mr-2" />
-                        Sending...
+                        Submitting...
                       </>
                     ) : (
-                      <>
-                        Send
-                        <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-                        </svg>
-                      </>
+                      'Submit Feedback'
                     )}
                   </button>
                 </div>
@@ -280,14 +345,6 @@ export default function ResponsePage() {
           </div>
         )}
       </main>
-
-      {/* Date Time Picker Modal */}
-      {showDateTimePicker && (
-        <DateTimePicker 
-          onSelect={handleDateTimeSelect} 
-          onClose={() => setShowDateTimePicker(false)} 
-        />
-      )}
     </div>
   );
 }

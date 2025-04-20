@@ -24,6 +24,8 @@ export default function UserLayout({ children }) {
   const noFooterRoutes = [
     "/user/response",
     "/user/response/",
+    "/user/patient-details",
+    "/user/patient-details/",
   ];
 
   // Check if the current path starts with any of the routes in noFooterRoutes

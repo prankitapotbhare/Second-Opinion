@@ -7,6 +7,7 @@ export { default as StatCard } from './common/StatCard';
 export { default as Navbar } from './common/Navbar';
 export { default as Footer } from './common/Footer';
 export { default as SubmissionMessage } from './common/SubmissionMessage';
+export { default as FeedbackButton } from './common/FeedbackButton';
 
 // Layout components
 
@@ -15,5 +16,5 @@ export { default as ProtectedRoute } from './auth/ProtectedRoute';
 export { default as AuthLoading } from './auth/AuthLoading';
 export { default as EmailVerificationStatus } from './auth/EmailVerificationStatus';
 
-// Add this line to your existing exports
-export { default as FeedbackButton } from './common/FeedbackButton';
+// Modal components
+export { default as LogoutConfirmationModal } from './modals/LogoutConfirmationModal';

@@ -41,6 +41,19 @@ export const submitPatientDetails = async (patientData, documents, doctorId) => 
         // Create a new submission ID
         const submissionId = 'sub_' + Math.random().toString(36).substr(2, 9);
         
+        // Store the submission data in localStorage for mock purposes
+        const submissionData = {
+          id: submissionId,
+          patientData,
+          documents: documents.map(doc => ({ name: doc.name, size: doc.size })),
+          doctorId,
+          submittedAt: new Date().toISOString(),
+          status: 'pending' // Initial status is pending
+        };
+        
+        // Store in localStorage for mock persistence
+        localStorage.setItem(`submission_${submissionId}`, JSON.stringify(submissionData));
+        
         resolve({
           success: true,
           message: 'Your document has been successfully submitted, wait for response',
@@ -64,22 +77,41 @@ export const getDoctorResponse = async (submissionId) => {
     // For mock implementation, we'll use the mock data
     return new Promise((resolve) => {
       setTimeout(() => {
+        // Check if we have a stored response in localStorage
+        const storedResponse = localStorage.getItem(`response_${submissionId}`);
+        
+        if (storedResponse) {
+          resolve(JSON.parse(storedResponse));
+          return;
+        }
+        
         const response = getResponseBySubmissionId(submissionId);
         if (response) {
           resolve(response);
         } else {
           // If no response found, create a mock response
-          resolve({
+          // Randomly decide if second opinion is required (for testing purposes)
+          const requiresSecondOpinion = Math.random() > 0.5;
+          
+          const mockResponse = {
             id: 'resp_' + Math.random().toString(36).substr(2, 9),
             submissionId: submissionId,
-            requiredSecondOpinion: true, // Set to true to test the second opinion flow
-            responseText: "Based on your symptoms and the provided documents, I recommend a second opinion. Please schedule an appointment at your earliest convenience so we can discuss your condition in more detail. In the meantime, continue with your current medications and avoid strenuous activities.",
+            requiredSecondOpinion: requiresSecondOpinion,
+            responseText: requiresSecondOpinion 
+              ? "Based on your symptoms and the provided documents, I recommend a second opinion. Please schedule an appointment at your earliest convenience so we can discuss your condition in more detail. In the meantime, continue with your current medications and avoid strenuous activities."
+              : "After reviewing your medical records and symptoms, I don't believe a second opinion is necessary at this time. Your current treatment plan appears appropriate for your condition. Continue with the prescribed medications and follow up with your primary physician as scheduled. If symptoms worsen, please contact your doctor immediately.",
             documents: [
               { id: 1, name: "Prescription.pdf", url: "/mock-files/prescription.pdf" },
               { id: 2, name: "Treatment_Plan.pdf", url: "/mock-files/treatment_plan.pdf" },
               { id: 3, name: "Medical_Report.pdf", url: "/mock-files/medical_report.pdf" }
-            ]
-          });
+            ],
+            createdAt: new Date().toISOString()
+          };
+          
+          // Store the mock response in localStorage for persistence
+          localStorage.setItem(`response_${submissionId}`, JSON.stringify(mockResponse));
+          
+          resolve(mockResponse);
         }
       }, 1000);
     });
@@ -101,10 +133,23 @@ export const submitFeedback = async (responseId, rating, comment) => {
     // For mock implementation, we'll simulate a successful response
     return new Promise((resolve) => {
       setTimeout(() => {
+        const feedbackId = 'feed_' + Math.random().toString(36).substr(2, 9);
+        
+        // Store feedback in localStorage for mock persistence
+        const feedbackData = {
+          id: feedbackId,
+          responseId,
+          rating,
+          comment,
+          submittedAt: new Date().toISOString()
+        };
+        
+        localStorage.setItem(`feedback_${feedbackId}`, JSON.stringify(feedbackData));
+        
         resolve({
           success: true,
           message: 'Your feedback has been submitted successfully',
-          feedbackId: 'feed_' + Math.random().toString(36).substr(2, 9),
+          feedbackId,
           responseId,
           rating,
           comment
@@ -128,17 +173,94 @@ export const requestSecondOpinion = async (responseId, appointmentDetails) => {
     // For mock implementation, we'll simulate a successful response
     return new Promise((resolve) => {
       setTimeout(() => {
+        const appointmentId = 'appt_' + Math.random().toString(36).substr(2, 9);
+        
+        // Store appointment request in localStorage for mock persistence
+        const appointmentData = {
+          id: appointmentId,
+          responseId,
+          appointmentDetails,
+          requestedAt: new Date().toISOString(),
+          status: 'pending' // Initial status is pending
+        };
+        
+        localStorage.setItem(`appointment_${appointmentId}`, JSON.stringify(appointmentData));
+        localStorage.setItem(`appointment_for_response_${responseId}`, appointmentId);
+        
         resolve({
           success: true,
           message: 'Your appointment request has been submitted successfully',
-          appointmentId: 'appt_' + Math.random().toString(36).substr(2, 9),
+          appointmentId,
           appointmentDetails,
-          status: 'approved'
+          status: 'pending'
         });
       }, 800);
     });
   } catch (error) {
     console.error('Error requesting second opinion:', error);
+    throw error;
+  }
+};
+
+/**
+ * Check the status of an appointment request
+ * @param {string} responseId - ID of the doctor's response
+ * @returns {Promise<Object>} Appointment status
+ */
+export const checkAppointmentStatus = async (responseId) => {
+  try {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Get the appointment ID for this response
+        const appointmentId = localStorage.getItem(`appointment_for_response_${responseId}`);
+        
+        if (!appointmentId) {
+          resolve({ status: 'not_found' });
+          return;
+        }
+        
+        // Get the appointment data
+        const appointmentDataStr = localStorage.getItem(`appointment_${appointmentId}`);
+        
+        if (!appointmentDataStr) {
+          resolve({ status: 'not_found' });
+          return;
+        }
+        
+        const appointmentData = JSON.parse(appointmentDataStr);
+        
+        // For mock purposes, we'll randomly approve or reject the appointment
+        // In a real app, this would come from the backend
+        if (appointmentData.status === 'pending') {
+          // 80% chance of approval for testing purposes
+          const newStatus = Math.random() < 0.8 ? 'approved' : 'rejected';
+          
+          // Update the appointment status
+          appointmentData.status = newStatus;
+          appointmentData.updatedAt = new Date().toISOString();
+          
+          if (newStatus === 'approved') {
+            appointmentData.doctorNotes = "Looking forward to our appointment. Please bring any new test results.";
+          } else {
+            appointmentData.rejectionReason = "Unable to accommodate at the requested time. Please select a different time.";
+          }
+          
+          // Save the updated appointment data
+          localStorage.setItem(`appointment_${appointmentId}`, JSON.stringify(appointmentData));
+        }
+        
+        resolve({
+          status: appointmentData.status,
+          appointmentId,
+          appointmentDetails: appointmentData.appointmentDetails,
+          updatedAt: appointmentData.updatedAt,
+          doctorNotes: appointmentData.doctorNotes,
+          rejectionReason: appointmentData.rejectionReason
+        });
+      }, 800);
+    });
+  } catch (error) {
+    console.error('Error checking appointment status:', error);
     throw error;
   }
 };

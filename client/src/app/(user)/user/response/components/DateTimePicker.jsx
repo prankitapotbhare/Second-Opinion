@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState } from 'react';
-import { FaCalendarAlt, FaClock } from 'react-icons/fa';
+import { FaCalendarAlt } from 'react-icons/fa';
 
 const DateTimePicker = ({ onSelect, onClose }) => {
-  const [selectedDate, setSelectedDate] = useState('');
+  // Format today's date as YYYY-MM-DD for initial state
+  const today = new Date().toISOString().split('T')[0];
+  const [selectedDate, setSelectedDate] = useState(today);
   const [selectedTime, setSelectedTime] = useState('');
 
   const timeSlots = [
@@ -19,9 +21,6 @@ const DateTimePicker = ({ onSelect, onClose }) => {
       onSelect({ date: selectedDate, time: selectedTime });
     }
   };
-
-  // Format today's date as YYYY-MM-DD for the default value
-  const today = new Date().toISOString().split('T')[0];
 
   return (
     <div className="fixed inset-0 bg-[rgba(0,0,0,0.7)] flex items-center justify-center z-50 p-4">
@@ -38,7 +37,6 @@ const DateTimePicker = ({ onSelect, onClose }) => {
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               min={today}
-              defaultValue={today}
               required
             />
             <FaCalendarAlt className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
