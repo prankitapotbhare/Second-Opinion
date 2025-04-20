@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { FaFileAlt, FaStar, FaSpinner, FaCalendarAlt, FaCheckCircle, FaHome } from 'react-icons/fa';
 import { usePatient } from '@/contexts/PatientContext';
@@ -26,11 +26,55 @@ export default function ResponsePage() {
   const [hover, setHover] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [showDateTimePicker, setShowDateTimePicker] = useState(false);
+  
+  // Use a ref to track if the status check has been initialized
+  const statusCheckInitialized = useRef(false);
+  // Store the interval ID in a ref to avoid it being a dependency
+  const intervalIdRef = useRef(null);
 
   // Fetch response data on mount if needed
   useEffect(() => {
     // You could add additional logic here if needed
   }, []);
+
+  // Fix the infinite loop by using a ref to track initialization
+  useEffect(() => {
+    // Only set up the interval if:
+    // 1. It hasn't been initialized yet
+    // 2. We have a pending appointment
+    // 3. We're not already checking (no existing interval)
+    if (
+      !statusCheckInitialized.current && 
+      appointmentRequested && 
+      appointmentStatus === 'pending' &&
+      !intervalIdRef.current
+    ) {
+      // Mark as initialized
+      statusCheckInitialized.current = true;
+      
+      // Check status immediately
+      checkAppointmentStatusUpdate();
+      
+      // Set up interval to check every 10 seconds
+      intervalIdRef.current = setInterval(() => {
+        checkAppointmentStatusUpdate();
+      }, 10000);
+    }
+    
+    // If appointment is no longer pending, clear the interval
+    if (appointmentStatus !== 'pending' && intervalIdRef.current) {
+      clearInterval(intervalIdRef.current);
+      intervalIdRef.current = null;
+    }
+    
+    // Clean up on unmount
+    return () => {
+      if (intervalIdRef.current) {
+        clearInterval(intervalIdRef.current);
+        intervalIdRef.current = null;
+      }
+    };
+  }, [appointmentRequested, appointmentStatus, checkAppointmentStatusUpdate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -68,6 +112,9 @@ export default function ResponsePage() {
     try {
       // Request a second opinion appointment with date/time
       await requestAppointment(doctorResponse.id, dateTime);
+      
+      // Reset the initialization flag to allow setting up a new interval
+      statusCheckInitialized.current = false;
     } catch (err) {
       console.error('Error requesting appointment:', err);
       alert('Failed to request appointment. Please try again.');
@@ -75,21 +122,6 @@ export default function ResponsePage() {
       setSubmitting(false);
     }
   };
-
-  // Add a useEffect to periodically check appointment status
-  useEffect(() => {
-    // Check appointment status when the page loads
-    if (appointmentRequested && appointmentStatus === 'pending') {
-      checkAppointmentStatusUpdate();
-      
-      // Set up an interval to check every 10 seconds (for demo purposes)
-      const intervalId = setInterval(() => {
-        checkAppointmentStatusUpdate();
-      }, 10000);
-      
-      return () => clearInterval(intervalId);
-    }
-  }, [appointmentRequested, appointmentStatus, checkAppointmentStatusUpdate]);
 
   if (loading) {
     return (
