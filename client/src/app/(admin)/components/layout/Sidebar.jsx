@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAdmin } from '@/contexts/AdminContext';
 import { useOnClickOutside } from '@/hooks/useOnClickOutside';
 import { useRouter } from 'next/navigation';
+import LogoutConfirmationModal from '@/components/modals/LogoutConfirmationModal';
 
 const Sidebar = () => {
   const { logout } = useAuth();
@@ -23,6 +24,7 @@ const Sidebar = () => {
   const [hoveredItem, setHoveredItem] = useState(null);
   const [isClosing, setIsClosing] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const sidebarRef = useRef(null);
   const router = useRouter();
   
@@ -58,6 +60,19 @@ const Sidebar = () => {
     if (window.innerWidth < 768) {
       handleClose();
     }
+  };
+
+  const handleLogoutClick = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleConfirmLogout = () => {
+    logout();
+    setShowLogoutConfirm(false);
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
   };
 
   return (
@@ -132,13 +147,20 @@ const Sidebar = () => {
 
         <div className="absolute bottom-0 w-full p-4 border-t border-gray-100">
           <button 
-            onClick={logout}
+            onClick={handleLogoutClick}
             className="flex items-center justify-center w-full px-4 py-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl transition-all duration-200 font-medium"
           >
             <FaSignOutAlt className="mr-3" />
             <span>Logout</span>
           </button>
         </div>
+
+        {/* Render the Confirmation Modal */}
+        <LogoutConfirmationModal
+          isOpen={showLogoutConfirm}
+          onClose={handleCancelLogout}
+          onConfirm={handleConfirmLogout}
+        />
       </div>
     </div>
   );
