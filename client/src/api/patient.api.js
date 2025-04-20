@@ -255,7 +255,8 @@ export const checkAppointmentStatus = async (responseId) => {
     // In a real app, this would come from the backend
     if (appointmentData.status === 'pending') {
       // 80% chance of approval for testing purposes
-      const newStatus = Math.random() < 0.8 ? 'approved' : 'rejected';
+      const random = Math.random();
+      const newStatus = random < 0.6 ? 'pending' : (random < 0.8 ? 'approved' : 'rejected');
       
       // Update the appointment status
       appointmentData.status = newStatus;
