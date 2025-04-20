@@ -7,7 +7,7 @@ export default function UserPage() {
   const router = useRouter();
   
   useEffect(() => {
-    router.push('/user/dashboard');
+    router.push('/user/doctors');
   }, [router]);
   
   return null;
