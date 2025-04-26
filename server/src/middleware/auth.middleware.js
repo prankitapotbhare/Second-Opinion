@@ -1,60 +1,85 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/user.model');
+const Patient = require('../models/patient.model');
+const Doctor = require('../models/doctor.model');
+const Admin = require('../models/admin.model');
 
-// Environment variables
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-// Middleware to verify JWT token
+/**
+ * Get the appropriate model based on user role
+ * @param {string} role - User role (patient, doctor, admin)
+ * @returns {Model} Mongoose model
+ */
+const getModelByRole = (role) => {
+  switch (role) {
+    case 'doctor':
+      return Doctor;
+    case 'admin':
+      return Admin;
+    case 'patient':
+    case 'user':
+    default:
+      return Patient;
+  }
+};
+
+/**
+ * Middleware to authenticate user
+ */
 exports.authenticate = async (req, res, next) => {
   try {
     // Get token from header
     const authHeader = req.headers.authorization;
-    
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
         success: false,
-        message: 'No token provided, authorization denied'
+        message: 'Unauthorized - No token provided'
       });
     }
-    
-    // Extract token
+
     const token = authHeader.split(' ')[1];
-    
+
     // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET);
-    
-    // Find user by id
-    const user = await User.findById(decoded.id).select('-password');
-    
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        return res.status(401).json({
+          success: false,
+          message: 'Unauthorized - Token expired',
+          tokenExpired: true
+        });
+      }
+      
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized - Invalid token'
+      });
+    }
+
+    // Get user from token
+    const UserModel = getModelByRole(decoded.role || 'patient');
+    const user = await UserModel.findById(decoded.id).select('-password');
+
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'User not found'
+        message: 'Unauthorized - User not found'
       });
     }
-    
-    // Add user to request object
-    req.user = user;
+
+    // Add user to request
+    req.user = {
+      id: user._id,
+      role: decoded.role || 'patient',
+      email: user.email,
+      name: user.name
+    };
+
     next();
   } catch (error) {
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token'
-      });
-    }
-    
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Token expired'
-      });
-    }
-    
-    return res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
+    next(error);
   }
 };
 

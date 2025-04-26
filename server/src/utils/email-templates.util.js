@@ -6,36 +6,32 @@
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
 /**
- * Generate verification email template
+ * Generate verification email template with OTP
  * @param {string} name - Recipient name
- * @param {string} token - Verification token
- * @param {string} email - Recipient email
- * @param {string} redirectPath - Path to redirect after verification
+ * @param {string} otp - Verification OTP
  * @param {string} userType - Type of user (user, doctor)
  * @returns {Object} Email subject and HTML content
  */
-const verificationEmailTemplate = (name, token, email, redirectPath, userType = 'user') => {
-  // Build the verification URL with email, redirectPath, and userType directly in the URL
-  const verificationUrl = `${CLIENT_URL}/verify-email?token=${token}&email=${encodeURIComponent(email)}${redirectPath ? `&redirect=${encodeURIComponent(redirectPath)}` : ''}&type=${userType}`;
+const verificationEmailTemplate = (name, otp, userType = 'patient') => {
+  const subject = 'Verify Your Email Address';
   
-  return {
-    subject: 'Verify Your Email Address',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #3b82f6;">Welcome to Second Opinion!</h2>
-        <p>Hello ${name},</p>
-        <p>Thank you for registering with Second Opinion. Please verify your email address by clicking the button below:</p>
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${verificationUrl}" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Verify Email</a>
-        </div>
-        <p>If the button doesn't work, you can also copy and paste the following link into your browser:</p>
-        <p style="word-break: break-all; color: #3b82f6;"><a href="${verificationUrl}">${verificationUrl}</a></p>
-        <p>This link will expire in 24 hours.</p>
-        <p>If you didn't create an account, you can safely ignore this email.</p>
-        <p>Best regards,<br>The Second Opinion Team</p>
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+      <h2 style="color: #3b82f6;">Verify Your Email Address</h2>
+      <p>Hello ${name},</p>
+      <p>Thank you for registering with Second Opinion. To complete your registration, please use the following verification code:</p>
+      
+      <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; text-align: center; margin: 20px 0; font-size: 24px; letter-spacing: 5px; font-weight: bold;">
+        ${otp}
       </div>
-    `
-  };
+      
+      <p>This code will expire in 1 hour.</p>
+      <p>If you did not request this verification, please ignore this email.</p>
+      <p>Best regards,<br>The Second Opinion Team</p>
+    </div>
+  `;
+  
+  return { subject, html };
 };
 
 /**

@@ -1,4 +1,6 @@
-const User = require('../models/user.model');
+const Patient = require('../models/patient.model');
+const Doctor = require('../models/doctor.model');
+const Admin = require('../models/admin.model');
 const Token = require('../models/token.model');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
@@ -8,12 +10,10 @@ const errorUtil = require('../utils/error.util');
 const logger = require('../utils/logger.util');
 const validationUtil = require('../utils/validation.util');
 const { OAuth2Client } = require('google-auth-library');
+const { getModelByRole } = require('../middleware/auth.middleware');
 
 // Environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1d';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key';
-const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 
 // Initialize Google OAuth client
@@ -22,14 +22,15 @@ const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 /**
  * Generate access and refresh tokens for a user
  * @param {string} userId - The user ID
+ * @param {string} role - User role
  * @returns {Object} Object containing access and refresh tokens
  */
-const generateTokens = async (userId) => {
+const generateTokens = async (userId, role) => {
   // Create access token
-  const accessToken = tokenUtil.generateAccessToken(userId);
+  const accessToken = tokenUtil.generateAccessToken(userId, role);
 
   // Create refresh token
-  const refreshToken = tokenUtil.generateRefreshToken(userId);
+  const refreshToken = tokenUtil.generateRefreshToken(userId, role);
 
   // Calculate expiry date for refresh token (7 days)
   const refreshExpiry = tokenUtil.calculateExpiryDate(24 * 7);
@@ -41,72 +42,220 @@ const generateTokens = async (userId) => {
 };
 
 /**
+ * Generate a 6-digit OTP
+ * @returns {string} 6-digit OTP
+ */
+const generateOTP = () => {
+  // Generate a random 6-digit number
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+/**
  * Register a new user
- * @param {Object} userData - User data including name, email, password, role
- * @returns {Object} Created user and verification token
+ * @param {Object} userData - User registration data
+ * @returns {Object} Registered user
  */
 const registerUser = async (userData) => {
-  // Validate user data
-  const validation = validationUtil.validateUserData(userData);
-  if (!validation.isValid) {
-    throw errorUtil.validationError(Object.values(validation.errors)[0]);
-  }
-
-  const { name, email, password, role, termsAccepted, redirectPath } = userData;
-
-  // Check if user already exists
-  const existingUser = await User.findOne({ email });
-  if (existingUser) {
-    throw errorUtil.validationError('Email already registered');
-  }
-
-  // Create user object
-  const userObj = { 
-    name, 
-    email, 
-    password, 
-    role,
-    termsAccepted,
-    termsAcceptedAt: new Date()
-  };
-  
-  // Create new user
-  const user = await User.create(userObj);
-
-  // Generate verification token
-  const verificationToken = tokenUtil.generateRandomToken();
-  const tokenExpiry = tokenUtil.calculateExpiryDate(24); // 24 hours
-
-  // Save verification token
-  await tokenUtil.saveToken(user._id, verificationToken, 'verification', tokenExpiry);
-
-  // Send verification email
   try {
-    await emailService.sendVerificationEmail(user.email, user.name, verificationToken, redirectPath, user.role);
+    const { name, email, password, role = 'patient', termsAccepted } = userData;
+
+    // Validate email format
+    if (!validationUtil.isValidEmail(email)) {
+      throw errorUtil.createError('Invalid email format', 400);
+    }
+
+    // Validate password strength
+    if (!validationUtil.isStrongPassword(password)) {
+      throw errorUtil.createError(
+        'Password must be at least 6 characters long and include a mix of letters and numbers',
+        400
+      );
+    }
+    
+    // Get the appropriate model based on role
+    const UserModel = getModelByRole(role);
+
+    // Check if user already exists
+    const existingUser = await UserModel.findOne({ email });
+    if (existingUser) {
+      throw errorUtil.createError('User already exists with this email', 409);
+    }
+
+    // Create user object with basic information
+    const userObj = {
+      name,
+      email,
+      password,
+      termsAccepted,
+      termsAcceptedAt: new Date()
+    };
+
+    // Create new user
+    const user = new UserModel(userObj);
+
+    // Save user
+    await user.save();
+
+    // Generate verification token
+    const verificationOTP = generateOTP();
+    const otpExpiry = tokenUtil.calculateExpiryDate(24); // 24 hours
+
+    // Save verification token
+    await tokenUtil.saveToken(user._id, verificationOTP, 'verification', otpExpiry);
+
+    // Send verification email
+    await emailService.sendVerificationEmail(user.email, verificationOTP);
+
+    return { user };
   } catch (error) {
-    logger.error('Failed to send verification email:', error);
-    // Continue with registration even if email fails
+    logger.error('Error in registerUser service:', error);
+    throw error;
+  }
+};
+
+/**
+ * Verify a user's email using OTP
+ * @param {string} email - User email
+ * @param {string} otp - Verification OTP
+ */
+const verifyEmail = async (email, otp) => {
+  if (!email || !otp) {
+    throw errorUtil.validationError('Email and OTP are required');
   }
 
-  return { user };
+  // Find the user by email
+  let user = null;
+  let userModel = null;
+  
+  // Try each model in sequence
+  user = await Patient.findOne({ email });
+  if (user) userModel = Patient;
+  
+  if (!user) {
+    user = await Doctor.findOne({ email });
+    if (user) userModel = Doctor;
+  }
+  
+  if (!user) {
+    user = await Admin.findOne({ email });
+    if (user) userModel = Admin;
+  }
+  
+  if (!user) {
+    throw errorUtil.notFoundError('User not found');
+  }
+
+  // Find the verification token
+  const tokenDoc = await Token.findOne({
+    userId: user._id,
+    token: otp,
+    type: 'verification',
+    expiresAt: { $gt: new Date() }
+  });
+
+  if (!tokenDoc) {
+    throw errorUtil.validationError('Invalid or expired OTP');
+  }
+
+  // Update user's email verification status
+  user.emailVerified = true;
+  await user.save();
+
+  // Delete the used token
+  await Token.findByIdAndDelete(tokenDoc._id);
+  
+  return user;
+};
+
+/**
+ * Resend verification OTP
+ * @param {string} email - User email
+ */
+const resendVerification = async (email) => {
+  if (!email) {
+    throw errorUtil.validationError('Email is required');
+  }
+
+  // Find the user by email
+  let user = null;
+  let userRole = null;
+  
+  // Try each model in sequence
+  user = await Patient.findOne({ email });
+  if (user) userRole = 'patient';
+  
+  if (!user) {
+    user = await Doctor.findOne({ email });
+    if (user) userRole = 'doctor';
+  }
+  
+  if (!user) {
+    user = await Admin.findOne({ email });
+    if (user) userRole = 'admin';
+  }
+  
+  if (!user) {
+    throw errorUtil.notFoundError('User not found');
+  }
+
+  // Check if email is already verified
+  if (user.emailVerified) {
+    throw errorUtil.validationError('Email is already verified');
+  }
+
+  // Delete any existing verification tokens for this user
+  await Token.deleteMany({ userId: user._id, type: 'verification' });
+
+  // Generate new verification OTP
+  const verificationOTP = generateOTP();
+  const otpExpiry = tokenUtil.calculateExpiryDate(1); // 1 hour expiry
+
+  // Save verification OTP
+  await tokenUtil.saveToken(user._id, verificationOTP, 'verification', otpExpiry);
+
+  // Send verification email with OTP
+  await emailService.sendVerificationEmail(user.email, user.name, verificationOTP, userRole);
+
+  return true;
 };
 
 /**
  * Login a user
  * @param {string} email - User email
  * @param {string} password - User password
+ * @param {string} role - User role (optional)
  * @returns {Object} User data and tokens
  */
-const loginUser = async (email, password) => {
-  // Check if user exists
-  const user = await User.findOne({ email });
+const loginUser = async (email, password, role = null) => {
+  // If role is specified, try that model first
+  let user = null;
+  let userRole = role;
+
+  if (role) {
+    const UserModel = getModelByRole(role);
+    user = await UserModel.findOne({ email });
+  } else {
+    // Try each model in sequence
+    user = await Patient.findOne({ email });
+    if (user) userRole = 'patient';
+    
+    if (!user) {
+      user = await Doctor.findOne({ email });
+      if (user) userRole = 'doctor';
+    }
+    
+    if (!user) {
+      user = await Admin.findOne({ email });
+      if (user) userRole = 'admin';
+    }
+  }
+
   if (!user) {
     const error = new Error('Invalid credentials');
     error.statusCode = 401;
     throw error;
   }
 
-  // Check if password is correct
   const isPasswordValid = await user.comparePassword(password);
   if (!isPasswordValid) {
     const error = new Error('Invalid credentials');
@@ -114,8 +263,7 @@ const loginUser = async (email, password) => {
     throw error;
   }
 
-  // Check if email is verified
-  if (!user.emailVerified) {
+  if (userRole !== 'admin' && !user.emailVerified) {
     const error = new Error('Please verify your email before logging in');
     error.statusCode = 401;
     error.needsVerification = true;
@@ -123,45 +271,19 @@ const loginUser = async (email, password) => {
     throw error;
   }
 
-  // Generate tokens
-  const tokens = await generateTokens(user._id);
+  const tokens = await generateTokens(user._id, userRole);
 
   return {
     user: {
       id: user._id,
       name: user.name,
       email: user.email,
-      role: user.role,
+      role: userRole,
       photoURL: user.photoURL,
       emailVerified: user.emailVerified,
     },
-    tokens
+    tokens,
   };
-};
-
-/**
- * Verify a user's email
- * @param {string} token - Verification token
- */
-const verifyEmail = async (token) => {
-  // Find the verification token
-  const tokenDoc = await Token.findOne({
-    token,
-    type: 'verification',
-    expiresAt: { $gt: new Date() }
-  });
-
-  if (!tokenDoc) {
-    const error = new Error('Invalid or expired verification token');
-    error.statusCode = 400;
-    throw error;
-  }
-
-  // Update user's email verification status
-  await User.findByIdAndUpdate(tokenDoc.userId, { emailVerified: true });
-
-  // Delete the used token
-  await Token.findByIdAndDelete(tokenDoc._id);
 };
 
 /**
@@ -200,8 +322,11 @@ const refreshUserToken = async (refreshToken) => {
     throw error;
   }
 
+  // Get the appropriate model based on role
+  const UserModel = getModelByRole(decoded.role || 'patient');
+  
   // Check if user exists
-  const user = await User.findById(decoded.id);
+  const user = await UserModel.findById(decoded.id);
   if (!user) {
     const error = new Error('User not found');
     error.statusCode = 401;
@@ -209,22 +334,7 @@ const refreshUserToken = async (refreshToken) => {
   }
 
   // Generate new tokens
-  return await generateTokens(user._id);
-};
-
-/**
- * Logout a user
- * @param {string} refreshToken - Refresh token
- */
-const logoutUser = async (refreshToken) => {
-  if (!refreshToken) {
-    const error = new Error('Refresh token is required');
-    error.statusCode = 400;
-    throw error;
-  }
-
-  // Delete the refresh token from database
-  await Token.findOneAndDelete({ token: refreshToken, type: 'refresh' });
+  return await generateTokens(user._id, decoded.role || 'patient');
 };
 
 /**
@@ -233,8 +343,23 @@ const logoutUser = async (refreshToken) => {
  * @returns {string} Reset token
  */
 const requestPasswordReset = async (email) => {
-  // Check if user exists
-  const user = await User.findOne({ email });
+  // Check if user exists in any model
+  let user = null;
+  let userRole = null;
+  
+  user = await Patient.findOne({ email });
+  if (user) userRole = 'patient';
+  
+  if (!user) {
+    user = await Doctor.findOne({ email });
+    if (user) userRole = 'doctor';
+  }
+  
+  if (!user) {
+    user = await Admin.findOne({ email });
+    if (user) userRole = 'admin';
+  }
+  
   if (!user) {
     // For security, don't reveal if the email exists or not
     return null;
@@ -256,7 +381,7 @@ const requestPasswordReset = async (email) => {
 
   // Send password reset email
   try {
-    await emailService.sendPasswordResetEmail(user.email, user.name, resetToken, user.role);
+    await emailService.sendPasswordResetEmail(user.email, user.name, resetToken, userRole);
   } catch (error) {
     console.error('Failed to send password reset email:', error);
     // Continue with reset process even if email fails
@@ -284,72 +409,160 @@ const resetPassword = async (token, password) => {
     throw error;
   }
 
-  // Update user's password
-  const user = await User.findById(tokenDoc.userId);
-  user.password = password;
-  await user.save();
+  // Try to update password in each model
+  let updated = false;
+  
+  try {
+    // Try Patient model first
+    const patient = await Patient.findById(tokenDoc.userId);
+    if (patient) {
+      patient.password = password;
+      await patient.save();
+      updated = true;
+    }
+    
+    // Try Doctor model if not found in Patient
+    if (!updated) {
+      const doctor = await Doctor.findById(tokenDoc.userId);
+      if (doctor) {
+        doctor.password = password;
+        await doctor.save();
+        updated = true;
+      }
+    }
+    
+    // Try Admin model if not found in others
+    if (!updated) {
+      const admin = await Admin.findById(tokenDoc.userId);
+      if (admin) {
+        admin.password = password;
+        await admin.save();
+        updated = true;
+      }
+    }
+    
+    if (!updated) {
+      throw new Error('User not found');
+    }
+  } catch (error) {
+    logger.error('Error resetting password:', error);
+    throw error;
+  }
 
   // Delete the used token
   await Token.findByIdAndDelete(tokenDoc._id);
 
   // Delete all refresh tokens for this user
-  await Token.deleteMany({ userId: user._id, type: 'refresh' });
+  await Token.deleteMany({ userId: tokenDoc.userId, type: 'refresh' });
 };
 
 /**
- * Resend verification email
- * @param {string} email - User email
- * @param {string} redirectPath - Path to redirect after verification
- * @returns {string} Verification token
+ * Authenticate with Google
+ * @param {string} idToken - Google ID token
+ * @param {string} userType - User type (patient, doctor)
+ * @returns {Object} User data and tokens
  */
-const resendVerification = async (email, redirectPath) => {
-  // Check if user exists
-  const user = await User.findOne({ email });
-  if (!user) {
-    // For security, don't reveal if the email exists or not
-    return null;
-  }
-
-  // Check if email is already verified
-  if (user.emailVerified) {
-    // For security, don't reveal verification status
-    return null;
-  }
-
-  // Generate new verification token
-  const verificationToken = crypto.randomBytes(32).toString('hex');
-  const tokenExpiry = new Date();
-  tokenExpiry.setHours(tokenExpiry.getHours() + 24); // 24 hours from now
-
-  // Delete any existing verification tokens
-  await Token.findOneAndDelete({ userId: user._id, type: 'verification' });
-
-  // Save new verification token
-  await Token.create({
-    userId: user._id,
-    token: verificationToken,
-    type: 'verification',
-    expiresAt: tokenExpiry
-  });
-
-  // Send verification email
+const googleAuth = async (idToken, userType = 'patient') => {
   try {
-    await emailService.sendVerificationEmail(user.email, user.name, verificationToken, redirectPath, user.role);
+    // Verify the Google ID token
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: GOOGLE_CLIENT_ID
+    });
+    
+    const payload = ticket.getPayload();
+    
+    // Extract user info from Google payload
+    const { email, name, picture, email_verified } = payload;
+    
+    // Determine which model to use
+    const UserModel = getModelByRole(userType);
+    
+    // Check if user exists
+    let user = await UserModel.findOne({ email });
+    let isNewUser = false;
+    
+    if (user) {
+      // If user exists but doesn't have Google as auth provider, update the user
+      if (!user.googleId) {
+        user.googleId = payload.sub;
+        user.photoURL = picture || user.photoURL;
+        await user.save();
+      }
+    } else {
+      // Create new user
+      isNewUser = true;
+      
+      // Validate user type
+      if (!['patient', 'doctor'].includes(userType)) {
+        throw errorUtil.validationError('Invalid user type');
+      }
+      
+      // Create user with Google data
+      user = await UserModel.create({
+        name,
+        email,
+        googleId: payload.sub,
+        password: crypto.randomBytes(20).toString('hex'), // Random password for Google users
+        photoURL: picture,
+        emailVerified: email_verified,
+        termsAccepted: true,
+        termsAcceptedAt: new Date()
+      });
+    }
+    
+    // Generate tokens
+    const tokens = await generateTokens(user._id, userType);
+    
+    // Format user data for response
+    const userData = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: userType,
+      photoURL: user.photoURL,
+      emailVerified: user.emailVerified,
+      termsAccepted: user.termsAccepted,
+      termsAcceptedAt: user.termsAcceptedAt
+    };
+    
+    return { user: userData, tokens, isNewUser };
   } catch (error) {
-    console.error('Failed to send verification email:', error);
-    // Continue with process even if email fails
+    logger.error('Google authentication error:', error);
+    
+    if (error.message.includes('Token used too late')) {
+      throw errorUtil.authError('Google token expired. Please try again.');
+    }
+    
+    throw errorUtil.authError('Google authentication failed. Please try again.');
+  }
+};
+
+/**
+ * Logout a user
+ * @param {string} refreshToken - Refresh token
+ */
+const logoutUser = async (refreshToken) => {
+  if (!refreshToken) {
+    const error = new Error('Refresh token is required');
+    error.statusCode = 400;
+    throw error;
   }
 
-  return verificationToken;
+  // Delete the refresh token from database
+  await Token.findOneAndDelete({ token: refreshToken, type: 'refresh' });
 };
 
 /**
  * Get current user
  * @param {string} userId - User ID
+ * @param {string} role - User role
  * @returns {Object} User data
  */
-const getCurrentUser = async (userId) => {
-  const user = await User.findById(userId).select('-password');
+const getCurrentUser = async (userId, role) => {
+  const UserModel = getModelByRole(role);
+  
+  const user = await UserModel.findById(userId).select('-password');
   
   if (!user) {
     const error = new Error('User not found');
@@ -379,8 +592,19 @@ const getUserEmailFromToken = async (token, tokenType) => {
     throw error;
   }
 
-  // Get the user
-  const user = await User.findById(tokenDoc.userId);
+  // Try to find user in each model
+  let user = null;
+  
+  user = await Patient.findById(tokenDoc.userId);
+  
+  if (!user) {
+    user = await Doctor.findById(tokenDoc.userId);
+  }
+  
+  if (!user) {
+    user = await Admin.findById(tokenDoc.userId);
+  }
+  
   if (!user) {
     const error = new Error('User not found');
     error.statusCode = 404;
@@ -388,86 +612,6 @@ const getUserEmailFromToken = async (token, tokenType) => {
   }
 
   return user.email;
-};
-
-/**
- * Authenticate with Google
- * @param {string} idToken - Google ID token
- * @param {string} userType - User type (user, doctor)
- * @returns {Object} User data and tokens
- */
-const googleAuth = async (idToken, userType = 'user') => {
-  try {
-    // Verify the Google ID token
-    const ticket = await googleClient.verifyIdToken({
-      idToken,
-      audience: GOOGLE_CLIENT_ID
-    });
-    
-    const payload = ticket.getPayload();
-    
-    // Extract user info from Google payload
-    const { email, name, picture, email_verified } = payload;
-    
-    // Check if user exists
-    let user = await User.findOne({ email });
-    let isNewUser = false;
-    
-    if (user) {
-      // If user exists but doesn't have Google as auth provider, update the user
-      if (!user.googleId) {
-        user.googleId = payload.sub;
-        user.photoURL = picture || user.photoURL;
-        await user.save();
-      }
-    } else {
-      // Create new user
-      isNewUser = true;
-      
-      // Validate user type
-      if (!['user', 'doctor'].includes(userType)) {
-        throw errorUtil.validationError('Invalid user type');
-      }
-      
-      // Create user with Google data
-      user = await User.create({
-        name,
-        email,
-        googleId: payload.sub,
-        password: crypto.randomBytes(20).toString('hex'), // Random password for Google users
-        photoURL: picture,
-        emailVerified: email_verified,
-        role: userType,
-        termsAccepted: true,
-        termsAcceptedAt: new Date()
-      });
-    }
-    
-    // Generate tokens
-    const tokens = await generateTokens(user._id);
-    
-    // Format user data for response
-    const userData = {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      photoURL: user.photoURL,
-      emailVerified: user.emailVerified,
-      termsAccepted: user.termsAccepted,
-      termsAcceptedAt: user.termsAcceptedAt
-    };
-    
-    return { user: userData, tokens, isNewUser };
-  } catch (error) {
-    logger.error('Google authentication error:', error);
-    
-    if (error.message.includes('Token used too late')) {
-      throw errorUtil.authError('Google token expired. Please try again.');
-    }
-    
-    throw errorUtil.authError('Google authentication failed. Please try again.');
-  }
 };
 
 module.exports = {
@@ -482,5 +626,7 @@ module.exports = {
   resendVerification,
   getCurrentUser,
   getUserEmailFromToken,
-  googleAuth
+  googleAuth,
+  getModelByRole,
+  generateOTP
 };

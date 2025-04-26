@@ -1,6 +1,6 @@
 # Postman Testing Guide for Second Opinion API
 
-This guide provides step-by-step instructions for testing all authentication routes in the Second Opinion API using Postman, with special attention to admin restrictions.
+This guide provides step-by-step instructions for testing all routes in the Second Opinion API using Postman, with special attention to authentication and role-based access control.
 
 ## Setup
 
@@ -13,11 +13,10 @@ This guide provides step-by-step instructions for testing all authentication rou
      - `BASE_URL`: `http://localhost:5000/api`
      - `ACCESS_TOKEN`: (leave empty initially)
      - `REFRESH_TOKEN`: (leave empty initially)
-     - `REDIRECT_PATH`: `/dashboard` (for testing email verification redirects)
 
 3. **Create Environment**
    - Create environments for different user roles:
-     - "Regular User"
+     - "Patient User"
      - "Doctor User"
      - "Admin User"
 
@@ -46,19 +45,18 @@ Use the registration endpoint to create these users.
 
 ### 1. User Registration
 
-#### 1.1 Register Regular User
+#### 1.1 Register Patient User
 
 - **Method**: POST
 - **URL**: `{{BASE_URL}}/auth/register`
 - **Body** (JSON):
   ```json
   {
-    "name": "Regular User",
-    "email": "user@example.com",
+    "name": "Patient User",
+    "email": "patient@example.com",
     "password": "password123",
-    "role": "user",
-    "termsAccepted": true,
-    "redirectPath": "{{REDIRECT_PATH}}"
+    "role": "patient",
+    "termsAccepted": true
   }
   ```
 - **Expected Response**: 201 Created
@@ -75,7 +73,7 @@ Use the registration endpoint to create these users.
     
     // Save user email for later use
     if (jsonData.data && jsonData.data.email) {
-      pm.environment.set("USER_EMAIL", jsonData.data.email);
+      pm.environment.set("PATIENT_EMAIL", jsonData.data.email);
     }
   });
   ```
@@ -92,8 +90,7 @@ Use the registration endpoint to create these users.
     "password": "password123",
     "role": "doctor",
     "specialization": "Cardiology",
-    "termsAccepted": true,
-    "redirectPath": "{{REDIRECT_PATH}}"
+    "termsAccepted": true
   }
   ```
 - **Expected Response**: 201 Created
@@ -129,15 +126,14 @@ Use the registration endpoint to create these users.
 
 ### 2. Resend Verification Email
 
-#### 2.1 Resend Verification Email for Regular User
+#### 2.1 Resend Verification Email for Patient User
 
 - **Method**: POST
 - **URL**: `{{BASE_URL}}/auth/resend-verification`
 - **Body** (JSON):
   ```json
   {
-    "email": "{{USER_EMAIL}}",
-    "redirectPath": "{{REDIRECT_PATH}}"
+    "email": "{{PATIENT_EMAIL}}"
   }
   ```
 - **Expected Response**: 200 OK
@@ -156,12 +152,19 @@ Use the registration endpoint to create these users.
 
 ### 3. Email Verification
 
-**Note**: In a real testing scenario, you would need to extract the verification token from the email or database. For this guide, we'll assume you have access to the token.
+**Note**: In a real testing scenario, you would need to extract the verification OTP from the email or database. For this guide, we'll assume you have access to the OTP.
 
-#### 3.1 Verify Regular User Email
+#### 3.1 Verify Patient User Email
 
-- **Method**: GET
-- **URL**: `{{BASE_URL}}/auth/verify-email/{{USER_VERIFICATION_TOKEN}}`
+- **Method**: POST
+- **URL**: `{{BASE_URL}}/auth/verify-email`
+- **Body** (JSON):
+  ```json
+  {
+    "email": "{{PATIENT_EMAIL}}",
+    "otp": "123456"
+  }
+  ```
 - **Expected Response**: 200 OK
 - **Test Script**:
   ```javascript
@@ -173,27 +176,34 @@ Use the registration endpoint to create these users.
     var jsonData = pm.response.json();
     pm.expect(jsonData.success).to.be.true;
     pm.expect(jsonData.message).to.equal("Email verified successfully");
-    pm.expect(jsonData.email).to.equal(pm.environment.get("USER_EMAIL"));
+    pm.expect(jsonData.email).to.equal(pm.environment.get("PATIENT_EMAIL"));
   });
   ```
 
 #### 3.2 Verify Doctor User Email
 
-- **Method**: GET
-- **URL**: `{{BASE_URL}}/auth/verify-email/{{DOCTOR_VERIFICATION_TOKEN}}`
+- **Method**: POST
+- **URL**: `{{BASE_URL}}/auth/verify-email`
+- **Body** (JSON):
+  ```json
+  {
+    "email": "{{DOCTOR_EMAIL}}",
+    "otp": "123456"
+  }
+  ```
 - **Expected Response**: 200 OK
 - **Test Script**: Same as above, but check against `DOCTOR_EMAIL`
 
 ### 4. User Login
 
-#### 4.1 Login as Regular User
+#### 4.1 Login as Patient User
 
 - **Method**: POST
 - **URL**: `{{BASE_URL}}/auth/login`
 - **Body** (JSON):
   ```json
   {
-    "email": "{{USER_EMAIL}}",
+    "email": "{{PATIENT_EMAIL}}",
     "password": "password123"
   }
   ```
@@ -208,12 +218,13 @@ Use the registration endpoint to create these users.
     var jsonData = pm.response.json();
     pm.expect(jsonData.success).to.be.true;
     pm.expect(jsonData.message).to.equal("Login successful");
-    pm.expect(jsonData.data.user.role).to.equal("user");
+    pm.expect(jsonData.data.user.role).to.equal("patient");
     
     // Save tokens
     if (jsonData.data && jsonData.data.tokens) {
       pm.environment.set("ACCESS_TOKEN", jsonData.data.tokens.accessToken);
       pm.environment.set("REFRESH_TOKEN", jsonData.data.tokens.refreshToken);
+      pm.environment.set("PATIENT_ID", jsonData.data.user.id);
     }
   });
   ```
@@ -230,7 +241,7 @@ Use the registration endpoint to create these users.
   }
   ```
 - **Expected Response**: 200 OK
-- **Test Script**: Similar to above, but check for doctor role
+- **Test Script**: Similar to above, but check for doctor role and save doctor ID
 
 #### 4.3 Login as Admin
 
@@ -275,7 +286,7 @@ Use the registration endpoint to create these users.
 
 ### 5. Get Current User
 
-#### 5.1 Get Regular User Profile
+#### 5.1 Get Patient User Profile
 
 - **Method**: GET
 - **URL**: `{{BASE_URL}}/auth/me`
@@ -291,7 +302,7 @@ Use the registration endpoint to create these users.
   pm.test("User profile retrieved successfully", function() {
     var jsonData = pm.response.json();
     pm.expect(jsonData.success).to.be.true;
-    pm.expect(jsonData.data.user.email).to.equal(pm.environment.get("USER_EMAIL"));
+    pm.expect(jsonData.data.user.email).to.equal(pm.environment.get("PATIENT_EMAIL"));
   });
   ```
 
@@ -305,7 +316,7 @@ Use the registration endpoint to create these users.
 
 ### 6. Refresh Token
 
-#### 6.1 Refresh Regular User Token
+#### 6.1 Refresh Patient User Token
 
 - **Method**: POST
 - **URL**: `{{BASE_URL}}/auth/refresh-token`
@@ -345,14 +356,14 @@ Use the registration endpoint to create these users.
 
 ### 7. Password Reset Flow
 
-#### 7.1 Request Password Reset for Regular User
+#### 7.1 Request Password Reset for Patient User
 
 - **Method**: POST
 - **URL**: `{{BASE_URL}}/auth/request-password-reset`
 - **Body** (JSON):
   ```json
   {
-    "email": "{{USER_EMAIL}}"
+    "email": "{{PATIENT_EMAIL}}"
   }
   ```
 - **Expected Response**: 200 OK
@@ -365,16 +376,14 @@ Use the registration endpoint to create these users.
   pm.test("Password reset requested successfully", function() {
     var jsonData = pm.response.json();
     pm.expect(jsonData.success).to.be.true;
-    pm.expect(jsonData.message).to.include("If your email is registered with us, you will receive a password reset link shortly");
+    pm.expect(jsonData.message).to.include("If your email is registered with us");
   });
   ```
 
-#### 7.2 Reset Password for Regular User
-
-**Note**: In a real testing scenario, you would need to extract the reset token from the email or database. For this guide, we'll assume you have access to the token.
+#### 7.2 Reset Password (with token)
 
 - **Method**: POST
-- **URL**: `{{BASE_URL}}/auth/reset-password/{{USER_RESET_TOKEN}}`
+- **URL**: `{{BASE_URL}}/auth/reset-password/{{RESET_TOKEN}}`
 - **Body** (JSON):
   ```json
   {
@@ -395,23 +404,7 @@ Use the registration endpoint to create these users.
   });
   ```
 
-#### 7.3 Login with New Password
-
-- **Method**: POST
-- **URL**: `{{BASE_URL}}/auth/login`
-- **Body** (JSON):
-  ```json
-  {
-    "email": "{{USER_EMAIL}}",
-    "password": "newPassword123"
-  }
-  ```
-- **Expected Response**: 200 OK
-- **Test Script**: Same as regular login test
-
 ### 8. Logout
-
-#### 8.1 Logout Regular User
 
 - **Method**: POST
 - **URL**: `{{BASE_URL}}/auth/logout`
@@ -439,22 +432,38 @@ Use the registration endpoint to create these users.
   });
   ```
 
-#### 8.2 Logout Admin
+## Test Cases for Patient Routes
 
-- Same as above but with admin's refresh token
+### 1. Get Patient Details
 
-### 9. Google Authentication
+- **Method**: GET
+- **URL**: `{{BASE_URL}}/patients/{{PATIENT_ID}}`
+- **Headers**: 
+  - Authorization: `Bearer {{ACCESS_TOKEN}}`
+- **Expected Response**: 200 OK
+- **Test Script**:
+  ```javascript
+  pm.test("Status code is 200", function() {
+    pm.response.to.have.status(200);
+  });
+  
+  pm.test("Patient details retrieved successfully", function() {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData._id).to.equal(pm.environment.get("PATIENT_ID"));
+    pm.expect(jsonData.email).to.equal(pm.environment.get("PATIENT_EMAIL"));
+  });
+  ```
 
-#### 9.1 Google Auth for Regular User
+### 2. Update Patient Details
 
-- **Method**: POST
-- **URL**: `{{BASE_URL}}/auth/google`
+- **Method**: PUT
+- **URL**: `{{BASE_URL}}/patients/{{PATIENT_ID}}`
+- **Headers**: 
+  - Authorization: `Bearer {{ACCESS_TOKEN}}`
 - **Body** (JSON):
   ```json
   {
-    "idToken": "{{GOOGLE_ID_TOKEN}}",
-    "userType": "user",
-    "redirectPath": "{{REDIRECT_PATH}}"
+    "name": "Updated Patient Name"
   }
   ```
 - **Expected Response**: 200 OK
@@ -464,47 +473,216 @@ Use the registration endpoint to create these users.
     pm.response.to.have.status(200);
   });
   
-  pm.test("Google authentication successful", function() {
+  pm.test("Patient details updated successfully", function() {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData.name).to.equal("Updated Patient Name");
+  });
+  ```
+
+### 3. Submit Form for Second Opinion
+
+- **Method**: POST
+- **URL**: `{{BASE_URL}}/patients/{{PATIENT_ID}}/forms`
+- **Headers**: 
+  - Authorization: `Bearer {{ACCESS_TOKEN}}`
+- **Body** (JSON):
+  ```json
+  {
+    "doctorId": "{{DOCTOR_ID}}",
+    "age": 35,
+    "gender": "Male",
+    "phone": "1234567890",
+    "emergencyContact": "0987654321",
+    "problem": "I've been experiencing chest pain and would like a second opinion on my diagnosis."
+  }
+  ```
+- **Expected Response**: 201 Created
+- **Test Script**:
+  ```javascript
+  pm.test("Status code is 201", function() {
+    pm.response.to.have.status(201);
+  });
+  
+  pm.test("Form submitted successfully", function() {
     var jsonData = pm.response.json();
     pm.expect(jsonData.success).to.be.true;
+    pm.expect(jsonData.message).to.equal("Form submitted successfully");
     
-    // Save tokens if available
-    if (jsonData.data && jsonData.data.tokens) {
-      pm.environment.set("ACCESS_TOKEN", jsonData.data.tokens.accessToken);
-      pm.environment.set("REFRESH_TOKEN", jsonData.data.tokens.refreshToken);
+    // Save form ID for later use
+    if (jsonData.data && jsonData.data.formSubmission) {
+      pm.environment.set("FORM_ID", jsonData.data.formSubmission._id);
     }
   });
   ```
 
-## Testing Admin Restrictions
+### 4. Upload Medical File
 
-### 1. Admin-Only Routes
-
-Test that admin-only routes are properly restricted:
-
-#### 1.1 Get All Users (Admin Only)
-
-- **Method**: GET
-- **URL**: `{{BASE_URL}}/users`
+- **Method**: POST
+- **URL**: `{{BASE_URL}}/patients/{{PATIENT_ID}}/forms/{{FORM_ID}}/files`
 - **Headers**: 
-  - Authorization: `Bearer {{ACCESS_TOKEN}}` (use regular user token)
-- **Expected Response**: 403 Forbidden
+  - Authorization: `Bearer {{ACCESS_TOKEN}}`
+- **Body** (form-data):
+  - Key: `file`, Value: [select a PDF or image file], Type: File
+- **Expected Response**: 201 Created
 - **Test Script**:
   ```javascript
-  pm.test("Status code is 403", function() {
-    pm.response.to.have.status(403);
+  pm.test("Status code is 201", function() {
+    pm.response.to.have.status(201);
   });
   
-  pm.test("Access denied for non-admin user", function() {
+  pm.test("File uploaded successfully", function() {
     var jsonData = pm.response.json();
-    pm.expect(jsonData.success).to.be.false;
+    pm.expect(jsonData.success).to.be.true;
+    pm.expect(jsonData.message).to.equal("File uploaded successfully");
+    
+    // Save file ID for later use
+    if (jsonData.data && jsonData.data.file) {
+      pm.environment.set("FILE_ID", jsonData.data.file._id);
+    }
   });
   ```
 
-#### 1.2 Get All Users (With Admin Token)
+### 5. Get Form Submissions
 
 - **Method**: GET
-- **URL**: `{{BASE_URL}}/users`
+- **URL**: `{{BASE_URL}}/patients/{{PATIENT_ID}}/forms`
+- **Headers**: 
+  - Authorization: `Bearer {{ACCESS_TOKEN}}`
+- **Expected Response**: 200 OK
+- **Test Script**:
+  ```javascript
+  pm.test("Status code is 200", function() {
+    pm.response.to.have.status(200);
+  });
+  
+  pm.test("Form submissions retrieved successfully", function() {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData.success).to.be.true;
+    pm.expect(jsonData.data.formSubmissions).to.be.an('array');
+  });
+  ```
+
+### 6. Get Specific Form Submission
+
+- **Method**: GET
+- **URL**: `{{BASE_URL}}/patients/{{PATIENT_ID}}/forms/{{FORM_ID}}`
+- **Headers**: 
+  - Authorization: `Bearer {{ACCESS_TOKEN}}`
+- **Expected Response**: 200 OK
+- **Test Script**:
+  ```javascript
+  pm.test("Status code is 200", function() {
+    pm.response.to.have.status(200);
+  });
+  
+  pm.test("Form submission retrieved successfully", function() {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData.success).to.be.true;
+    pm.expect(jsonData.data.formSubmission._id).to.equal(pm.environment.get("FORM_ID"));
+  });
+  ```
+
+### 7. Download Medical File
+
+- **Method**: GET
+- **URL**: `{{BASE_URL}}/patients/{{PATIENT_ID}}/forms/{{FORM_ID}}/files/{{FILE_ID}}`
+- **Headers**: 
+  - Authorization: `Bearer {{ACCESS_TOKEN}}`
+- **Expected Response**: 200 OK (file download)
+
+### 8. Delete Medical File
+
+- **Method**: DELETE
+- **URL**: `{{BASE_URL}}/patients/{{PATIENT_ID}}/forms/{{FORM_ID}}/files/{{FILE_ID}}`
+- **Headers**: 
+  - Authorization: `Bearer {{ACCESS_TOKEN}}`
+- **Expected Response**: 200 OK
+- **Test Script**:
+  ```javascript
+  pm.test("Status code is 200", function() {
+    pm.response.to.have.status(200);
+  });
+  
+  pm.test("File deleted successfully", function() {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData.success).to.be.true;
+    pm.expect(jsonData.message).to.include("deleted successfully");
+  });
+  ```
+
+## Test Cases for Doctor Routes
+
+### 1. Get All Doctors (as Patient)
+
+- **Method**: GET
+- **URL**: `{{BASE_URL}}/doctors`
+- **Headers**: 
+  - Authorization: `Bearer {{ACCESS_TOKEN}}` (use patient token)
+- **Expected Response**: 200 OK
+- **Test Script**:
+  ```javascript
+  pm.test("Status code is 200", function() {
+    pm.response.to.have.status(200);
+  });
+  
+  pm.test("Doctors list retrieved successfully", function() {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData).to.be.an('array');
+  });
+  ```
+
+### 2. Get Doctor Details (as Doctor)
+
+- **Method**: GET
+- **URL**: `{{BASE_URL}}/doctors/{{DOCTOR_ID}}`
+- **Headers**: 
+  - Authorization: `Bearer {{ACCESS_TOKEN}}` (use doctor token)
+- **Expected Response**: 200 OK
+- **Test Script**:
+  ```javascript
+  pm.test("Status code is 200", function() {
+    pm.response.to.have.status(200);
+  });
+  
+  pm.test("Doctor details retrieved successfully", function() {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData._id).to.equal(pm.environment.get("DOCTOR_ID"));
+  });
+  ```
+
+### 3. Update Doctor Details (as Doctor)
+
+- **Method**: PUT
+- **URL**: `{{BASE_URL}}/doctors/{{DOCTOR_ID}}`
+- **Headers**: 
+  - Authorization: `Bearer {{ACCESS_TOKEN}}` (use doctor token)
+- **Body** (JSON):
+  ```json
+  {
+    "specialization": "Cardiology and Internal Medicine",
+    "qualification": "MD, FACC"
+  }
+  ```
+- **Expected Response**: 200 OK
+- **Test Script**:
+  ```javascript
+  pm.test("Status code is 200", function() {
+    pm.response.to.have.status(200);
+  });
+  
+  pm.test("Doctor details updated successfully", function() {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData.specialization).to.equal("Cardiology and Internal Medicine");
+    pm.expect(jsonData.qualification).to.equal("MD, FACC");
+  });
+  ```
+
+## Test Cases for Admin Routes
+
+### 1. Get Admin Details
+
+- **Method**: GET
+- **URL**: `{{BASE_URL}}/admins/{{ADMIN_ID}}`
 - **Headers**: 
   - Authorization: `Bearer {{ACCESS_TOKEN}}` (use admin token)
 - **Expected Response**: 200 OK
@@ -514,119 +692,74 @@ Test that admin-only routes are properly restricted:
     pm.response.to.have.status(200);
   });
   
-  pm.test("Admin can access user list", function() {
+  pm.test("Admin details retrieved successfully", function() {
     var jsonData = pm.response.json();
-    pm.expect(jsonData.success).to.be.true;
-    pm.expect(jsonData.data.users).to.be.an('array');
+    pm.expect(jsonData._id).to.equal(pm.environment.get("ADMIN_ID"));
   });
   ```
 
-## Email Verification and Password Reset URLs
+### 2. Get All Patients (as Admin)
 
-When testing with a real frontend, note that the verification and password reset emails will contain URLs with the following formats:
+- **Method**: GET
+- **URL**: `{{BASE_URL}}/admins/patients/all`
+- **Headers**: 
+  - Authorization: `Bearer {{ACCESS_TOKEN}}` (use admin token)
+- **Expected Response**: 200 OK
+- **Test Script**:
+  ```javascript
+  pm.test("Status code is 200", function() {
+    pm.response.to.have.status(200);
+  });
+  
+  pm.test("All patients retrieved successfully", function() {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData).to.be.an('array');
+  });
+  ```
 
-### Email Verification URL
-```
-http://localhost:3000/verify-email?token=<verification_token>&email=<user_email>&redirectPath=<redirect_path>&type=<user_type>
-```
+### 3. Get All Doctors (as Admin)
 
-### Password Reset URL
-```
-http://localhost:3000/reset-password?token=<reset_token>&email=<user_email>&type=<user_type>
-```
+- **Method**: GET
+- **URL**: `{{BASE_URL}}/admins/doctors/all`
+- **Headers**: 
+  - Authorization: `Bearer {{ACCESS_TOKEN}}` (use admin token)
+- **Expected Response**: 200 OK
+- **Test Script**:
+  ```javascript
+  pm.test("Status code is 200", function() {
+    pm.response.to.have.status(200);
+  });
+  
+  pm.test("All doctors retrieved successfully", function() {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData).to.be.an('array');
+  });
+  ```
 
-To test these URLs in Postman:
+### 4. Create New Admin (as Admin)
 
-1. For email verification, extract the token from the URL and use it in the `/auth/verify-email/:token` endpoint
-2. For password reset, extract the token from the URL and use it in the `/auth/reset-password/:token` endpoint
-
-## Postman Collection Setup Tips
-
-### Using Environment Variables
-
-1. Create separate environments for each user role
-2. Store tokens in the appropriate environment
-3. Switch environments when testing different user roles
-
-### Test Automation
-
-1. Create a folder structure in Postman that follows the test flow
-2. Use the "Collection Runner" to run all tests in sequence
-3. Set up pre-request scripts to handle dependencies between requests
-
-### Handling Token Expiry
-
-Add this pre-request script to requests that require authentication:
-
-```javascript
-// Check if access token is expired and refresh if needed
-const tokenExpiry = pm.environment.get("TOKEN_EXPIRY");
-const currentTime = new Date().getTime();
-
-if (tokenExpiry && currentTime > tokenExpiry) {
-    // Token is expired, need to refresh
-    console.log("Token expired, refreshing...");
-    
-    pm.sendRequest({
-        url: pm.environment.get("BASE_URL") + '/auth/refresh-token',
-        method: 'POST',
-        header: {
-            'Content-Type': 'application/json'
-        },
-        body: {
-            mode: 'raw',
-            raw: JSON.stringify({
-                refreshToken: pm.environment.get("REFRESH_TOKEN")
-            })
-        }
-    }, function (err, res) {
-        if (!err && res.code === 200) {
-            const responseJson = res.json();
-            if (responseJson.success && responseJson.data && responseJson.data.tokens) {
-                pm.environment.set("ACCESS_TOKEN", responseJson.data.tokens.accessToken);
-                pm.environment.set("REFRESH_TOKEN", responseJson.data.tokens.refreshToken);
-                
-                // Set expiry time (assuming 1 hour token life)
-                const newExpiry = new Date().getTime() + (60 * 60 * 1000);
-                pm.environment.set("TOKEN_EXPIRY", newExpiry);
-                
-                console.log("Token refreshed successfully");
-            }
-        } else {
-            console.error("Failed to refresh token");
-        }
-    });
-}
-```
-
-## Troubleshooting Common Issues
-
-### 401 Unauthorized Errors
-
-- Check that your access token is valid and not expired
-- Ensure you're including the "Bearer " prefix in the Authorization header
-- Verify that the user has the correct permissions
-
-### 403 Forbidden Errors
-
-- Verify that you're using the correct user role for the endpoint
-- Check that admin restrictions are properly implemented
-- Ensure the user has the necessary permissions
-
-### Token Handling Issues
-
-- Make sure to save tokens after login and refresh operations
-- Check that you're using the correct environment variables
-- Verify that tokens are properly formatted in requests
-
-### Email Verification Issues
-
-- The verification URL now includes both the token and email parameters
-- Make sure to include the redirectPath parameter when testing registration and resend verification
-- The URL also includes the user type (user, doctor, admin)
-
-### Password Reset Issues
-
-- The reset password URL now includes the token, email, and user type parameters
-- Make sure to test the complete flow from request to reset
-- Verify that the new password works by logging in after reset
+- **Method**: POST
+- **URL**: `{{BASE_URL}}/admins/create`
+- **Headers**: 
+  - Authorization: `Bearer {{ACCESS_TOKEN}}` (use admin token)
+- **Body** (JSON):
+  ```json
+  {
+    "name": "New Admin",
+    "email": "newadmin@example.com",
+    "password": "adminPassword123"
+  }
+  ```
+- **Expected Response**: 201 Created
+- **Test Script**:
+  ```javascript
+  pm.test("Status code is 201", function() {
+    pm.response.to.have.status(201);
+  });
+  
+  pm.test("New admin created successfully", function() {
+    var jsonData = pm.response.json();
+    pm.expect(jsonData.success).to.be.true;
+    pm.expect(jsonData.data.email).to.equal("newadmin@example.com");
+  });
+  ```

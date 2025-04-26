@@ -1,6 +1,7 @@
 {
-  "name": "server",
+  "name": "second-opinion-server",
   "version": "1.0.0",
+  "description": "Backend server for Second Opinion medical platform",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -8,13 +9,13 @@
     "build": "npm prune --production",
     "test": "echo \"Error: no test specified\" && exit 1",
     "create-admin": "node src/scripts/create-admin.js",
-    "generate-jwt": "node src/scripts/generate-jwt-secrets.js"
+    "generate-jwt": "node src/scripts/generate-jwt-secrets.js",
+    "test-email": "node src/scripts/test-email.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
-  "description": "",
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
@@ -22,8 +23,11 @@
     "express": "^5.1.0",
     "google-auth-library": "^9.15.1",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.13.2",
-    "nodemailer": "^6.10.1",
-    "nodemon": "^3.1.9"
+    "mongoose": "^8.14.0",
+    "multer": "^1.4.5-lts.2",
+    "nodemailer": "^6.10.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
   }
 }
