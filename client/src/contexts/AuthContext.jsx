@@ -16,7 +16,8 @@ export const AuthProvider = ({ children }) => {
   const [tokenRefreshTimer, setTokenRefreshTimer] = useState(null);
   const [verificationState, setVerificationState] = useState({
     needsVerification: false,
-    email: null
+    email: null,
+    otpSent: false
   });
 
   // Check if user is already logged in (from localStorage or sessionStorage)
@@ -178,6 +179,11 @@ export const AuthProvider = ({ children }) => {
     setCurrentUser(null);
     setAuthToken(null);
     setRefreshToken(null);
+    setVerificationState({
+      needsVerification: false,
+      email: null,
+      otpSent: false
+    });
     
     // Clear token refresh timer
     if (tokenRefreshTimer) {
@@ -200,7 +206,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     
     try {
-      const response = await authApi.login(email, password);
+      const response = await authApi.login(email, password, expectedRole);
       
       if (response.success) {
         const { user, tokens } = response.data;
@@ -217,6 +223,23 @@ export const AuthProvider = ({ children }) => {
             error: `This account is registered as a ${userData.role}. Please use the ${userData.role} login page.`,
             wrongRole: true,
             actualRole: userData.role
+          };
+        }
+        
+        // Check if email is verified
+        if (!userData.isEmailVerified) {
+          setVerificationState({
+            needsVerification: true,
+            email: email,
+            otpSent: true
+          });
+          
+          setLoading(false);
+          return { 
+            success: false, 
+            error: 'Please verify your email before logging in.',
+            needsVerification: true,
+            email: email
           };
         }
         
@@ -249,208 +272,153 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
       return { success: false, error: response.message };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       
-      // Handle verification needed error
-      if (error.status === 401 && error.data && error.data.needsVerification) {
-        setAuthError({
-          message: 'Please verify your email before logging in',
-          needsVerification: true,
-          email: error.data.email
-        });
-        
+      // Check if the error contains verification information
+      if (error.response && error.response.data && error.response.data.needsVerification) {
         setVerificationState({
           needsVerification: true,
-          email: error.data.email
+          email: email,
+          otpSent: true
         });
         
         setLoading(false);
         return { 
           success: false, 
-          error: error.data.message,
+          error: 'Please verify your email before logging in.',
           needsVerification: true,
-          email: error.data.email
+          email: email
         };
       }
       
-      const errorMessage = error.message || 'An error occurred during login';
-      setAuthError({ message: errorMessage });
+      setAuthError(error.message || 'An error occurred during login');
       setLoading(false);
-      return { success: false, error: errorMessage };
+      return { success: false, error: error.message || 'An error occurred during login' };
     }
   };
 
   // Register function
-  const register = async (userData, redirectPath = '/dashboard') => {
+  const register = async (userData) => {
     setAuthError(null);
     setLoading(true);
     
     try {
-      // Ensure redirectPath is included in userData
-      const userDataWithRedirect = {
-        ...userData,
-        redirectPath
-      };
-      
-      const response = await authApi.register(userDataWithRedirect);
-      
-      setLoading(false);
+      const response = await authApi.register(userData);
       
       if (response.success) {
-        // Set verification state to show verification message
+        // Set verification state to indicate email needs verification
         setVerificationState({
           needsVerification: true,
-          email: response.data.email
+          email: userData.email,
+          otpSent: true
         });
         
+        setLoading(false);
         return { 
           success: true, 
-          message: response.message,
-          email: response.data.email
+          user: {
+            email: userData.email,
+            role: userData.role
+          },
+          needsVerification: true
         };
       }
       
+      setLoading(false);
       return { success: false, error: response.message };
     } catch (error) {
-      console.error('Registration error:', error);
-      
-      // Handle admin registration attempt
-      if (error.status === 403) {
-        const errorMessage = 'Admin registration is not allowed through the API';
-        setAuthError({ message: errorMessage });
-        setLoading(false);
-        return { success: false, error: errorMessage };
-      }
-      
-      const errorMessage = error.message || 'An error occurred during registration';
-      setAuthError({ message: errorMessage });
+      console.error("Registration error:", error);
+      setAuthError(error.message || 'An error occurred during registration');
       setLoading(false);
-      return { success: false, error: errorMessage };
+      return { success: false, error: error.message || 'An error occurred during registration' };
     }
   };
 
-  // Logout function
-  const logout = async () => {
+  // Verify email with OTP
+  const verifyEmail = async (email, otp) => {
+    setAuthError(null);
     setLoading(true);
     
     try {
-      if (refreshToken) {
-        await authApi.logout(refreshToken);
-      }
-      
-      clearAuthData();
-      setLoading(false);
-      return { success: true };
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Even if logout fails on server, clear local data
-      clearAuthData();
-      setLoading(false);
-      return { success: true };
-    }
-  };
-
-  // Verify email function
-  const verifyEmail = async (token) => {
-    setLoading(true);
-    
-    try {
-      const response = await authApi.verifyEmail(token);
-      
-      setLoading(false);
+      const response = await authApi.verifyEmail(email, otp);
       
       if (response.success) {
-        // Clear verification state
+        const { user, tokens } = response.data;
+        const { accessToken, refreshToken: newRefreshToken } = tokens;
+        
+        // Format user data
+        const userData = formatUserData(user);
+        
+        setCurrentUser(userData);
+        setAuthToken(accessToken);
+        setRefreshToken(newRefreshToken);
+        
+        // Reset verification state
         setVerificationState({
           needsVerification: false,
-          email: null
+          email: null,
+          otpSent: false
         });
         
-        return { 
-          success: true, 
-          message: response.message,
-          email: response.email,
-          role: response.role
-        };
+        // Store in sessionStorage (default for email verification)
+        sessionStorage.setItem('currentUser', JSON.stringify(userData));
+        sessionStorage.setItem('authToken', accessToken);
+        sessionStorage.setItem('refreshToken', newRefreshToken);
+        
+        setLoading(false);
+        return { success: true, user: userData };
       }
       
+      setLoading(false);
       return { success: false, error: response.message };
     } catch (error) {
-      console.error('Email verification error:', error);
+      console.error("Email verification error:", error);
+      setAuthError(error.message || 'An error occurred during email verification');
       setLoading(false);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || 'An error occurred during email verification' };
     }
   };
 
   // Resend verification email
-  const resendVerification = async (email, redirectPath = '/dashboard') => {
+  const resendVerification = async (email) => {
+    setAuthError(null);
     setLoading(true);
     
     try {
-      const response = await authApi.resendVerification(email, redirectPath);
-      
-      setLoading(false);
+      const response = await authApi.resendVerification(email);
       
       if (response.success) {
-        return { success: true, message: response.message };
+        // Update verification state
+        setVerificationState({
+          needsVerification: true,
+          email: email,
+          otpSent: true
+        });
+        
+        setLoading(false);
+        return { success: true };
       }
       
+      setLoading(false);
       return { success: false, error: response.message };
     } catch (error) {
-      console.error('Resend verification error:', error);
+      console.error("Resend verification error:", error);
+      setAuthError(error.message || 'An error occurred while resending verification');
       setLoading(false);
-      return { success: false, error: error.message };
-    }
-  };
-
-  // Request password reset
-  const requestPasswordReset = async (email) => {
-    setLoading(true);
-    
-    try {
-      const response = await authApi.requestPasswordReset(email);
-      
-      setLoading(false);
-      
-      if (response.success) {
-        return { success: true, message: response.message };
-      }
-      
-      return { success: false, error: response.message };
-    } catch (error) {
-      console.error('Password reset request error:', error);
-      setLoading(false);
-      return { success: false, error: error.message };
-    }
-  };
-
-  // Reset password
-  const resetPassword = async (token, password) => {
-    setLoading(true);
-    
-    try {
-      const response = await authApi.resetPassword(token, password);
-      
-      setLoading(false);
-      
-      if (response.success) {
-        return { success: true, message: response.message };
-      }
-      
-      return { success: false, error: response.message };
-    } catch (error) {
-      console.error('Password reset error:', error);
-      setLoading(false);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || 'An error occurred while resending verification' };
     }
   };
 
   // Google authentication
-  const googleAuth = async (idToken, userType = 'user', redirectPath = '/dashboard') => {
+  const googleAuth = async (idToken, userType = 'user') => {
+    setAuthError(null);
     setLoading(true);
     
     try {
-      const response = await authApi.googleAuth(idToken, userType, redirectPath);
+      // Map 'user' type to 'patient' for backend compatibility
+      const backendUserType = userType === 'user' ? 'patient' : userType;
+      
+      const response = await authApi.googleAuth(idToken, backendUserType);
       
       if (response.success) {
         const { user, tokens, isNewUser } = response.data;
@@ -463,26 +431,78 @@ export const AuthProvider = ({ children }) => {
         setAuthToken(accessToken);
         setRefreshToken(newRefreshToken);
         
-        // Store in localStorage (Google auth typically uses remember me)
-        localStorage.setItem('currentUser', JSON.stringify(userData));
-        localStorage.setItem('authToken', accessToken);
-        localStorage.setItem('refreshToken', newRefreshToken);
-        localStorage.setItem('rememberMe', 'true');
+        // Store in sessionStorage by default for Google auth
+        sessionStorage.setItem('currentUser', JSON.stringify(userData));
+        sessionStorage.setItem('authToken', accessToken);
+        sessionStorage.setItem('refreshToken', newRefreshToken);
         
         setLoading(false);
         return { 
           success: true, 
-          user: userData, 
-          isNewUser 
+          user: userData,
+          isNewUser: isNewUser
         };
       }
       
       setLoading(false);
       return { success: false, error: response.message };
     } catch (error) {
-      console.error('Google auth error:', error);
+      console.error("Google auth error:", error);
+      setAuthError(error.message || 'An error occurred during Google authentication');
       setLoading(false);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || 'An error occurred during Google authentication' };
+    }
+  };
+
+  // Logout function
+  const logout = async () => {
+    setLoading(true);
+    
+    try {
+      if (refreshToken) {
+        await authApi.logout(refreshToken);
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      clearAuthData();
+      setLoading(false);
+    }
+  };
+
+  // Request password reset
+  const requestPasswordReset = async (email) => {
+    setAuthError(null);
+    setLoading(true);
+    
+    try {
+      const response = await authApi.requestPasswordReset(email);
+      
+      setLoading(false);
+      return { success: true };
+    } catch (error) {
+      console.error("Password reset request error:", error);
+      setAuthError(error.message || 'An error occurred while requesting password reset');
+      setLoading(false);
+      return { success: false, error: error.message || 'An error occurred while requesting password reset' };
+    }
+  };
+
+  // Reset password
+  const resetPassword = async (token, password) => {
+    setAuthError(null);
+    setLoading(true);
+    
+    try {
+      const response = await authApi.resetPassword(token, password);
+      
+      setLoading(false);
+      return { success: true };
+    } catch (error) {
+      console.error("Password reset error:", error);
+      setAuthError(error.message || 'An error occurred while resetting password');
+      setLoading(false);
+      return { success: false, error: error.message || 'An error occurred while resetting password' };
     }
   };
 
@@ -499,9 +519,9 @@ export const AuthProvider = ({ children }) => {
     logout,
     verifyEmail,
     resendVerification,
+    googleAuth,
     requestPasswordReset,
     resetPassword,
-    googleAuth,
     refreshUserToken
   };
 
@@ -512,10 +532,9 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Custom hook to use auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
