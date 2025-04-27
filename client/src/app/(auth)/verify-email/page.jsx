@@ -11,7 +11,7 @@ function VerifyOtpContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get('email');
   const redirectTo = searchParams.get('redirect') || '/';
-  const userType = searchParams.get('type') || 'user';
+  const userType = searchParams.get('type') || "patient";
 
   if (!email) {
     return (

@@ -18,7 +18,7 @@ export default function UserSignup() {
       />
       
       <SignupForm 
-        userType="user"
+        userType="patient"
         redirectPath="/"
       />
     </SplitScreen>

@@ -16,8 +16,8 @@ const getModelByRole = (role) => {
       return Doctor;
     case 'admin':
       return Admin;
-    case 'patient':
-    case 'user':
+    case "patient":
+      return Patient;
     default:
       return Patient;
   }

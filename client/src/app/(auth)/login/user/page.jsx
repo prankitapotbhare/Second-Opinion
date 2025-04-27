@@ -25,7 +25,7 @@ function UserLoginContent() {
       />
       
       <LoginForm 
-        userType="user"
+        userType="patient"
         redirectPath={redirectTo}
       />
     </SplitScreen>
