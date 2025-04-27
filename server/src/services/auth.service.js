@@ -98,13 +98,13 @@ const registerUser = async (userData) => {
 
     // Generate verification token
     const verificationOTP = generateOTP();
-    const otpExpiry = tokenUtil.calculateExpiryDate(24); // 24 hours
+    const otpExpiry = tokenUtil.calculateExpiryDate(1); // 1 hours
 
     // Save verification token
     await tokenUtil.saveToken(user._id, verificationOTP, 'verification', otpExpiry);
 
     // Send verification email
-    await emailService.sendVerificationEmail(user.email, verificationOTP);
+    await emailService.sendVerificationEmail(user.email, user.name, verificationOTP);
 
     return { user };
   } catch (error) {
@@ -126,7 +126,6 @@ const verifyEmail = async (email, otp) => {
 
   // Find the user by email
   let user = null;
-  let userModel = null;
   
   // Try each model in sequence
   user = await Patient.findOne({ email });
@@ -180,7 +179,7 @@ const verifyEmail = async (email, otp) => {
       id: user._id,
       name: user.name,
       email: user.email,
-      role: userRole,
+      role: user.role,
       photoURL: user.photoURL,
       isEmailVerified: user.isEmailVerified,
     }, 

@@ -3,6 +3,8 @@
  * Admin users should only be able to use specific routes: login, refresh-token, logout, 
  * request-password-reset, and reset-password
  */
+const errorUtil = require('../utils/error.util'); // Add this import
+
 const restrictAdminAuth = (req, res, next) => {
   // Check if the request is trying to register as admin
   if (req.body && req.body.role === 'admin') {
@@ -15,12 +17,36 @@ const restrictAdminAuth = (req, res, next) => {
   // For email-based routes, check if the email belongs to an admin
   if (req.body && req.body.email) {
     // This requires a database lookup
-    const User = require('../models/user.model');
+    const Patient = require('../models/patient.model');
+    const Doctor = require('../models/doctor.model');
+    const Admin = require('../models/admin.model');
+
+    const email = req.body.email;
     
     // Use an async function to check the user role
     const checkUserRole = async () => {
       try {
-        const user = await User.findOne({ email: req.body.email });
+          // Try each model in sequence
+          let user, userModel; // Define variables
+          
+          user = await Patient.findOne({ email });
+          if (user) userModel = Patient;
+          
+          if (!user) {
+            user = await Doctor.findOne({ email });
+            if (user) userModel = Doctor;
+          }
+          
+          if (!user) {
+            user = await Admin.findOne({ email });
+            if (user) userModel = Admin;
+          }
+          
+          if (!user) {
+            // Use a simple error object if errorUtil is not available as fallback
+            next();
+            return;
+          }
         
         // If user exists and is an admin, restrict access to non-allowed routes
         if (user && user.role === 'admin') {

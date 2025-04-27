@@ -25,7 +25,7 @@ const verificationEmailTemplate = (name, otp, userType = 'patient') => {
         <h2 style="margin: 0; color: #1f2937; letter-spacing: 5px;">${otp}</h2>
       </div>
       
-      <p>This code will expire in 24 hours.</p>
+      <p>This code will expire in 60 minutes.</p>
       <p><strong>Note:</strong> After verification, you'll be automatically logged in to your account.</p>
       
       <p>If you did not create an account with Second Opinion, please ignore this email.</p>

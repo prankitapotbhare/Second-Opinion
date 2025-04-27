@@ -78,7 +78,6 @@ export const verifyEmail = async (email, otp) => {
 /**
  * Resend verification email
  * @param {string} email - User email
- * @param {string} redirectPath - Path to redirect after verification
  * @returns {Promise<Object>} Resend verification response
  */
 export const resendVerification = async (email) => {
@@ -198,10 +197,9 @@ export const resetPassword = async (token, password) => {
  * Google authentication
  * @param {string} idToken - Google ID token
  * @param {string} userType - User type (patient, doctor)
- * @param {string} redirectPath - Path to redirect after verification if needed
  * @returns {Promise<Object>} Google auth response
  */
-export const googleAuth = async (idToken, userType = 'patient', redirectPath = '/dashboard') => {
+export const googleAuth = async (idToken, userType = 'patient') => {
   try {
     const response = await fetch(`${API_URL}/auth/google`, {
       method: 'POST',
@@ -210,8 +208,7 @@ export const googleAuth = async (idToken, userType = 'patient', redirectPath = '
       },
       body: JSON.stringify({ 
         idToken, 
-        userType,
-        redirectPath 
+        userType
       })
     });
     
