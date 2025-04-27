@@ -4,14 +4,13 @@ const fs = require('fs');
 const path = require('path');
 const { DOCTOR_FILES_DIR, ALLOWED_DOCUMENT_TYPES } = require('../utils/constants');
 const { createError } = require('../utils/error.util');
+const userService = require('../services/user.service');
+const fileService = require('../services/file.service');
 
 // Get doctor profile (using authenticated user)
 exports.getDoctorProfile = async (req, res, next) => {
   try {
-    const doctor = await Doctor.findById(req.user.id).select('-password');
-    if (!doctor) {
-      return next(createError('Doctor not found', 404));
-    }
+    const doctor = await userService.getUserProfile(Doctor, req.user.id);
     
     // Get availability information
     const availability = await Availability.findOne({ doctorId: doctor._id });
@@ -31,25 +30,7 @@ exports.getDoctorProfile = async (req, res, next) => {
 // Update doctor profile (using authenticated user)
 exports.updateDoctorProfile = async (req, res, next) => {
   try {
-    // Don't allow password updates through this endpoint
-    if (req.body.password) {
-      delete req.body.password;
-    }
-    
-    // Don't allow role changes through this endpoint
-    if (req.body.role) {
-      delete req.body.role;
-    }
-    
-    const doctor = await Doctor.findByIdAndUpdate(
-      req.user.id,
-      req.body,
-      { new: true, runValidators: true }
-    ).select('-password');
-    
-    if (!doctor) {
-      return next(createError('Doctor not found', 404));
-    }
+    const doctor = await userService.updateUserProfile(Doctor, req.user.id, req.body);
     
     res.status(200).json({
       success: true,
@@ -64,10 +45,7 @@ exports.updateDoctorProfile = async (req, res, next) => {
 // Get doctor details (for admin or patient viewing a specific doctor)
 exports.getDoctorDetails = async (req, res, next) => {
   try {
-    const doctor = await Doctor.findById(req.params.id).select('-password');
-    if (!doctor) {
-      return next(createError('Doctor not found', 404));
-    }
+    const doctor = await userService.getUserDetails(Doctor, req.params.id);
     
     // Get availability information
     const availability = await Availability.findOne({ doctorId: doctor._id });
@@ -87,12 +65,7 @@ exports.getDoctorDetails = async (req, res, next) => {
 // Create new doctor (admin function)
 exports.createDoctor = async (req, res, next) => {
   try {
-    const doctor = new Doctor(req.body);
-    await doctor.save();
-    
-    // Remove password from response
-    const doctorResponse = doctor.toObject();
-    delete doctorResponse.password;
+    const doctorResponse = await userService.createUser(Doctor, req.body);
     
     res.status(201).json({
       success: true,
@@ -107,20 +80,7 @@ exports.createDoctor = async (req, res, next) => {
 // Update doctor details (admin function)
 exports.updateDoctor = async (req, res, next) => {
   try {
-    // Don't allow password updates through this endpoint
-    if (req.body.password) {
-      delete req.body.password;
-    }
-    
-    const doctor = await Doctor.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    ).select('-password');
-    
-    if (!doctor) {
-      return next(createError('Doctor not found', 404));
-    }
+    const doctor = await userService.updateUser(Doctor, req.params.id, req.body);
     
     res.status(200).json({
       success: true,
@@ -139,9 +99,7 @@ exports.completeProfile = async (req, res, next) => {
     
     // Create doctor-specific directory for files
     const doctorDir = path.join(DOCTOR_FILES_DIR, doctorId);
-    if (!fs.existsSync(doctorDir)) {
-      fs.mkdirSync(doctorDir, { recursive: true });
-    }
+    fileService.ensureDirectoryExists(doctorDir);
     
     // Process uploaded files
     const uploadedFiles = {};
@@ -188,9 +146,7 @@ exports.completeProfile = async (req, res, next) => {
       if (req.files) {
         Object.keys(req.files).forEach(key => {
           req.files[key].forEach(file => {
-            if (fs.existsSync(file.path)) {
-              fs.unlinkSync(file.path);
-            }
+            fileService.deleteFileIfExists(file.path);
           });
         });
       }
@@ -257,9 +213,7 @@ exports.completeProfile = async (req, res, next) => {
     if (req.files) {
       Object.keys(req.files).forEach(key => {
         req.files[key].forEach(file => {
-          if (fs.existsSync(file.path)) {
-            fs.unlinkSync(file.path);
-          }
+          fileService.deleteFileIfExists(file.path);
         });
       });
     }
@@ -280,9 +234,7 @@ exports.uploadDocuments = async (req, res, next) => {
       if (req.files) {
         Object.keys(req.files).forEach(key => {
           req.files[key].forEach(file => {
-            if (fs.existsSync(file.path)) {
-              fs.unlinkSync(file.path);
-            }
+            fileService.deleteFileIfExists(file.path);
           });
         });
       }
@@ -319,9 +271,7 @@ exports.uploadDocuments = async (req, res, next) => {
     if (req.files) {
       Object.keys(req.files).forEach(key => {
         req.files[key].forEach(file => {
-          if (fs.existsSync(file.path)) {
-            fs.unlinkSync(file.path);
-          }
+          fileService.deleteFileIfExists(file.path);
         });
       });
     }
@@ -357,28 +307,8 @@ exports.downloadDocument = async (req, res, next) => {
     
     const documentPath = doctor.documents[documentType];
     
-    // Check if file exists
-    if (!fs.existsSync(documentPath)) {
-      return next(createError('Document file not found', 404));
-    }
-    
-    // Determine content type
-    let contentType = 'application/octet-stream';
-    if (documentPath.endsWith('.pdf')) {
-      contentType = 'application/pdf';
-    } else if (documentPath.endsWith('.jpg') || documentPath.endsWith('.jpeg')) {
-      contentType = 'image/jpeg';
-    } else if (documentPath.endsWith('.png')) {
-      contentType = 'image/png';
-    }
-    
-    // Set headers
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Content-Disposition', `inline; filename="${path.basename(documentPath)}"`);
-    
-    // Stream the file
-    const fileStream = fs.createReadStream(documentPath);
-    fileStream.pipe(res);
+    // Stream the file to response
+    fileService.streamFileToResponse(res, documentPath, path.basename(documentPath));
   } catch (error) {
     next(error);
   }

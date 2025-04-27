@@ -7,21 +7,17 @@ const { checkRole } = require('../middleware/role.middleware');
 const multer = require('multer');
 const { MEDICAL_FILES_DIR, ALLOWED_FILE_TYPES, FILE_SIZE_LIMITS } = require('../utils/constants');
 const path = require('path');
-const fs = require('fs');
+const fileService = require('../services/file.service');
 
 // Ensure medical files directory exists
-if (!fs.existsSync(MEDICAL_FILES_DIR)) {
-  fs.mkdirSync(MEDICAL_FILES_DIR, { recursive: true });
-}
+fileService.ensureDirectoryExists(MEDICAL_FILES_DIR);
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     // Create patient-specific directory using authenticated user ID
     const patientDir = path.join(MEDICAL_FILES_DIR, req.user.id);
-    if (!fs.existsSync(patientDir)) {
-      fs.mkdirSync(patientDir, { recursive: true });
-    }
+    fileService.ensureDirectoryExists(patientDir);
     cb(null, patientDir);
   },
   filename: function (req, file, cb) {

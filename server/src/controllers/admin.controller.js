@@ -2,14 +2,12 @@ const Admin = require('../models/admin.model');
 const Patient = require('../models/patient.model');
 const Doctor = require('../models/doctor.model');
 const { createError } = require('../utils/error.util');
+const userService = require('../services/user.service');
 
 // Get admin profile (using authenticated user)
 exports.getAdminProfile = async (req, res, next) => {
   try {
-    const admin = await Admin.findById(req.user.id).select('-password');
-    if (!admin) {
-      return next(createError('Admin not found', 404));
-    }
+    const admin = await userService.getUserProfile(Admin, req.user.id);
     
     res.status(200).json({
       success: true,
@@ -23,25 +21,7 @@ exports.getAdminProfile = async (req, res, next) => {
 // Update admin profile (using authenticated user)
 exports.updateAdminProfile = async (req, res, next) => {
   try {
-    // Don't allow password updates through this endpoint
-    if (req.body.password) {
-      delete req.body.password;
-    }
-    
-    // Don't allow role changes through this endpoint
-    if (req.body.role) {
-      delete req.body.role;
-    }
-    
-    const admin = await Admin.findByIdAndUpdate(
-      req.user.id,
-      req.body,
-      { new: true, runValidators: true }
-    ).select('-password');
-    
-    if (!admin) {
-      return next(createError('Admin not found', 404));
-    }
+    const admin = await userService.updateUserProfile(Admin, req.user.id, req.body);
     
     res.status(200).json({
       success: true,
@@ -90,12 +70,7 @@ exports.createAdmin = async (req, res, next) => {
       return next(createError('Only super admins can create new admins', 403));
     }
     
-    const admin = new Admin(req.body);
-    await admin.save();
-    
-    // Remove password from response
-    const adminResponse = admin.toObject();
-    delete adminResponse.password;
+    const adminResponse = await userService.createUser(Admin, req.body);
     
     res.status(201).json({
       success: true,
