@@ -105,34 +105,243 @@ export const AuthProvider = ({ children }) => {
 
   // Initialize auth state from storage
   useEffect(() => {
-    // Implementation details...
+    const initializeAuth = async () => {
+      try {
+        const storedToken = localStorage.getItem('accessToken');
+        const storedRefreshToken = localStorage.getItem('refreshToken');
+        
+        if (storedToken) {
+          setAuthToken(storedToken);
+          setRefreshToken(storedRefreshToken);
+          
+          // Fetch current user with the token
+          const userData = await authApi.getCurrentUser(storedToken);
+          setCurrentUser(userData.data.user);
+        }
+      } catch (error) {
+        // Token might be invalid or expired, try to refresh
+        try {
+          const storedRefreshToken = localStorage.getItem('refreshToken');
+          if (storedRefreshToken) {
+            const tokens = await authApi.refreshToken(storedRefreshToken);
+            handleAuthTokens(tokens.data.tokens);
+            
+            // Fetch user with new token
+            const userData = await authApi.getCurrentUser(tokens.data.tokens.accessToken);
+            setCurrentUser(userData.data.user);
+          }
+        } catch (refreshError) {
+          // Clear invalid tokens
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    initializeAuth();
   }, []);
+
+  // Helper to handle auth tokens
+  const handleAuthTokens = (tokens, remember = true) => {
+    setAuthToken(tokens.accessToken);
+    setRefreshToken(tokens.refreshToken);
+    
+    if (remember) {
+      localStorage.setItem('accessToken', tokens.accessToken);
+      localStorage.setItem('refreshToken', tokens.refreshToken);
+    } else {
+      // Use sessionStorage for session-only storage
+      sessionStorage.setItem('accessToken', tokens.accessToken);
+      sessionStorage.setItem('refreshToken', tokens.refreshToken);
+    }
+  };
 
   // Methods for authentication operations
   const register = async (userData) => {
-    // Implementation details...
+    setLoading(true);
+    try {
+      const response = await authApi.register(userData);
+      
+      // Set verification state to show verification page
+      setVerificationState({
+        needsVerification: true,
+        email: userData.email
+      });
+      
+      setLoading(false);
+      return response;
+    } catch (error) {
+      setAuthError(error.message);
+      setLoading(false);
+      throw error;
+    }
+  };
+
+  const verifyEmail = async (email, otp) => {
+    setLoading(true);
+    try {
+      const response = await authApi.verifyEmail(email, otp);
+      
+      // The API now returns tokens upon successful verification
+      const { user, tokens } = response.data;
+      
+      // Store tokens and user data
+      handleAuthTokens(tokens);
+      setCurrentUser(user);
+      
+      // Reset verification state
+      setVerificationState({
+        needsVerification: false,
+        email: null
+      });
+      
+      setLoading(false);
+      return response;
+    } catch (error) {
+      setAuthError(error.message);
+      setLoading(false);
+      throw error;
+    }
   };
 
   const login = async (email, password, rememberMe = false, expectedRole = null) => {
-    // Implementation details...
+    setLoading(true);
+    try {
+      const response = await authApi.login(email, password, expectedRole);
+      
+      const { user, tokens } = response.data;
+      
+      // Store tokens and user data
+      handleAuthTokens(tokens, rememberMe);
+      setCurrentUser(user);
+      
+      setLoading(false);
+      return response;
+    } catch (error) {
+      // Check if user needs verification
+      if (error.data && error.data.needsVerification) {
+        setVerificationState({
+          needsVerification: true,
+          email: error.data.email
+        });
+      }
+      
+      setAuthError(error.message);
+      setLoading(false);
+      throw error;
+    }
   };
 
   const logout = async () => {
-    // Implementation details...
+    setLoading(true);
+    try {
+      // Call logout API if refresh token exists
+      if (refreshToken) {
+        await authApi.logout(refreshToken);
+      }
+      
+      // Clear auth state
+      setCurrentUser(null);
+      setAuthToken(null);
+      setRefreshToken(null);
+      
+      // Remove tokens from storage
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      sessionStorage.removeItem('accessToken');
+      sessionStorage.removeItem('refreshToken');
+      
+      setLoading(false);
+    } catch (error) {
+      setAuthError(error.message);
+      setLoading(false);
+      throw error;
+    }
   };
 
-  // Additional methods...
+  const refreshAuthToken = async () => {
+    try {
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
+      }
+      
+      const response = await authApi.refreshToken(refreshToken);
+      handleAuthTokens(response.data.tokens);
+      
+      return response.data.tokens.accessToken;
+    } catch (error) {
+      // If refresh fails, log the user out
+      await logout();
+      throw error;
+    }
+  };
+
+  const requestPasswordReset = async (email) => {
+    try {
+      return await authApi.requestPasswordReset(email);
+    } catch (error) {
+      setAuthError(error.message);
+      throw error;
+    }
+  };
+
+  const resetPassword = async (token, newPassword) => {
+    try {
+      return await authApi.resetPassword(token, newPassword);
+    } catch (error) {
+      setAuthError(error.message);
+      throw error;
+    }
+  };
+
+  const resendVerification = async (email) => {
+    try {
+      return await authApi.resendVerification(email);
+    } catch (error) {
+      setAuthError(error.message);
+      throw error;
+    }
+  };
+
+  const googleAuth = async (idToken, userType = 'patient') => {
+    setLoading(true);
+    try {
+      const response = await authApi.googleAuth(idToken, userType);
+      
+      const { user, tokens } = response.data;
+      
+      // Store tokens and user data
+      handleAuthTokens(tokens);
+      setCurrentUser(user);
+      
+      setLoading(false);
+      return response;
+    } catch (error) {
+      setAuthError(error.message);
+      setLoading(false);
+      throw error;
+    }
+  };
 
   const value = {
     currentUser,
     loading,
     authError,
     authToken,
+    refreshToken,
     verificationState,
     register,
+    verifyEmail,
     login,
     logout,
-    // Additional methods...
+    refreshAuthToken,
+    requestPasswordReset,
+    resetPassword,
+    resendVerification,
+    googleAuth,
+    isAuthenticated: !!currentUser
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -264,14 +473,43 @@ export default RegisterPage;
 
 ## Email Verification
 
-### Verification Page
+### Updated Email Verification Flow
 
-Create a verification page that:
-1. Accepts the OTP sent to the user's email
-2. Provides option to resend verification email
-3. Redirects to login page on successful verification
+The email verification process now returns authentication tokens upon successful verification, allowing users to be automatically logged in after verifying their email.
 
-### Example Implementation
+### API Service Methods
+
+```javascript
+// src/api/auth.api.js
+
+// Verify email with OTP
+export const verifyEmail = async (email, otp) => {
+  const response = await fetch(`${API_URL}/auth/verify-email`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ email, otp })
+  });
+  
+  return handleResponse(response);
+};
+
+// Resend verification email
+export const resendVerification = async (email) => {
+  const response = await fetch(`${API_URL}/auth/resend-verification`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ email })
+  });
+  
+  return handleResponse(response);
+};
+```
+
+### Email Verification Component
 
 ```jsx
 // src/app/(auth)/verify-email/page.jsx
@@ -282,35 +520,36 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
 const VerifyEmailPage = () => {
+  const searchParams = useSearchParams();
+  const email = searchParams.get('email');
+  
   const [otp, setOtp] = useState('');
-  const [email, setEmail] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [resendDisabled, setResendDisabled] = useState(false);
   const [countdown, setCountdown] = useState(0);
   
-  const { verifyEmail, resendVerification } = useAuth();
+  const { verifyEmail, resendVerification, verificationState } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
   
+  // If no email in URL, use email from verification state
   useEffect(() => {
-    const emailParam = searchParams.get('email');
-    if (emailParam) {
-      setEmail(emailParam);
+    if (!email && verificationState.email) {
+      router.replace(`/verify-email?email=${encodeURIComponent(verificationState.email)}`);
+    } else if (!email && !verificationState.email) {
+      // No email to verify, redirect to login
+      router.replace('/login');
     }
-  }, [searchParams]);
+  }, [email, verificationState.email, router]);
   
+  // Countdown timer for resend button
   useEffect(() => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
       return () => clearTimeout(timer);
-    } else {
-      setResendDisabled(false);
     }
   }, [countdown]);
-
-  const handleVerify = async (e) => {
+  
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!otp) {
@@ -322,36 +561,38 @@ const VerifyEmailPage = () => {
     setError('');
     
     try {
+      // The verifyEmail method now handles setting tokens and user data
       await verifyEmail(email, otp);
-      setSuccess('Email verified successfully! Redirecting to login...');
       
-      // Redirect to login after a short delay
-      setTimeout(() => {
-        router.push('/login');
-      }, 2000);
+      // Redirect to dashboard after successful verification
+      router.push('/dashboard');
     } catch (error) {
       setError(error.message || 'Verification failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
-
+  
   const handleResend = async () => {
-    setResendDisabled(true);
-    setCountdown(60); // 60 seconds cooldown
-    setError('');
+    if (countdown > 0) return;
     
     try {
       await resendVerification(email);
-      setSuccess('Verification email resent successfully!');
+      setCountdown(60); // 60 second cooldown
+      setError('');
     } catch (error) {
-      setError(error.message || 'Failed to resend verification email.');
+      setError(error.message || 'Failed to resend verification code');
     }
   };
-
+  
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Verify Your Email</h1>
+      
+      <p className="mb-4">
+        We've sent a verification code to <strong>{email}</strong>.
+        Please enter the code below to verify your email address.
+      </p>
       
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -359,25 +600,12 @@ const VerifyEmailPage = () => {
         </div>
       )}
       
-      {success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          {success}
-        </div>
-      )}
-      
-      <p className="mb-4">
-        We've sent a verification code to <strong>{email}</strong>. 
-        Please enter the code below to verify your email address.
-      </p>
-      
-      <form onSubmit={handleVerify}>
+      <form onSubmit={handleSubmit}>
         <div className="mb-4">
-          <label className="block text-gray-700 mb-2" htmlFor="otp">
-            Verification Code
-          </label>
+          <label htmlFor="otp" className="block text-gray-700 mb-2">Verification Code</label>
           <input
-            id="otp"
             type="text"
+            id="otp"
             value={otp}
             onChange={(e) => setOtp(e.target.value)}
             className="w-full px-3 py-2 border rounded"
@@ -385,25 +613,23 @@ const VerifyEmailPage = () => {
           />
         </div>
         
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           disabled={isSubmitting}
-          className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 disabled:bg-blue-300"
+          className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 disabled:bg-blue-300 mb-4"
         >
           {isSubmitting ? 'Verifying...' : 'Verify Email'}
         </button>
       </form>
       
-      <div className="mt-4 text-center">
-        <p>Didn't receive the code?</p>
+      <div className="text-center">
+        <p className="mb-2">Didn't receive the code?</p>
         <button
           onClick={handleResend}
-          disabled={resendDisabled}
-          className="text-blue-500 hover:text-blue-700 disabled:text-gray-400"
+          disabled={countdown > 0}
+          className="text-blue-500 hover:text-blue-700"
         >
-          {resendDisabled 
-            ? `Resend code (${countdown}s)` 
-            : 'Resend verification code'}
+          {countdown > 0 ? `Resend in ${countdown}s` : 'Resend Code'}
         </button>
       </div>
     </div>
@@ -415,15 +641,7 @@ export default VerifyEmailPage;
 
 ## Login Implementation
 
-### Login Form
-
-Create a login form component that:
-1. Collects user credentials (email, password)
-2. Provides "Remember me" option
-3. Handles role-specific logins
-4. Redirects to appropriate dashboard based on user role
-
-### Example Implementation
+### Login Form Component
 
 ```jsx
 // src/app/(auth)/login/page.jsx
@@ -433,12 +651,14 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { getDashboardUrl } from '@/utils/authUtils';
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    rememberMe: false,
+    role: '' // Optional role filter
+  });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -446,19 +666,33 @@ const LoginPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  // Check for redirect parameter
+  // Pre-fill email from query params if available
   useEffect(() => {
-    const redirect = searchParams.get('redirect');
-    if (redirect) {
-      // Store redirect URL for after login
-      sessionStorage.setItem('redirectAfterLogin', redirect);
+    const emailParam = searchParams.get('email');
+    if (emailParam) {
+      setFormData(prev => ({ ...prev, email: emailParam }));
     }
   }, [searchParams]);
-
+  
+  // Redirect to verification page if needed
+  useEffect(() => {
+    if (verificationState.needsVerification && verificationState.email) {
+      router.push(`/verify-email?email=${encodeURIComponent(verificationState.email)}`);
+    }
+  }, [verificationState, router]);
+  
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData({
+      ...formData,
+      [name]: type === 'checkbox' ? checked : value
+    });
+  };
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!email || !password) {
+    if (!formData.email || !formData.password) {
       setError('Email and password are required');
       return;
     }
@@ -467,33 +701,28 @@ const LoginPage = () => {
     setError('');
     
     try {
-      const result = await login(email, password, rememberMe);
+      await login(
+        formData.email,
+        formData.password,
+        formData.rememberMe,
+        formData.role || null
+      );
       
-      // Check if user needs verification
-      if (verificationState.needsVerification) {
-        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
-        return;
-      }
-      
-      // Get redirect URL if exists
-      const redirectUrl = sessionStorage.getItem('redirectAfterLogin');
-      if (redirectUrl) {
-        sessionStorage.removeItem('redirectAfterLogin');
-        router.push(redirectUrl);
-      } else {
-        // Redirect to appropriate dashboard
-        router.push(getDashboardUrl(result.user.role));
-      }
+      // Redirect to dashboard after successful login
+      router.push('/dashboard');
     } catch (error) {
-      setError(error.message || 'Login failed. Please check your credentials.');
+      // If error is not related to verification, show it
+      if (!(error.data && error.data.needsVerification)) {
+        setError(error.message || 'Login failed. Please check your credentials.');
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
-
+  
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Log In to Your Account</h1>
+      <h1 className="text-2xl font-bold mb-6">Log In</h1>
       
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -503,60 +732,73 @@ const LoginPage = () => {
       
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
-          <label className="block text-gray-700 mb-2" htmlFor="email">
-            Email
-          </label>
+          <label htmlFor="email" className="block text-gray-700 mb-2">Email</label>
           <input
-            id="email"
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
             className="w-full px-3 py-2 border rounded"
             placeholder="Enter your email"
           />
         </div>
         
         <div className="mb-4">
-          <label className="block text-gray-700 mb-2" htmlFor="password">
-            Password
-          </label>
+          <label htmlFor="password" className="block text-gray-700 mb-2">Password</label>
           <input
-            id="password"
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            id="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
             className="w-full px-3 py-2 border rounded"
             placeholder="Enter your password"
           />
         </div>
         
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <input
-              id="rememberMe"
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="mr-2"
-            />
-            <label htmlFor="rememberMe">Remember me</label>
-          </div>
-          
-          <Link href="/forgot-password" className="text-blue-500 hover:text-blue-700">
-            Forgot password?
-          </Link>
+        <div className="mb-4">
+          <label htmlFor="role" className="block text-gray-700 mb-2">Login As (Optional)</label>
+          <select
+            id="role"
+            name="role"
+            value={formData.role}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border rounded"
+          >
+            <option value="">Any Role</option>
+            <option value="patient">Patient</option>
+            <option value="doctor">Doctor</option>
+          </select>
         </div>
         
-        <button 
-          type="submit" 
+        <div className="mb-4 flex items-center">
+          <input
+            type="checkbox"
+            id="rememberMe"
+            name="rememberMe"
+            checked={formData.rememberMe}
+            onChange={handleChange}
+            className="mr-2"
+          />
+          <label htmlFor="rememberMe">Remember me</label>
+        </div>
+        
+        <button
+          type="submit"
           disabled={isSubmitting}
-          className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 disabled:bg-blue-300"
+          className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 disabled:bg-blue-300 mb-4"
         >
           {isSubmitting ? 'Logging in...' : 'Log In'}
         </button>
       </form>
       
-      <div className="mt-4 text-center">
+      <div className="text-center">
+        <p className="mb-2">
+          <Link href="/forgot-password" className="text-blue-500 hover:text-blue-700">
+            Forgot your password?
+          </Link>
+        </p>
         <p>
           Don't have an account?{' '}
           <Link href="/register" className="text-blue-500 hover:text-blue-700">
@@ -573,94 +815,147 @@ export default LoginPage;
 
 ## Token Management
 
-### Token Refresh Logic
+### Token Refresh Strategy
 
-Implement token refresh logic in the AuthContext:
+The token refresh strategy should be implemented to:
+1. Automatically refresh tokens before they expire
+2. Handle token refresh on API calls that return 401 with tokenExpired flag
+3. Maintain user session across page refreshes
 
-```jsx
-// Token refresh logic in AuthContext
-const setupTokenRefreshTimer = (token) => {
-  // Clear any existing timer
-  if (tokenRefreshTimer) {
-    clearTimeout(tokenRefreshTimer);
-  }
+### API Interceptor with Token Refresh
+
+```javascript
+// src/api/apiClient.js
+import { useAuth } from '@/contexts/AuthContext';
+
+export const createApiClient = () => {
+  const { authToken, refreshAuthToken, logout } = useAuth();
   
-  try {
-    // Decode token to get expiration time
-    const tokenData = JSON.parse(atob(token.split('.')[1]));
-    const expirationTime = tokenData.exp * 1000; // Convert to milliseconds
-    const currentTime = Date.now();
-    
-    // Calculate time until token needs refresh (5 minutes before expiration)
-    const timeUntilRefresh = Math.max(0, expirationTime - currentTime - 5 * 60 * 1000);
-    
-    // Set timer to refresh token
-    const timer = setTimeout(() => {
-      if (refreshToken) {
-        refreshUserToken(refreshToken);
+  const apiClient = {
+    fetch: async (url, options = {}) => {
+      // Add auth token to request if available
+      if (authToken) {
+        options.headers = {
+          ...options.headers,
+          Authorization: `Bearer ${authToken}`
+        };
       }
-    }, timeUntilRefresh);
+      
+      try {
+        const response = await fetch(url, options);
+        
+        // If response is 401 and token expired, try to refresh
+        if (response.status === 401) {
+          const data = await response.json();
+          
+          if (data.tokenExpired) {
+            // Try to refresh the token
+            try {
+              const newToken = await refreshAuthToken();
+              
+              // Retry the request with the new token
+              options.headers = {
+                ...options.headers,
+                Authorization: `Bearer ${newToken}`
+              };
+              
+              return fetch(url, options);
+            } catch (refreshError) {
+              // If refresh fails, logout and throw error
+              await logout();
+              throw new Error('Session expired. Please log in again.');
+            }
+          }
+        }
+        
+        return response;
+      } catch (error) {
+        throw error;
+      }
+    },
     
-    setTokenRefreshTimer(timer);
-  } catch (error) {
-    console.error('Error setting up token refresh timer:', error);
-  }
-};
-
-// Function to refresh the token
-const refreshUserToken = async (token) => {
-  try {
-    const result = await authApi.refreshToken(token);
+    // Helper methods for common HTTP methods
+    get: async (url, options = {}) => {
+      return apiClient.fetch(url, { ...options, method: 'GET' });
+    },
     
-    // Update tokens
-    setAuthToken(result.accessToken);
-    setRefreshToken(result.refreshToken);
+    post: async (url, data, options = {}) => {
+      return apiClient.fetch(url, {
+        ...options,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers
+        },
+        body: JSON.stringify(data)
+      });
+    },
     
-    // Store tokens based on remember me preference
-    const storage = localStorage.getItem('rememberMe') === 'true' 
-      ? localStorage 
-      : sessionStorage;
-    
-    storage.setItem('authToken', result.accessToken);
-    storage.setItem('refreshToken', result.refreshToken);
-    
-    // Set up new refresh timer
-    setupTokenRefreshTimer(result.accessToken);
-  } catch (error) {
-    // Handle token refresh failure
-    console.error('Token refresh failed:', error);
-    clearAuthData();
-  }
+    // Add other methods as needed (PUT, DELETE, etc.)
+  };
+  
+  return apiClient;
 };
 ```
 
 ## Password Reset
 
-### Forgot Password Page
+### Password Reset Flow
 
-Create a forgot password page that:
-1. Collects user email
-2. Sends password reset request
-3. Provides feedback to user
+The password reset flow consists of two steps:
+1. Request password reset (sends email with reset link)
+2. Reset password with token from email
 
-### Example Implementation
+### API Service Methods
+
+```javascript
+// src/api/auth.api.js
+
+// Request password reset
+export const requestPasswordReset = async (email) => {
+  const response = await fetch(`${API_URL}/auth/request-password-reset`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ email })
+  });
+  
+  return handleResponse(response);
+};
+
+// Reset password with token
+export const resetPassword = async (token, password) => {
+  const response = await fetch(`${API_URL}/auth/reset-password/${token}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ password })
+  });
+  
+  return handleResponse(response);
+};
+```
+
+### Request Password Reset Component
 
 ```jsx
 // src/app/(auth)/forgot-password/page.jsx
 "use client";
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { validateEmail } from '@/utils/authUtils';
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState('');
   
   const { requestPasswordReset } = useAuth();
-
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -669,30 +964,44 @@ const ForgotPasswordPage = () => {
       return;
     }
     
-    if (!validateEmail(email)) {
-      setError('Please enter a valid email address');
-      return;
-    }
-    
     setIsSubmitting(true);
     setError('');
     
     try {
       await requestPasswordReset(email);
-      setSuccess('Password reset instructions have been sent to your email.');
-      setEmail('');
+      setIsSubmitted(true);
     } catch (error) {
-      // For security reasons, we don't want to reveal if the email exists
-      // So we show a success message even if the email doesn't exist
-      setSuccess('If an account exists with this email, password reset instructions have been sent.');
+      setError(error.message || 'Failed to request password reset');
     } finally {
       setIsSubmitting(false);
     }
   };
-
+  
+  if (isSubmitted) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold mb-6">Check Your Email</h1>
+        
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+          If your email is registered with us, you will receive a password reset link shortly.
+        </div>
+        
+        <p className="mb-4">
+          Please check your email and follow the instructions to reset your password.
+        </p>
+        
+        <div className="text-center mt-6">
+          <Link href="/login" className="text-blue-500 hover:text-blue-700">
+            Return to Login
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Reset Your Password</h1>
+      <h1 className="text-2xl font-bold mb-6">Forgot Password</h1>
       
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -700,24 +1009,16 @@ const ForgotPasswordPage = () => {
         </div>
       )}
       
-      {success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          {success}
-        </div>
-      )}
-      
       <p className="mb-4">
-        Enter your email address and we'll send you instructions to reset your password.
+        Enter your email address and we'll send you a link to reset your password.
       </p>
       
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
-          <label className="block text-gray-700 mb-2" htmlFor="email">
-            Email
-          </label>
+          <label htmlFor="email" className="block text-gray-700 mb-2">Email</label>
           <input
-            id="email"
             type="email"
+            id="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full px-3 py-2 border rounded"
@@ -725,14 +1026,20 @@ const ForgotPasswordPage = () => {
           />
         </div>
         
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           disabled={isSubmitting}
-          className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 disabled:bg-blue-300"
+          className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 disabled:bg-blue-300 mb-4"
         >
-          {isSubmitting ? 'Sending...' : 'Send Reset Instructions'}
+          {isSubmitting ? 'Sending...' : 'Send Reset Link'}
         </button>
       </form>
+      
+      <div className="text-center">
+        <Link href="/login" className="text-blue-500 hover:text-blue-700">
+          Back to Login
+        </Link>
+      </div>
     </div>
   );
 };
@@ -740,15 +1047,7 @@ const ForgotPasswordPage = () => {
 export default ForgotPasswordPage;
 ```
 
-### Reset Password Page
-
-Create a reset password page that:
-1. Accepts the reset token from URL
-2. Allows user to enter new password
-3. Validates password strength
-4. Submits password reset request
-
-### Example Implementation
+### Reset Password Component
 
 ```jsx
 // src/app/(auth)/reset-password/[token]/page.jsx
@@ -756,21 +1055,22 @@ Create a reset password page that:
 
 import React, { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { validatePassword } from '@/utils/authUtils';
 
 const ResetPasswordPage = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [error, setError] = useState('');
   
   const { resetPassword } = useAuth();
   const router = useRouter();
   const params = useParams();
-  const token = params.token;
-
+  const { token } = params;
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -792,22 +1092,44 @@ const ResetPasswordPage = () => {
     
     try {
       await resetPassword(token, password);
-      setSuccess('Password reset successful! Redirecting to login...');
+      setIsSuccess(true);
       
-      // Redirect to login after a short delay
+      // Redirect to login after a delay
       setTimeout(() => {
         router.push('/login');
-      }, 2000);
+      }, 3000);
     } catch (error) {
-      setError(error.message || 'Password reset failed. Please try again.');
+      setError(error.message || 'Failed to reset password');
     } finally {
       setIsSubmitting(false);
     }
   };
-
+  
+  if (isSuccess) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold mb-6">Password Reset Successful</h1>
+        
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+          Your password has been reset successfully.
+        </div>
+        
+        <p className="mb-4">
+          You will be redirected to the login page shortly.
+        </p>
+        
+        <div className="text-center mt-6">
+          <Link href="/login" className="text-blue-500 hover:text-blue-700">
+            Go to Login
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Reset Your Password</h1>
+      <h1 className="text-2xl font-bold mb-6">Reset Password</h1>
       
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -815,38 +1137,24 @@ const ResetPasswordPage = () => {
         </div>
       )}
       
-      {success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          {success}
-        </div>
-      )}
-      
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
-          <label className="block text-gray-700 mb-2" htmlFor="password">
-            New Password
-          </label>
+          <label htmlFor="password" className="block text-gray-700 mb-2">New Password</label>
           <input
-            id="password"
             type="password"
+            id="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-3 py-2 border rounded"
             placeholder="Enter new password"
           />
-          <p className="text-sm text-gray-500 mt-1">
-            Password must be at least 8 characters long and include uppercase, lowercase, 
-            numbers, and special characters.
-          </p>
         </div>
         
         <div className="mb-4">
-          <label className="block text-gray-700 mb-2" htmlFor="confirmPassword">
-            Confirm Password
-          </label>
+          <label htmlFor="confirmPassword" className="block text-gray-700 mb-2">Confirm Password</label>
           <input
-            id="confirmPassword"
             type="password"
+            id="confirmPassword"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             className="w-full px-3 py-2 border rounded"
@@ -854,12 +1162,12 @@ const ResetPasswordPage = () => {
           />
         </div>
         
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           disabled={isSubmitting}
-          className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 disabled:bg-blue-300"
+          className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 disabled:bg-blue-300 mb-4"
         >
-          {isSubmitting ? 'Resetting Password...' : 'Reset Password'}
+          {isSubmitting ? 'Resetting...' : 'Reset Password'}
         </button>
       </form>
     </div>
@@ -871,61 +1179,100 @@ export default ResetPasswordPage;
 
 ## Google OAuth Integration
 
-### Setup Google OAuth
+### Google OAuth Flow
 
-1. Follow the instructions in `docs/GoogleOAuth.md` to set up Google OAuth credentials
-2. Add the client ID to your environment variables
+The Google OAuth flow consists of:
+1. User clicks "Sign in with Google" button
+2. Google sign-in popup appears
+3. User authenticates with Google
+4. Google returns an ID token
+5. Backend verifies the token and creates/logs in the user
 
-### Google Login Button Component
+### API Service Method
 
-Create a reusable Google login button:
+```javascript
+// src/api/auth.api.js
+
+// Google authentication
+export const googleAuth = async (idToken, userType = 'patient') => {
+  const response = await fetch(`${API_URL}/auth/google`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ idToken, userType })
+  });
+  
+  return handleResponse(response);
+};
+```
+
+### Google Sign-In Button Component
 
 ```jsx
-// src/components/auth/GoogleLoginButton.jsx
+// src/components/GoogleSignInButton.jsx
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { getDashboardUrl } from '@/utils/authUtils';
+import { useAuth } from '@/contexts/AuthContext';
 
-const GoogleLoginButton = ({ userType = 'patient' }) => {
+const GoogleSignInButton = ({ userType = 'patient', buttonText = 'Sign in with Google' }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const { googleLogin } = useAuth();
+  const [googleLoaded, setGoogleLoaded] = useState(false);
+  
+  const { googleAuth } = useAuth();
   const router = useRouter();
-
+  
+  // Load Google API script
   useEffect(() => {
-    // Load Google API script
     const loadGoogleScript = () => {
+      // Check if script already exists
+      if (document.querySelector('script[src*="accounts.google.com/gsi/client"]')) {
+        setGoogleLoaded(true);
+        return;
+      }
+      
       const script = document.createElement('script');
       script.src = 'https://accounts.google.com/gsi/client';
       script.async = true;
       script.defer = true;
+      script.onload = () => setGoogleLoaded(true);
       document.body.appendChild(script);
-      
-      return () => {
-        document.body.removeChild(script);
-      };
     };
     
-    const cleanup = loadGoogleScript();
-    
-    return cleanup;
+    loadGoogleScript();
   }, []);
-
+  
+  // Initialize Google Sign-In button
   useEffect(() => {
-    // Initialize Google One Tap when script is loaded
-    if (window.google && !isLoading) {
-      window.google.accounts.id.initialize({
-        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-        callback: handleGoogleResponse,
-        cancel_on_tap_outside: true,
-      });
+    if (!googleLoaded || !window.google) return;
+    
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    
+    if (!clientId) {
+      setError('Google client ID is not configured');
+      return;
     }
-  }, [isLoading]);
-
-  const handleGoogleResponse = async (response) => {
+    
+    try {
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: handleCredentialResponse
+      });
+      
+      window.google.accounts.id.renderButton(
+        document.getElementById('google-signin-button'),
+        { theme: 'outline', size: 'large', width: '100%', text: 'continue_with' }
+      );
+    } catch (error) {
+      setError('Failed to initialize Google Sign-In');
+      console.error(error);
+    }
+  }, [googleLoaded]);
+  
+  const handleCredentialResponse = async (response) => {
     if (!response.credential) {
       setError('Google authentication failed');
       return;
@@ -935,118 +1282,147 @@ const GoogleLoginButton = ({ userType = 'patient' }) => {
     setError('');
     
     try {
-      const result = await googleLogin(response.credential, userType);
-      
-      // Redirect to appropriate dashboard
-      router.push(getDashboardUrl(result.user.role));
+      await googleAuth(response.credential, userType);
+      router.push('/dashboard');
     } catch (error) {
-      setError(error.message || 'Google login failed');
+      setError(error.message || 'Google authentication failed');
     } finally {
       setIsLoading(false);
     }
   };
-
-  const handleGoogleLogin = () => {
-    if (window.google) {
-      window.google.accounts.id.prompt();
-    } else {
-      setError('Google authentication is not available');
-    }
-  };
-
+  
   return (
-    <div>
+    <div className="w-full">
       {error && (
-        <div className="text-red-500 text-sm mb-2">{error}</div>
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
       )}
       
-      <button
-        type="button"
-        onClick={handleGoogleLogin}
-        disabled={isLoading}
-        className="w-full flex items-center justify-center bg-white border border-gray-300 rounded px-4 py-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-      >
-        <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-          <path
-            fill="#4285F4"
-            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-          />
-          <path
-            fill="#34A853"
-            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-          />
-          <path
-            fill="#FBBC05"
-            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-          />
-          <path
-            fill="#EA4335"
-            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-          />
-        </svg>
-        {isLoading ? 'Logging in...' : `Continue with Google as ${userType}`}
-      </button>
+      <div 
+        id="google-signin-button" 
+        className={`w-full ${isLoading ? 'opacity-50' : ''}`}
+      ></div>
+      
+      {isLoading && (
+        <div className="text-center mt-2">
+          <p>Authenticating...</p>
+        </div>
+      )}
     </div>
   );
 };
 
-export default GoogleLoginButton;
+export default GoogleSignInButton;
 ```
 
 ## Protected Routes
 
-Create a ProtectedRoute component to secure routes that require authentication:
+### Route Protection with Middleware
+
+Next.js middleware can be used to protect routes based on authentication status and user roles.
+
+```javascript
+// src/middleware.js
+import { NextResponse } from 'next/server';
+
+export function middleware(request) {
+  const { pathname } = request.nextUrl;
+  
+  // Get auth tokens from cookies
+  const accessToken = request.cookies.get('accessToken')?.value;
+  const refreshToken = request.cookies.get('refreshToken')?.value;
+  
+  // Public routes that don't require authentication
+  const publicRoutes = [
+    '/login',
+    '/register',
+    '/verify-email',
+    '/forgot-password',
+    '/reset-password'
+  ];
+  
+  // Check if the current route is a public route
+  const isPublicRoute = publicRoutes.some(route => 
+    pathname.startsWith(route) || pathname === '/'
+  );
+  
+  // If it's a public route, allow access
+  if (isPublicRoute) {
+    return NextResponse.next();
+  }
+  
+  // If no tokens are found, redirect to login
+  if (!accessToken && !refreshToken) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+  
+  // Allow access to protected routes if tokens exist
+  return NextResponse.next();
+}
+
+// Configure which routes the middleware applies to
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     * - api routes (handled separately)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public|api).*)',
+  ],
+};
+```
+
+### Protected Route Component
 
 ```jsx
-// src/components/auth/ProtectedRoute.jsx
+// src/components/ProtectedRoute.jsx
 "use client";
 
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { LoadingSpinner } from '@/components';
 
 const ProtectedRoute = ({ 
   children, 
-  allowedRoles = [], 
-  redirectTo = '/login' 
+  allowedRoles = [], // Empty array means any authenticated user can access
+  redirectTo = '/login'
 }) => {
-  const { currentUser, loading } = useAuth();
+  const { currentUser, loading, isAuthenticated } = useAuth();
   const router = useRouter();
-
-  // Helper function to check if user is authenticated
-  const isAuthenticated = () => !!currentUser;
   
-  // Helper function to check if user has a specific role
-  const hasRole = (role) => {
-    return currentUser && currentUser.role === role;
-  };
-
   useEffect(() => {
-    if (!loading) {
-      if (!isAuthenticated()) {
-        // If not authenticated, redirect to login with the current path as redirect parameter
-        const currentPath = window.location.pathname;
-        router.push(`${redirectTo}?redirect=${encodeURIComponent(currentPath)}`);
-      } else if (allowedRoles.length > 0 && !allowedRoles.some(role => hasRole(role))) {
-        // If authenticated but doesn't have the required role
-        router.push('/unauthorized');
-      }
+    // Wait until auth state is loaded
+    if (loading) return;
+    
+    // If not authenticated, redirect to login
+    if (!isAuthenticated) {
+      router.push(redirectTo);
+      return;
     }
-  }, [currentUser, loading, allowedRoles, redirectTo, router]);
-
-  // Show loading spinner while checking authentication
+    
+    // If roles are specified, check if user has required role
+    if (allowedRoles.length > 0 && !allowedRoles.includes(currentUser?.role)) {
+      router.push('/unauthorized');
+    }
+  }, [currentUser, loading, isAuthenticated, allowedRoles, redirectTo, router]);
+  
+  // Show loading state while checking authentication
   if (loading) {
-    return <LoadingSpinner />;
+    return <div>Loading...</div>;
   }
-
-  // If user is authenticated and has the required role, render children
-  if (isAuthenticated() && (allowedRoles.length === 0 || allowedRoles.some(role => hasRole(role)))) {
-    return children;
+  
+  // If not authenticated or doesn't have required role, don't render children
+  if (!isAuthenticated || (allowedRoles.length > 0 && !allowedRoles.includes(currentUser?.role))) {
+    return null;
   }
-
-  // Return null while redirecting
-  return null;
+  
+  // Render children if authenticated and has required role
+  return children;
 };
 
 export default ProtectedRoute;
@@ -1054,151 +1430,271 @@ export default ProtectedRoute;
 
 ## Role-Based Access Control
 
-### Role-Based Layout Structure
-
-Organize your application with role-based layouts:
+### Role-Based Route Protection
 
 ```jsx
-// src/app/(patient)/layout.jsx
+// src/app/(dashboard)/doctor/page.jsx
 "use client";
 
 import React from 'react';
-import { ProtectedRoute } from '@/components/auth';
-import { PatientSidebar, PatientHeader } from '@/components/layout';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
-export default function PatientLayout({ children }) {
+const DoctorDashboardPage = () => {
   return (
-    <ProtectedRoute allowedRoles={['patient']}>
-      <div className="flex min-h-screen bg-gray-100">
-        <PatientSidebar />
-        <div className="flex-1">
-          <PatientHeader />
-          <main className="p-4 md:p-6">
-            {children}
-          </main>
-        </div>
+    <ProtectedRoute allowedRoles={['doctor']} redirectTo="/unauthorized">
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold mb-6">Doctor Dashboard</h1>
+        {/* Doctor-specific content */}
       </div>
     </ProtectedRoute>
-  );
-}
-```
-
-```jsx
-// src/app/(doctor)/layout.jsx
-"use client";
-
-import React from 'react';
-import { ProtectedRoute } from '@/components/auth';
-import { DoctorSidebar, DoctorHeader } from '@/components/layout';
-
-export default function DoctorLayout({ children }) {
-  return (
-    <ProtectedRoute allowedRoles={['doctor']}>
-      <div className="flex min-h-screen bg-gray-100">
-        <DoctorSidebar />
-        <div className="flex-1">
-          <DoctorHeader />
-          <main className="p-4 md:p-6">
-            {children}
-          </main>
-        </div>
-      </div>
-    </ProtectedRoute>
-  );
-}
-```
-
-```jsx
-// src/app/(admin)/layout.jsx
-"use client";
-
-import React from 'react';
-import { ProtectedRoute } from '@/components/auth';
-import { AdminSidebar, AdminHeader } from '@/components/layout';
-
-export default function AdminLayout({ children }) {
-  return (
-    <ProtectedRoute allowedRoles={['admin']}>
-      <div className="flex min-h-screen bg-gray-100">
-        <AdminSidebar />
-        <div className="flex-1">
-          <AdminHeader />
-          <main className="p-4 md:p-6">
-            {children}
-          </main>
-        </div>
-      </div>
-    </ProtectedRoute>
-  );
-}
-```
-
-### Unauthorized Page
-
-Create an unauthorized access page:
-
-```jsx
-// src/app/unauthorized/page.jsx
-"use client";
-
-import React from 'react';
-import Link from 'next/link';
-import { useAuth } from '@/contexts/AuthContext';
-import { getDashboardUrl } from '@/utils/authUtils';
-
-const UnauthorizedPage = () => {
-  const { currentUser } = useAuth();
-  
-  const dashboardUrl = currentUser ? getDashboardUrl(currentUser.role) : '/login';
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
-        <h1 className="text-3xl font-bold text-red-600 mb-4">Access Denied</h1>
-        <div className="text-6xl mb-4">🚫</div>
-        <p className="text-gray-700 mb-6">
-          You don't have permission to access this page. Please contact your administrator if you believe this is an error.
-        </p>
-        <Link 
-          href={dashboardUrl}
-          className="inline-block bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
-        >
-          Return to Dashboard
-        </Link>
-      </div>
-    </div>
   );
 };
 
-export default UnauthorizedPage;
+export default DoctorDashboardPage;
+```
+
+### Role-Based UI Elements
+
+```jsx
+// src/components/RoleBasedElement.jsx
+"use client";
+
+import { useAuth } from '@/contexts/AuthContext';
+
+const RoleBasedElement = ({ 
+  children, 
+  allowedRoles = [], 
+  fallback = null 
+}) => {
+  const { currentUser, isAuthenticated } = useAuth();
+  
+  // If not authenticated, show fallback
+  if (!isAuthenticated) {
+    return fallback;
+  }
+  
+  // If no roles specified, show for all authenticated users
+  if (allowedRoles.length === 0) {
+    return children;
+  }
+  
+  // Show only if user has one of the allowed roles
+  return allowedRoles.includes(currentUser?.role) ? children : fallback;
+};
+
+export default RoleBasedElement;
+```
+
+### Navigation with Role-Based Access
+
+```jsx
+// src/components/Navigation.jsx
+"use client";
+
+import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
+import RoleBasedElement from './RoleBasedElement';
+
+const Navigation = () => {
+  const { currentUser, logout, isAuthenticated } = useAuth();
+  
+  return (
+    <nav className="bg-blue-600 text-white p-4">
+      <div className="container mx-auto flex justify-between items-center">
+        <Link href="/" className="text-xl font-bold">
+          Second Opinion
+        </Link>
+        
+        <div className="flex space-x-4">
+          {isAuthenticated ? (
+            <>
+              <Link href="/dashboard" className="hover:text-blue-200">
+                Dashboard
+              </Link>
+              
+              <RoleBasedElement allowedRoles={['patient']}>
+                <Link href="/patient/consultations" className="hover:text-blue-200">
+                  My Consultations
+                </Link>
+              </RoleBasedElement>
+              
+              <RoleBasedElement allowedRoles={['doctor']}>
+                <Link href="/doctor/appointments" className="hover:text-blue-200">
+                  Appointments
+                </Link>
+              </RoleBasedElement>
+              
+              <RoleBasedElement allowedRoles={['admin']}>
+                <Link href="/admin/users" className="hover:text-blue-200">
+                  Manage Users
+                </Link>
+              </RoleBasedElement>
+              
+              <button 
+                onClick={logout}
+                className="hover:text-blue-200"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="hover:text-blue-200">
+                Login
+              </Link>
+              <Link href="/register" className="hover:text-blue-200">
+                Register
+              </Link>
+            </>
+          )}
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+export default Navigation;
 ```
 
 ## Testing Authentication
 
+### Unit Testing Auth Context
+
+```javascript
+// src/__tests__/contexts/AuthContext.test.jsx
+import { render, screen, act, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import * as authApi from '@/api/auth.api';
+
+// Mock the auth API
+jest.mock('@/api/auth.api');
+
+// Test component that uses auth context
+const TestComponent = () => {
+  const { 
+    currentUser, 
+    login, 
+    logout, 
+    register, 
+    verifyEmail,
+    loading 
+  } = useAuth();
+  
+  return (
+    <div>
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
+        <>
+          {currentUser ? (
+            <>
+              <p>Logged in as: {currentUser.email}</p>
+              <button onClick={logout}>Logout</button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => login('test@example.com', 'password')}>
+                Login
+              </button>
+              <button onClick={() => register({
+                name: 'Test User',
+                email: 'test@example.com',
+                password: 'password',
+                role: 'patient',
+                termsAccepted: true
+              })}>
+                Register
+              </button>
+            </>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+describe('AuthContext', () => {
+  beforeEach(() => {
+    // Clear mocks before each test
+    jest.clearAllMocks();
+    
+    // Clear localStorage
+    localStorage.clear();
+  });
+  
+  test('renders loading state initially', () => {
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+    
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+  });
+  
+  test('handles login successfully', async () => {
+    // Mock successful login
+    authApi.login.mockResolvedValue({
+      success: true,
+      data: {
+        user: { id: '123', email: 'test@example.com', role: 'patient' },
+        tokens: { accessToken: 'access-token', refreshToken: 'refresh-token' }
+      }
+    });
+    
+    render(
+      <AuthProvider>
+        <TestComponent />
+      </AuthProvider>
+    );
+    
+    // Wait for loading to finish
+    await waitFor(() => {
+      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+    });
+    
+    // Click login button
+    await act(async () => {
+      userEvent.click(screen.getByText('Login'));
+    });
+    
+    // Check if login was called
+    expect(authApi.login).toHaveBeenCalledWith('test@example.com', 'password', false, null);
+    
+    // Check if user is logged in
+    await waitFor(() => {
+      expect(screen.getByText('Logged in as: test@example.com')).toBeInTheDocument();
+    });
+    
+    // Check if tokens were stored
+    expect(localStorage.getItem('accessToken')).toBe('access-token');
+    expect(localStorage.getItem('refreshToken')).toBe('refresh-token');
+  });
+  
+  // Add more tests for register, logout, verifyEmail, etc.
+});
+```
+
 ### Manual Testing Checklist
 
-Create a checklist for testing authentication features:
-
 1. **Registration Testing**
-   - [ ] Patient registration with valid data
-   - [ ] Doctor registration with valid data
-   - [ ] Admin registration (should fail)
-   - [ ] Registration with invalid email
-   - [ ] Registration with weak password
-   - [ ] Registration without accepting terms
-   - [ ] Registration with existing email
+   - [ ] Register as patient with valid data
+   - [ ] Register as doctor with valid data
+   - [ ] Try to register as admin (should fail)
+   - [ ] Register with invalid email
+   - [ ] Register with weak password
+   - [ ] Register without accepting terms
 
 2. **Email Verification Testing**
    - [ ] Verify email with valid OTP
    - [ ] Verify email with invalid OTP
-   - [ ] Verify email with expired OTP
    - [ ] Resend verification email
+   - [ ] Check automatic login after verification
 
 3. **Login Testing**
-   - [ ] Patient login with valid credentials
-   - [ ] Doctor login with valid credentials
-   - [ ] Admin login with valid credentials
-   - [ ] Login with unverified email
+   - [ ] Login as patient
+   - [ ] Login as doctor
    - [ ] Login with invalid credentials
    - [ ] Login with expected role
    - [ ] Login with wrong expected role
@@ -1225,66 +1721,7 @@ Create a checklist for testing authentication features:
    - [ ] User with wrong role redirected to unauthorized page
    - [ ] User with correct role can access protected page
 
-### Automated Testing
-
-For automated testing, consider using tools like Cypress or Jest with React Testing Library:
-
-```jsx
-// Example Jest test for login component
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import LoginPage from '@/app/(auth)/login/page';
-import { AuthProvider } from '@/contexts/AuthContext';
-import { mockRouter } from '@/utils/test-utils';
-
-// Mock the next/navigation
-jest.mock('next/navigation', () => ({
-  useRouter: () => mockRouter,
-  useSearchParams: () => ({
-    get: jest.fn().mockReturnValue(null)
-  })
-}));
-
-describe('LoginPage', () => {
-  beforeEach(() => {
-    render(
-      <AuthProvider>
-        <LoginPage />
-      </AuthProvider>
-    );
-  });
-
-  test('renders login form', () => {
-    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /log in/i })).toBeInTheDocument();
-  });
-
-  test('shows error when submitting empty form', async () => {
-    fireEvent.click(screen.getByRole('button', { name: /log in/i }));
-    
-    await waitFor(() => {
-      expect(screen.getByText(/email and password are required/i)).toBeInTheDocument();
-    });
-  });
-
-  // Add more tests for different scenarios
-});
-```
-
-## Conclusion
-
-This guide provides a comprehensive approach to implementing authentication in your Second Opinion frontend application. By following these patterns and examples, you can create a secure, user-friendly authentication system that integrates seamlessly with your backend API.
-
-Remember to:
-1. Keep sensitive authentication logic in the AuthContext
-2. Implement proper validation for all user inputs
-3. Handle errors gracefully with user-friendly messages
-4. Use role-based access control for protected routes
-5. Test all authentication flows thoroughly
-
-For additional security considerations, consider implementing:
-- CSRF protection
-- Rate limiting on the client side
-- Security headers
-- Secure storage of tokens
-- Automatic session timeout
+8. **Role-Based UI Testing**
+   - [ ] Patient-specific UI elements shown only to patients
+   - [ ] Doctor-specific UI elements shown only to doctors
+   - [ ] Admin-specific UI elements shown only to admins

@@ -33,19 +33,22 @@ Add the following test scripts to automatically save tokens and validate respons
 // Save tokens from login or refresh responses
 if (pm.response.code === 200) {
     const responseJson = pm.response.json();
-    if (responseJson.accessToken) {
-        pm.environment.set("ACCESS_TOKEN", responseJson.accessToken);
+    if (responseJson.data && responseJson.data.tokens) {
+        pm.environment.set("ACCESS_TOKEN", responseJson.data.tokens.accessToken);
+        pm.environment.set("REFRESH_TOKEN", responseJson.data.tokens.refreshToken);
+    } else if (responseJson.data && responseJson.data.accessToken) {
+        pm.environment.set("ACCESS_TOKEN", responseJson.data.accessToken);
+    } else if (responseJson.data && responseJson.data.refreshToken) {
+        pm.environment.set("REFRESH_TOKEN", responseJson.data.refreshToken);
     }
-    if (responseJson.refreshToken) {
-        pm.environment.set("REFRESH_TOKEN", responseJson.refreshToken);
-    }
-    if (responseJson.user && responseJson.user.email) {
-        if (responseJson.user.role === "patient") {
-            pm.environment.set("PATIENT_EMAIL", responseJson.user.email);
-        } else if (responseJson.user.role === "doctor") {
-            pm.environment.set("DOCTOR_EMAIL", responseJson.user.email);
-        } else if (responseJson.user.role === "admin") {
-            pm.environment.set("ADMIN_EMAIL", responseJson.user.email);
+    
+    if (responseJson.data && responseJson.data.user) {
+        if (responseJson.data.user.role === "patient") {
+            pm.environment.set("PATIENT_EMAIL", responseJson.data.user.email);
+        } else if (responseJson.data.user.role === "doctor") {
+            pm.environment.set("DOCTOR_EMAIL", responseJson.data.user.email);
+        } else if (responseJson.data.user.role === "admin") {
+            pm.environment.set("ADMIN_EMAIL", responseJson.data.user.email);
         }
     }
 }
@@ -334,6 +337,28 @@ pm.test("Response has the correct format", function () {
     pm.expect(responseJson.success).to.be.true;
     pm.expect(responseJson.message).to.include("verified");
   });
+  
+  // NEW TEST: Check for tokens in the response
+  pm.test("Response includes authentication tokens", function () {
+    const responseJson = pm.response.json();
+    pm.expect(responseJson.data).to.have.property("tokens");
+    pm.expect(responseJson.data.tokens).to.have.property("accessToken");
+    pm.expect(responseJson.data.tokens).to.have.property("refreshToken");
+    
+    // Save tokens for future requests
+    pm.environment.set("ACCESS_TOKEN", responseJson.data.tokens.accessToken);
+    pm.environment.set("REFRESH_TOKEN", responseJson.data.tokens.refreshToken);
+  });
+  
+  pm.test("Response includes user data", function () {
+    const responseJson = pm.response.json();
+    pm.expect(responseJson.data).to.have.property("user");
+    pm.expect(responseJson.data.user).to.have.property("id");
+    pm.expect(responseJson.data.user).to.have.property("email");
+    pm.expect(responseJson.data.user).to.have.property("role");
+    pm.expect(responseJson.data.user).to.have.property("isEmailVerified");
+    pm.expect(responseJson.data.user.isEmailVerified).to.be.true;
+  });
   ```
 
 ### 2. Verify Email with Invalid OTP
@@ -416,13 +441,14 @@ pm.test("Response has the correct format", function () {
     const responseJson = pm.response.json();
     pm.expect(responseJson.success).to.be.true;
     pm.expect(responseJson.data).to.have.property("user");
-    pm.expect(responseJson.data).to.have.property("accessToken");
-    pm.expect(responseJson.data).to.have.property("refreshToken");
+    pm.expect(responseJson.data).to.have.property("tokens");
+    pm.expect(responseJson.data.tokens).to.have.property("accessToken");
+    pm.expect(responseJson.data.tokens).to.have.property("refreshToken");
     pm.expect(responseJson.data.user.role).to.equal("patient");
     
     // Save tokens for future requests
-    pm.environment.set("ACCESS_TOKEN", responseJson.data.accessToken);
-    pm.environment.set("REFRESH_TOKEN", responseJson.data.refreshToken);
+    pm.environment.set("ACCESS_TOKEN", responseJson.data.tokens.accessToken);
+    pm.environment.set("REFRESH_TOKEN", responseJson.data.tokens.refreshToken);
   });
   ```
 
@@ -450,13 +476,14 @@ pm.test("Response has the correct format", function () {
     const responseJson = pm.response.json();
     pm.expect(responseJson.success).to.be.true;
     pm.expect(responseJson.data).to.have.property("user");
-    pm.expect(responseJson.data).to.have.property("accessToken");
-    pm.expect(responseJson.data).to.have.property("refreshToken");
+    pm.expect(responseJson.data).to.have.property("tokens");
+    pm.expect(responseJson.data.tokens).to.have.property("accessToken");
+    pm.expect(responseJson.data.tokens).to.have.property("refreshToken");
     pm.expect(responseJson.data.user.role).to.equal("doctor");
     
     // Save tokens for future requests if needed
-    // pm.environment.set("DOCTOR_ACCESS_TOKEN", responseJson.data.accessToken);
-    // pm.environment.set("DOCTOR_REFRESH_TOKEN", responseJson.data.refreshToken);
+    // pm.environment.set("DOCTOR_ACCESS_TOKEN", responseJson.data.tokens.accessToken);
+    // pm.environment.set("DOCTOR_REFRESH_TOKEN", responseJson.data.tokens.refreshToken);
   });
   ```
 
@@ -472,7 +499,7 @@ pm.test("Response has the correct format", function () {
   {
     "email": "{{PATIENT_EMAIL}}",
     "password": "Password123!",
-    "expectedRole": "patient"
+    "role": "patient"
   }
   ```
 - **Tests**:
@@ -501,7 +528,7 @@ pm.test("Response has the correct format", function () {
   {
     "email": "{{PATIENT_EMAIL}}",
     "password": "Password123!",
-    "expectedRole": "doctor"
+    "role": "doctor"
   }
   ```
 - **Tests**:
@@ -513,7 +540,7 @@ pm.test("Response has the correct format", function () {
   pm.test("Response contains error about role mismatch", function () {
     const responseJson = pm.response.json();
     pm.expect(responseJson.success).to.be.false;
-    pm.expect(responseJson.message).to.include("role");
+    pm.expect(responseJson.message).to.include("Invalid credentials");
   });
   ```
 
@@ -540,7 +567,7 @@ pm.test("Response has the correct format", function () {
   pm.test("Response contains error about invalid credentials", function () {
     const responseJson = pm.response.json();
     pm.expect(responseJson.success).to.be.false;
-    pm.expect(responseJson.message).to.include("credentials");
+    pm.expect(responseJson.message).to.include("Invalid credentials");
   });
   ```
 
@@ -568,12 +595,13 @@ pm.test("Response has the correct format", function () {
   pm.test("Response contains new tokens", function () {
     const responseJson = pm.response.json();
     pm.expect(responseJson.success).to.be.true;
-    pm.expect(responseJson.data).to.have.property("accessToken");
-    pm.expect(responseJson.data).to.have.property("refreshToken");
+    pm.expect(responseJson.data).to.have.property("tokens");
+    pm.expect(responseJson.data.tokens).to.have.property("accessToken");
+    pm.expect(responseJson.data.tokens).to.have.property("refreshToken");
     
     // Save new tokens
-    pm.environment.set("ACCESS_TOKEN", responseJson.data.accessToken);
-    pm.environment.set("REFRESH_TOKEN", responseJson.data.refreshToken);
+    pm.environment.set("ACCESS_TOKEN", responseJson.data.tokens.accessToken);
+    pm.environment.set("REFRESH_TOKEN", responseJson.data.tokens.refreshToken);
   });
   ```
 
@@ -753,12 +781,13 @@ pm.test("Response has the correct format", function () {
       const responseJson = pm.response.json();
       pm.expect(responseJson.success).to.be.true;
       pm.expect(responseJson.data).to.have.property("user");
-      pm.expect(responseJson.data).to.have.property("accessToken");
-      pm.expect(responseJson.data).to.have.property("refreshToken");
+      pm.expect(responseJson.data).to.have.property("tokens");
+      pm.expect(responseJson.data.tokens).to.have.property("accessToken");
+      pm.expect(responseJson.data.tokens).to.have.property("refreshToken");
       
       // Save tokens
-      pm.environment.set("ACCESS_TOKEN", responseJson.data.accessToken);
-      pm.environment.set("REFRESH_TOKEN", responseJson.data.refreshToken);
+      pm.environment.set("ACCESS_TOKEN", responseJson.data.tokens.accessToken);
+      pm.environment.set("REFRESH_TOKEN", responseJson.data.tokens.refreshToken);
     });
   }
   ```
@@ -838,6 +867,7 @@ For these tests, you'll need to:
    - `/api/auth/logout`
    - `/api/auth/request-password-reset`
    - `/api/auth/reset-password/{token}`
+   - `/api/auth/verify-email` (now allowed for admin)
 
 ### 2. Admin Accessing Restricted Routes
 

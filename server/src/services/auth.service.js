@@ -538,11 +538,12 @@ const googleAuth = async (idToken, userType = 'patient') => {
     
     // Format user data for response
     const userData = {
-      _id: user._id,
+      id: user._id,
       name: user.name,
       email: user.email,
-      role: userType,
+      role: userRole,
       photoURL: user.photoURL,
+      isEmailVerified: user.isEmailVerified,
       termsAccepted: user.termsAccepted,
       termsAcceptedAt: user.termsAcceptedAt
     };
