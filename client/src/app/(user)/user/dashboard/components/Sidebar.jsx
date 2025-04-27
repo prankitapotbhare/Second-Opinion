@@ -13,6 +13,7 @@ import {
 } from "react-icons/fa";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import LogoutConfirmationModal from "@/components/modals/LogoutConfirmationModal";
 
 // Update the Sidebar component to use Next.js Link for navigation
 const Sidebar = ({ 
@@ -24,6 +25,7 @@ const Sidebar = ({
 }) => {
   const { logout } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   
   const sidebarItems = [
     {
@@ -55,6 +57,19 @@ const Sidebar = ({
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
+  };
+
+  const handleLogoutClick = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleConfirmLogout = () => {
+    logout();
+    setShowLogoutConfirm(false);
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
   };
 
   return (
@@ -165,7 +180,7 @@ const Sidebar = ({
           {/* Redesigned Logout Button */}
           <div className="p-4 mt-auto border-t border-teal-200">
             <button 
-              onClick={logout}
+              onClick={handleLogoutClick}
               className={`group flex items-center w-full px-4 py-3 text-gray-700 bg-white hover:bg-gray-100 rounded-lg transition-all duration-300 shadow-sm border border-teal-200 ${isCollapsed ? 'justify-center' : ''}`}
             >
               <span className="inline-flex items-center justify-center bg-gradient-to-r from-orange-400 to-red-400 p-1.5 rounded-full text-white">
@@ -174,6 +189,13 @@ const Sidebar = ({
               {!isCollapsed && <span className="font-medium ml-3 group-hover:text-gray-900">Sign Out</span>}
             </button>
           </div>
+
+          {/* Render the Confirmation Modal */}
+          <LogoutConfirmationModal
+            isOpen={showLogoutConfirm}
+            onClose={handleCancelLogout}
+            onConfirm={handleConfirmLogout}
+          />
         </div>
       </div>
     </>

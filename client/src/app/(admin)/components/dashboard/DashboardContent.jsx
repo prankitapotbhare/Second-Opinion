@@ -2,22 +2,23 @@
 
 import React from 'react';
 import { FaUserMd, FaUsers, FaCalendarCheck, FaClock } from 'react-icons/fa';
-import { statCards, doctors as mockDoctors, activities } from '@/data/mockData';
-import { doctors as staticDoctors } from '@/data/doctorsData';
+import { statCards, activities } from '@/data/mockData'; // Keep activities from mockData for now
+// import { doctors as staticDoctors } from '@/data/doctorsData'; // Remove old import
+import { doctors as combinedDoctorsData } from '@/data/doctorsData'; // Import the consolidated data
 import { useAuth } from "@/contexts/AuthContext";
 
 // Import components
-import { 
-  Header, 
-  StatCard, 
-  DoctorList, 
-  AppointmentsChart, 
-  RecentActivity 
+import {
+  Header,
+  StatCard,
+  DoctorList,
+  AppointmentsChart,
+  RecentActivity
 } from '@/app/(admin)/components';
 
 const DashboardContent = () => {
   const { currentUser } = useAuth();
-  
+
   // Add icons to stat cards
   const statCardsWithIcons = statCards.map(card => {
     let icon;
@@ -31,35 +32,29 @@ const DashboardContent = () => {
     return { ...card, icon };
   });
 
-  // Combine doctors from both sources and format them for the DoctorList component
-  const combinedDoctors = [
-    ...mockDoctors.map(doc => ({
-      ...doc,
-      status: doc.status || 'Active',
-      patients: doc.patients || 0,
-      avatar: doc.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(doc.name)}`
-    })),
-    ...staticDoctors.map(doc => ({
-      id: doc.id,
-      name: doc.name,
-      specialization: doc.specialization || doc.department,
-      email: `${doc.name.toLowerCase().replace(/\s+/g, '.')}@example.com`,
-      patients: Math.floor(Math.random() * 50) + 10,
-      status: 'Active',
-      avatar: doc.imageUrl
-    }))
-  ];
+  // Format the combined doctors data for the DoctorList component
+  // No need to combine sources here anymore
+  const formattedDoctors = combinedDoctorsData.map(doc => ({
+    id: doc.id, // Use id
+    name: doc.name, // Use name
+    specialization: doc.specialization,
+    email: doc.email || `${doc.name.toLowerCase().replace(/\s+/g, '.')}@example.com`, // Ensure email exists
+    patients: doc.patients || Math.floor(Math.random() * 50) + 10, // Ensure patients exist
+    status: doc.status || 'Active', // Ensure status exists
+    avatar: doc.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(doc.name)}` // Use imageUrl
+  }));
+
 
   return (
     <div className="min-h-screen bg-[#f0f8ff]">
       <Header title="Admin Dashboard" />
-      
+
       {/* Main Content */}
       <main className="max-w-[1440px] mx-auto px-6 pb-8">
         {/* Dashboard Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {statCardsWithIcons.map((card, index) => (
-            <StatCard 
+            <StatCard
               key={index}
               title={card.title}
               count={card.count}
@@ -68,15 +63,15 @@ const DashboardContent = () => {
             />
           ))}
         </div>
-        
-        {/* Doctor List */}
-        <DoctorList doctors={combinedDoctors.slice(0, 5)} />
-        
+
+        {/* Doctor List - Use formattedDoctors */}
+        <DoctorList doctors={formattedDoctors.slice(0, 5)} />
+
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Appointments Chart */}
           <AppointmentsChart />
-          
+
           {/* Recent Activity */}
           <RecentActivity activities={activities} />
         </div>

@@ -69,7 +69,7 @@ const SettingSection = ({ user }) => {
                 Delete Account
               </h3>
               <p className="text-sm text-gray-500 max-w-md">
-                Once you delete your account, there is no going back. Please be certain.
+                Permanently delete your account and all associated data.
               </p>
             </div>
             <button className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center">
@@ -80,49 +80,34 @@ const SettingSection = ({ user }) => {
         </div>
       </div>
 
-      {/* Contact Information */}
+      {/* Help & Support */}
       <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100">
         <h2 className="text-xl font-medium text-gray-800 mb-6 flex items-center">
           <FaEnvelope className="mr-2 text-indigo-600" />
-          Contact Information
+          Help & Support
         </h2>
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
-              </label>
-              <div className="flex">
-                <div className="flex items-center px-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md">
-                  <FaEnvelope className="text-gray-500" />
-                </div>
-                <input
-                  type="email"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  value={user?.email || "doctor@example.com"}
-                  readOnly
-                />
+          <div className="grid grid-cols-1 gap-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-full">
+                <FaPhoneAlt className="text-blue-500" />
+              </div>
+              <div>
+                <h3 className="text-base font-medium text-gray-800">Support Phone</h3>
+                <p className="text-sm text-gray-500">+91-XXXXXXXXXX</p>
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Phone Number
-              </label>
-              <div className="flex">
-                <div className="flex items-center px-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md">
-                  <FaPhoneAlt className="text-gray-500" />
-                </div>
-                <input
-                  type="tel"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="Enter your phone number"
-                />
+            
+            <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-full">
+                <FaEnvelope className="text-blue-500" />
+              </div>
+              <div>
+                <h3 className="text-base font-medium text-gray-800">Support Email</h3>
+                <p className="text-sm text-blue-500">support@healthplatform.com</p>
               </div>
             </div>
           </div>
-          <button className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors">
-            Update Contact Info
-          </button>
         </div>
       </div>
     </main>

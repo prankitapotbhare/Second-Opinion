@@ -57,7 +57,7 @@ const AppointmentsSection = () => {
           <FaCalendarAlt className="mr-2 text-blue-600" />
           My Appointments
         </h1>
-        <Link href="/user/appointment/booking">
+        <Link href="/user/doctors">
           <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-all duration-300 shadow-sm">
             Book New Appointment
           </button>

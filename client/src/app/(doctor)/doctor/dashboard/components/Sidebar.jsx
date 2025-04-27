@@ -13,6 +13,7 @@ import {
 } from "react-icons/fa";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import LogoutConfirmationModal from "@/components/modals/LogoutConfirmationModal"; // Adjust path if needed
 
 const Sidebar = ({ 
   activeTab, 
@@ -23,7 +24,8 @@ const Sidebar = ({
 }) => {
   const { logout } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false); // State for modal visibility
+
   const sidebarItems = [
     {
       name: "dashboard",
@@ -50,6 +52,20 @@ const Sidebar = ({
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
   };
+
+  const handleLogoutClick = () => {
+    setShowLogoutConfirm(true); // Show the modal instead of logging out directly
+  };
+
+  const handleConfirmLogout = () => {
+    logout(); // Call the actual logout function
+    setShowLogoutConfirm(false); // Close the modal
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false); // Close the modal
+  };
+
 
   return (
     <>
@@ -80,7 +96,7 @@ const Sidebar = ({
           isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
-        <div className={`flex flex-col h-screen ${isCollapsed ? 'w-20' : 'w-72'} bg-gradient-to-br from-blue-100 via-blue-50 to-white text-blue-800 shadow-xl overflow-y-auto transition-all duration-300`}>
+        <div className={`flex flex-col h-screen ${isCollapsed ? 'w-20' : 'w-72'} bg-white text-blue-800 shadow-xl overflow-y-auto transition-all duration-300`}>
           {/* Sidebar Header with Enhanced Logo */}
           <div className={`mt-2 p-4 flex flex-col ${isCollapsed ? 'items-center' : ''}`}>
             <div className="flex items-center justify-between w-full">
@@ -159,7 +175,7 @@ const Sidebar = ({
           {/* Redesigned Logout Button */}
           <div className="p-4 mt-auto border-t border-blue-200">
             <button 
-              onClick={logout}
+              onClick={handleLogoutClick} // Use the new handler
               className={`group flex items-center w-full px-4 py-3 text-blue-700 bg-white hover:bg-red-50 rounded-lg transition-all duration-300 shadow-sm border border-blue-200 hover:border-red-200 ${isCollapsed ? 'justify-center' : ''}`}
             >
               <span className="inline-flex items-center justify-center bg-red-100 p-1.5 rounded-full">
@@ -170,6 +186,13 @@ const Sidebar = ({
           </div>
         </div>
       </div>
+
+      {/* Render the Confirmation Modal */}
+      <LogoutConfirmationModal
+        isOpen={showLogoutConfirm}
+        onClose={handleCancelLogout}
+        onConfirm={handleConfirmLogout}
+      />
     </>
   );
 };
