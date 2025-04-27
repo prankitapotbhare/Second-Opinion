@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const patientController = require('../controllers/patient.controller');
-const doctorController = require('../controllers/doctor.controller'); // Add this import
+const doctorController = require('../controllers/doctor.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { checkRole } = require('../middleware/role.middleware');
 const multer = require('multer');
@@ -62,8 +62,9 @@ router.delete('/:id/forms/:formId/files/:fileId',
   patientController.deleteMedicalFile
 );
 
-// Get all doctors (patients need to see available doctors)
-// Use doctorController instead of patientController
+// Doctor listing and details (patients need to see available doctors)
 router.get('/doctors', doctorController.getAllDoctors);
+router.get('/doctors/:id', doctorController.getDoctorDetails);
+router.get('/doctors/:id/availability', doctorController.getAvailability);
 
 module.exports = router;
