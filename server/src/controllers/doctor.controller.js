@@ -1,27 +1,17 @@
 const Doctor = require('../models/doctor.model');
-const Availability = require('../models/availability.model');
-const fs = require('fs');
-const path = require('path');
-const { DOCTOR_FILES_DIR, ALLOWED_DOCUMENT_TYPES } = require('../utils/constants');
+const { DOCTOR_FILES_DIR } = require('../utils/constants');
 const { createError } = require('../utils/error.util');
 const userService = require('../services/user.service');
 const fileService = require('../services/file.service');
+const doctorService = require('../services/doctor.service');
+const responseService = require('../services/response.service');
+const validationService = require('../services/validation.service');
 
 // Get doctor profile (using authenticated user)
 exports.getDoctorProfile = async (req, res, next) => {
   try {
     const doctor = await userService.getUserProfile(Doctor, req.user.id);
-    
-    // Get availability information
-    const availability = await Availability.findOne({ doctorId: doctor._id });
-    
-    res.status(200).json({
-      success: true,
-      data: {
-        doctor,
-        availability: availability || null
-      }
-    });
+    responseService.sendSuccess(res, 'Doctor profile retrieved successfully', doctor);
   } catch (error) {
     next(error);
   }
@@ -42,182 +32,40 @@ exports.updateDoctorProfile = async (req, res, next) => {
   }
 };
 
-// Get doctor details (for admin or patient viewing a specific doctor)
-exports.getDoctorDetails = async (req, res, next) => {
-  try {
-    const doctor = await userService.getUserDetails(Doctor, req.params.id);
-    
-    // Get availability information
-    const availability = await Availability.findOne({ doctorId: doctor._id });
-    
-    res.status(200).json({
-      success: true,
-      data: {
-        doctor,
-        availability: availability || null
-      }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Create new doctor (admin function)
-exports.createDoctor = async (req, res, next) => {
-  try {
-    const doctorResponse = await userService.createUser(Doctor, req.body);
-    
-    res.status(201).json({
-      success: true,
-      message: 'Doctor created successfully',
-      data: doctorResponse
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Update doctor details (admin function)
-exports.updateDoctor = async (req, res, next) => {
-  try {
-    const doctor = await userService.updateUser(Doctor, req.params.id, req.body);
-    
-    res.status(200).json({
-      success: true,
-      message: 'Doctor profile updated successfully',
-      data: doctor
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Complete doctor profile (using authenticated user)
+// Complete doctor profile with documents (using authenticated user)
 exports.completeProfile = async (req, res, next) => {
   try {
-    const doctorId = req.user.id;
+    // Process uploaded documents
+    const documents = doctorService.processDocuments(req.files);
     
-    // Create doctor-specific directory for files
-    const doctorDir = path.join(DOCTOR_FILES_DIR, doctorId);
-    fileService.ensureDirectoryExists(doctorDir);
+    // Validate required fields
+    validationService.validateRequiredFields(req.body, [
+      'specialization', 'experience', 'licenseNumber', 'education'
+    ]);
     
-    // Process uploaded files
-    const uploadedFiles = {};
+    // Update doctor profile with documents and additional information
+    const updateData = {
+      ...req.body,
+      isProfileComplete: true,
+      profileCompletedAt: new Date()
+    };
     
-    if (req.files) {
-      // Handle registration certificate
-      if (req.files.registrationCertificate && req.files.registrationCertificate.length > 0) {
-        const file = req.files.registrationCertificate[0];
-        uploadedFiles.registrationCertificate = {
-          fileName: file.originalname,
-          filePath: file.path,
-          fileType: file.mimetype,
-          fileSize: file.size
-        };
-      }
-      
-      // Handle government ID
-      if (req.files.governmentId && req.files.governmentId.length > 0) {
-        const file = req.files.governmentId[0];
-        uploadedFiles.governmentId = {
-          fileName: file.originalname,
-          filePath: file.path,
-          fileType: file.mimetype,
-          fileSize: file.size
-        };
-      }
-      
-      // Handle profile photo
-      if (req.files.profilePhoto && req.files.profilePhoto.length > 0) {
-        const file = req.files.profilePhoto[0];
-        uploadedFiles.profilePhoto = {
-          fileName: file.originalname,
-          filePath: file.path,
-          fileType: file.mimetype,
-          fileSize: file.size
-        };
-      }
+    // Add document paths if they exist
+    if (documents.registrationCertificate) {
+      updateData.registrationCertificate = documents.registrationCertificate;
     }
     
-    const doctor = await Doctor.findById(doctorId);
-    
-    if (!doctor) {
-      // Delete uploaded files if doctor not found
-      if (req.files) {
-        Object.keys(req.files).forEach(key => {
-          req.files[key].forEach(file => {
-            fileService.deleteFileIfExists(file.path);
-          });
-        });
-      }
-      
-      return next(createError('Doctor not found', 404));
+    if (documents.governmentId) {
+      updateData.governmentId = documents.governmentId;
     }
     
-    // Update doctor profile with form data
-    if (req.body.specialization) {
-      doctor.specialization = req.body.specialization;
+    if (documents.profilePhoto) {
+      updateData.photoURL = documents.profilePhoto;
     }
     
-    if (req.body.experience) {
-      doctor.experience = req.body.experience;
-    }
-    
-    if (req.body.qualifications) {
-      doctor.qualifications = req.body.qualifications;
-    }
-    
-    if (req.body.bio) {
-      doctor.bio = req.body.bio;
-    }
-    
-    if (req.body.languages) {
-      doctor.languages = req.body.languages.split(',').map(lang => lang.trim());
-    }
-    
-    // Update document paths
-    if (uploadedFiles.registrationCertificate) {
-      doctor.documents.registrationCertificate = uploadedFiles.registrationCertificate.filePath;
-    }
-    
-    if (uploadedFiles.governmentId) {
-      doctor.documents.governmentId = uploadedFiles.governmentId.filePath;
-    }
-    
-    // Update profile photo if uploaded
-    if (uploadedFiles.profilePhoto) {
-      doctor.photoURL = uploadedFiles.profilePhoto.filePath.replace(/\\/g, '/');
-    }
-    
-    // Mark profile as completed
-    doctor.profileCompleted = true;
-    
-    await doctor.save();
-    
-    res.status(200).json({
-      success: true,
-      message: 'Doctor profile completed successfully',
-      data: {
-        doctor: {
-          id: doctor._id,
-          name: doctor.name,
-          email: doctor.email,
-          specialization: doctor.specialization,
-          profileCompleted: doctor.profileCompleted,
-          photoURL: doctor.photoURL
-        }
-      }
-    });
+    const doctor = await userService.updateUserProfile(Doctor, req.user.id, updateData);
+    responseService.sendSuccess(res, 'Profile completed successfully', doctor);
   } catch (error) {
-    // Delete uploaded files if an error occurs
-    if (req.files) {
-      Object.keys(req.files).forEach(key => {
-        req.files[key].forEach(file => {
-          fileService.deleteFileIfExists(file.path);
-        });
-      });
-    }
-    
     next(error);
   }
 };
@@ -225,90 +73,54 @@ exports.completeProfile = async (req, res, next) => {
 // Upload doctor documents (using authenticated user)
 exports.uploadDocuments = async (req, res, next) => {
   try {
-    const doctorId = req.user.id;
+    // Process uploaded documents
+    const documents = doctorService.processDocuments(req.files);
     
-    const doctor = await Doctor.findById(doctorId);
+    // Update doctor profile with documents
+    const updateData = {};
     
-    if (!doctor) {
-      // Delete uploaded files if doctor not found
-      if (req.files) {
-        Object.keys(req.files).forEach(key => {
-          req.files[key].forEach(file => {
-            fileService.deleteFileIfExists(file.path);
-          });
-        });
-      }
-      
-      return next(createError('Doctor not found', 404));
+    // Add document paths if they exist
+    if (documents.registrationCertificate) {
+      updateData.registrationCertificate = documents.registrationCertificate;
     }
     
-    // Process uploaded files
-    if (req.files) {
-      // Handle registration certificate
-      if (req.files.registrationCertificate && req.files.registrationCertificate.length > 0) {
-        const file = req.files.registrationCertificate[0];
-        doctor.documents.registrationCertificate = file.path;
-      }
-      
-      // Handle government ID
-      if (req.files.governmentId && req.files.governmentId.length > 0) {
-        const file = req.files.governmentId[0];
-        doctor.documents.governmentId = file.path;
-      }
+    if (documents.governmentId) {
+      updateData.governmentId = documents.governmentId;
     }
     
-    await doctor.save();
-    
-    res.status(200).json({
-      success: true,
-      message: 'Documents uploaded successfully',
-      data: {
-        documents: doctor.documents
-      }
-    });
+    const doctor = await userService.updateUserProfile(Doctor, req.user.id, updateData);
+    responseService.sendSuccess(res, 'Documents uploaded successfully', doctor);
   } catch (error) {
-    // Delete uploaded files if an error occurs
-    if (req.files) {
-      Object.keys(req.files).forEach(key => {
-        req.files[key].forEach(file => {
-          fileService.deleteFileIfExists(file.path);
-        });
-      });
-    }
-    
     next(error);
   }
 };
 
-// Download doctor document
+// Download a specific document (using authenticated user)
 exports.downloadDocument = async (req, res, next) => {
   try {
+    const doctorId = req.user.id;
     const { documentType } = req.params;
-    let doctorId;
     
-    // If admin is requesting a specific doctor's document
-    if (req.user.role === 'admin' && req.params.id) {
-      doctorId = req.params.id;
-    } else {
-      // Otherwise use the authenticated doctor's ID
-      doctorId = req.user.id;
-    }
+    // Validate document type
+    validationService.validateAllowedValues(
+      documentType, 
+      ['registrationCertificate', 'governmentId'], 
+      'document type'
+    );
     
     const doctor = await Doctor.findById(doctorId);
-    
     if (!doctor) {
-      return next(createError('Doctor not found', 404));
+      throw createError('Doctor not found', 404);
     }
     
-    // Check if document exists
-    if (!doctor.documents || !doctor.documents[documentType]) {
-      return next(createError(`Document ${documentType} not found`, 404));
+    // Get the document
+    const document = doctor[documentType];
+    if (!document || !document.filePath) {
+      throw createError('Document not found', 404);
     }
-    
-    const documentPath = doctor.documents[documentType];
     
     // Stream the file to response
-    fileService.streamFileToResponse(res, documentPath, path.basename(documentPath));
+    fileService.streamFileToResponse(res, document.filePath, document.fileName);
   } catch (error) {
     next(error);
   }
@@ -319,30 +131,11 @@ exports.setAvailability = async (req, res, next) => {
   try {
     const doctorId = req.user.id;
     
-    // Check if availability already exists
-    let availability = await Availability.findOne({ doctorId });
+    // Validate required fields
+    validationService.validateRequiredFields(req.body, ['availableDays', 'availableTimeSlots']);
     
-    if (availability) {
-      // Update existing availability
-      availability = await Availability.findOneAndUpdate(
-        { doctorId },
-        req.body,
-        { new: true, runValidators: true }
-      );
-    } else {
-      // Create new availability
-      availability = new Availability({
-        doctorId,
-        ...req.body
-      });
-      await availability.save();
-    }
-    
-    res.status(200).json({
-      success: true,
-      message: 'Availability updated successfully',
-      data: availability
-    });
+    const availability = await doctorService.setAvailability(doctorId, req.body);
+    responseService.sendSuccess(res, 'Availability set successfully', availability);
   } catch (error) {
     next(error);
   }
@@ -352,70 +145,117 @@ exports.setAvailability = async (req, res, next) => {
 exports.getDoctorAvailability = async (req, res, next) => {
   try {
     const doctorId = req.user.id;
-    
-    const availability = await Availability.findOne({ doctorId });
-    
-    if (!availability) {
-      return res.status(200).json({
-        success: true,
-        message: 'No availability set',
-        data: null
-      });
-    }
-    
-    res.status(200).json({
-      success: true,
-      data: availability
-    });
+    const availability = await doctorService.getAvailability(doctorId);
+    responseService.sendSuccess(res, 'Availability retrieved successfully', availability);
   } catch (error) {
     next(error);
   }
 };
 
-// Get availability for a specific doctor (for patients or admins)
+// Get availability for a specific doctor (for patients)
 exports.getAvailability = async (req, res, next) => {
   try {
-    const doctorId = req.params.id;
-    
-    const availability = await Availability.findOne({ doctorId });
-    
-    if (!availability) {
-      return res.status(200).json({
-        success: true,
-        message: 'No availability set for this doctor',
-        data: null
-      });
-    }
-    
-    res.status(200).json({
-      success: true,
-      data: availability
-    });
+    validationService.validateObjectId(req.params.id, 'doctor');
+    const availability = await doctorService.getAvailability(req.params.id);
+    responseService.sendSuccess(res, 'Availability retrieved successfully', availability);
   } catch (error) {
     next(error);
   }
 };
 
-// Get all doctors (for patients to browse)
+// Get all doctors (for patients and admins)
 exports.getAllDoctors = async (req, res, next) => {
   try {
-    // Add filtering options
-    const filter = { profileCompleted: true };
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    
+    // Only show doctors with complete profiles
+    const filter = { isProfileComplete: true };
     
     // Add specialization filter if provided
     if (req.query.specialization) {
       filter.specialization = req.query.specialization;
     }
     
-    const doctors = await Doctor.find(filter)
-      .select('-password -documents -googleId')
-      .sort({ createdAt: -1 });
+    const result = await doctorService.getAllDoctors(filter, page, limit);
     
-    res.status(200).json({
-      success: true,
-      count: doctors.length,
-      data: doctors
+    responseService.sendPaginated(
+      res, 
+      'Doctors retrieved successfully', 
+      result.doctors, 
+      result.page, 
+      result.limit, 
+      result.total
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get doctor details (for patients and admins)
+exports.getDoctorDetails = async (req, res, next) => {
+  try {
+    validationService.validateObjectId(req.params.id, 'doctor');
+    
+    const { doctor, availability } = await doctorService.getDoctorWithAvailability(req.params.id);
+    
+    responseService.sendSuccess(res, 'Doctor details retrieved successfully', {
+      doctor,
+      availability
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Create new doctor (admin function)
+exports.createDoctor = async (req, res, next) => {
+  try {
+    // Only allow admins to access this endpoint
+    if (req.user.role !== 'admin') {
+      return responseService.sendForbidden(res, 'Not authorized to access this resource');
+    }
+    
+    // Validate required fields
+    validationService.validateRequiredFields(req.body, ['name', 'email', 'password']);
+    
+    // Validate email format
+    validationService.validateEmail(req.body.email);
+    
+    const doctorResponse = await userService.createUser(Doctor, req.body);
+    responseService.sendSuccess(res, 'Doctor created successfully', doctorResponse, 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Update doctor (admin function)
+exports.updateDoctor = async (req, res, next) => {
+  try {
+    // Only allow admins to access this endpoint
+    if (req.user.role !== 'admin') {
+      return responseService.sendForbidden(res, 'Not authorized to access this resource');
+    }
+    
+    validationService.validateObjectId(req.params.id, 'doctor');
+    const doctor = await userService.updateUser(Doctor, req.params.id, req.body);
+    responseService.sendSuccess(res, 'Doctor updated successfully', doctor);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delete doctor (admin function)
+exports.deleteDoctor = async (req, res, next) => {
+  try {
+    // Only allow admins to access this endpoint
+    if (req.user.role !== 'admin') {
+      return responseService.sendForbidden(res, 'Not authorized to access this resource');
+    }
+    
+    validationService.validateObjectId(req.params.id, 'doctor');
+    await userService.deleteUser(Doctor, req.params.id);
+    responseService.sendSuccess(res, 'Doctor deleted successfully');
   } catch (error) {
     next(error);
   }

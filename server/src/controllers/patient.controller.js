@@ -1,21 +1,16 @@
 const Patient = require('../models/patient.model');
-const fs = require('fs');
-const path = require('path');
-const mongoose = require('mongoose');
-const { MEDICAL_FILES_DIR } = require('../utils/constants');
 const { createError } = require('../utils/error.util');
 const userService = require('../services/user.service');
 const fileService = require('../services/file.service');
+const formService = require('../services/form.service');
+const responseService = require('../services/response.service');
+const validationService = require('../services/validation.service');
 
 // Get patient profile (using authenticated user)
 exports.getPatientProfile = async (req, res, next) => {
   try {
     const patient = await userService.getUserProfile(Patient, req.user.id);
-    
-    res.status(200).json({
-      success: true,
-      data: patient
-    });
+    responseService.sendSuccess(res, 'Patient profile retrieved successfully', patient);
   } catch (error) {
     next(error);
   }
@@ -25,12 +20,7 @@ exports.getPatientProfile = async (req, res, next) => {
 exports.updatePatientProfile = async (req, res, next) => {
   try {
     const patient = await userService.updateUserProfile(Patient, req.user.id, req.body);
-    
-    res.status(200).json({
-      success: true,
-      message: 'Patient profile updated successfully',
-      data: patient
-    });
+    responseService.sendSuccess(res, 'Patient profile updated successfully', patient);
   } catch (error) {
     next(error);
   }
@@ -39,12 +29,9 @@ exports.updatePatientProfile = async (req, res, next) => {
 // Get patient details (for admin or doctor viewing a specific patient)
 exports.getPatientDetails = async (req, res, next) => {
   try {
+    validationService.validateObjectId(req.params.id, 'patient');
     const patient = await userService.getUserDetails(Patient, req.params.id);
-    
-    res.status(200).json({
-      success: true,
-      data: patient
-    });
+    responseService.sendSuccess(res, 'Patient details retrieved successfully', patient);
   } catch (error) {
     next(error);
   }
@@ -53,13 +40,14 @@ exports.getPatientDetails = async (req, res, next) => {
 // Create new patient (admin function)
 exports.createPatient = async (req, res, next) => {
   try {
-    const patientResponse = await userService.createUser(Patient, req.body);
+    // Validate required fields
+    validationService.validateRequiredFields(req.body, ['name', 'email', 'password']);
     
-    res.status(201).json({
-      success: true,
-      message: 'Patient created successfully',
-      data: patientResponse
-    });
+    // Validate email format
+    validationService.validateEmail(req.body.email);
+    
+    const patientResponse = await userService.createUser(Patient, req.body);
+    responseService.sendSuccess(res, 'Patient created successfully', patientResponse, 201);
   } catch (error) {
     next(error);
   }
@@ -68,13 +56,9 @@ exports.createPatient = async (req, res, next) => {
 // Update patient details (admin function)
 exports.updatePatient = async (req, res, next) => {
   try {
+    validationService.validateObjectId(req.params.id, 'patient');
     const patient = await userService.updateUser(Patient, req.params.id, req.body);
-    
-    res.status(200).json({
-      success: true,
-      message: 'Patient profile updated successfully',
-      data: patient
-    });
+    responseService.sendSuccess(res, 'Patient profile updated successfully', patient);
   } catch (error) {
     next(error);
   }
@@ -85,282 +69,89 @@ exports.submitForm = async (req, res, next) => {
   try {
     const patientId = req.user.id;
     
-    const { doctorId, age, gender, phone, emergencyContact, problem } = req.body;
-    
-    // Validate required fields
-    if (!doctorId || !age || !gender || !phone || !problem) {
-      // Delete uploaded files if validation fails
-      fileService.deleteFiles(req.files);
-      
-      return next(createError('Missing required fields', 400));
-    }
-    
-    // Validate age
-    if (isNaN(age) || age <= 0 || age > 120) {
-      // Delete uploaded files if validation fails
-      fileService.deleteFiles(req.files);
-      
-      return next(createError('Invalid age value', 400));
-    }
-    
-    // Validate gender
-    if (!['Male', 'Female', 'Other'].includes(gender)) {
-      // Delete uploaded files if validation fails
-      fileService.deleteFiles(req.files);
-      
-      return next(createError('Invalid gender value', 400));
-    }
-    
-    const patient = await Patient.findById(patientId);
-    if (!patient) {
-      // Delete uploaded files if patient not found
-      fileService.deleteFiles(req.files);
-      
-      return next(createError('Patient not found', 404));
-    }
+    // Validate form data
+    formService.validateFormData(req.body, req.files);
     
     // Process uploaded files
-    const medicalFiles = [];
-    if (req.files && req.files.length > 0) {
-      req.files.forEach(file => {
-        medicalFiles.push({
-          fileName: file.originalname,
-          fileType: file.mimetype,
-          fileSize: file.size,
-          uploadDate: new Date(),
-          filePath: file.path
-        });
-      });
-    }
+    const medicalFiles = formService.processUploadedFiles(req.files);
     
-    // Create new form submission
-    const newFormSubmission = {
-      doctorId,
-      age,
-      gender,
-      phone,
-      emergencyContact,
-      problem,
-      medicalFiles,
-      status: 'pending',
-      submittedAt: new Date()
-    };
+    // Submit form
+    const formSubmission = await formService.submitForm(patientId, req.body, medicalFiles);
     
-    // Add form submission to patient's formSubmissions array
-    patient.formSubmissions.push(newFormSubmission);
-    await patient.save();
-    
-    // Return the newly created form submission
-    const formSubmission = patient.formSubmissions[patient.formSubmissions.length - 1];
-    
-    res.status(201).json({
-      success: true,
-      message: 'Form submitted successfully',
-      data: {
-        formSubmission
-      }
-    });
+    responseService.sendSuccess(res, 'Form submitted successfully', formSubmission, 201);
   } catch (error) {
-    // Delete uploaded files if an error occurs
-    fileService.deleteFiles(req.files);
-    
     next(error);
   }
 };
 
-// Get patient's form submissions (using authenticated user)
+// Get all form submissions for a patient (using authenticated user)
 exports.getFormSubmissions = async (req, res, next) => {
   try {
-    let patientId;
-    
-    // If admin or doctor is requesting a specific patient's forms
-    if ((req.user.role === 'admin' || req.user.role === 'doctor') && req.params.id) {
-      patientId = req.params.id;
-    } else {
-      // Otherwise use the authenticated patient's ID
-      patientId = req.user.id;
-    }
-    
-    const patient = await Patient.findById(patientId)
-      .select('formSubmissions')
-      .populate('formSubmissions.doctorId', 'name email specialization');
-    
-    if (!patient) {
-      return next(createError('Patient not found', 404));
-    }
-    
-    res.status(200).json({
-      success: true,
-      count: patient.formSubmissions.length,
-      data: patient.formSubmissions
-    });
+    const patientId = req.user.id;
+    const formSubmissions = await formService.getFormSubmissions(patientId);
+    responseService.sendSuccess(res, 'Form submissions retrieved successfully', formSubmissions);
   } catch (error) {
     next(error);
   }
 };
 
-// Get a specific form submission
+// Get a specific form submission (using authenticated user)
 exports.getFormSubmission = async (req, res, next) => {
   try {
-    let patientId;
+    const patientId = req.user.id;
+    validationService.validateObjectId(req.params.formId, 'form');
     
-    // If admin or doctor is requesting a specific patient's form
-    if ((req.user.role === 'admin' || req.user.role === 'doctor') && req.params.id) {
-      patientId = req.params.id;
-    } else {
-      // Otherwise use the authenticated patient's ID
-      patientId = req.user.id;
-    }
-    
-    const { formId } = req.params;
-    
-    if (!mongoose.Types.ObjectId.isValid(formId)) {
-      return next(createError('Invalid form ID', 400));
-    }
-    
-    const patient = await Patient.findById(patientId)
-      .populate('formSubmissions.doctorId', 'name email specialization');
-    
-    if (!patient) {
-      return next(createError('Patient not found', 404));
-    }
-    
-    // Find the specific form submission
-    const formSubmission = patient.formSubmissions.id(formId);
-    
-    if (!formSubmission) {
-      return next(createError('Form submission not found', 404));
-    }
-    
-    res.status(200).json({
-      success: true,
-      data: formSubmission
-    });
+    const formSubmission = await formService.getFormSubmission(patientId, req.params.formId);
+    responseService.sendSuccess(res, 'Form submission retrieved successfully', formSubmission);
   } catch (error) {
     next(error);
   }
 };
 
-// Update a form submission
+// Update a form submission (using authenticated user)
 exports.updateFormSubmission = async (req, res, next) => {
   try {
-    let patientId;
+    const patientId = req.user.id;
+    validationService.validateObjectId(req.params.formId, 'form');
     
-    // If admin or doctor is updating a specific patient's form
-    if ((req.user.role === 'admin' || req.user.role === 'doctor') && req.params.id) {
-      patientId = req.params.id;
-    } else {
-      // Otherwise use the authenticated patient's ID
-      patientId = req.user.id;
-    }
-    
-    const { formId } = req.params;
-    
-    if (!mongoose.Types.ObjectId.isValid(formId)) {
-      return next(createError('Invalid form ID', 400));
-    }
-    
-    const patient = await Patient.findById(patientId);
-    
-    if (!patient) {
-      return next(createError('Patient not found', 404));
-    }
-    
-    // Find the specific form submission
-    const formSubmission = patient.formSubmissions.id(formId);
-    
-    if (!formSubmission) {
-      return next(createError('Form submission not found', 404));
-    }
-    
-    // If patient is updating, only allow updates to problem field
-    if (req.user.role === 'patient') {
-      if (req.body.problem) {
-        formSubmission.problem = req.body.problem;
-      }
-    } else {
-      // Admin or doctor can update status and add notes
-      if (req.body.status) {
-        formSubmission.status = req.body.status;
-      }
-      
-      if (req.body.doctorNotes) {
-        formSubmission.doctorNotes = req.body.doctorNotes;
-      }
-    }
-    
-    await patient.save();
-    
-    res.status(200).json({
-      success: true,
-      message: 'Form submission updated successfully',
-      data: formSubmission
-    });
+    const formSubmission = await formService.updateFormSubmission(patientId, req.params.formId, req.body);
+    responseService.sendSuccess(res, 'Form submission updated successfully', formSubmission);
   } catch (error) {
     next(error);
   }
 };
 
-// Upload additional medical files to a form submission
+// Upload medical files to an existing form submission
 exports.uploadMedicalFiles = async (req, res, next) => {
   try {
     const patientId = req.user.id;
-    const { formId } = req.params;
+    validationService.validateObjectId(req.params.formId, 'form');
     
-    if (!mongoose.Types.ObjectId.isValid(formId)) {
-      // Delete uploaded files if validation fails
-      fileService.deleteFiles(req.files);
-      
-      return next(createError('Invalid form ID', 400));
-    }
+    // Process uploaded files
+    const newFiles = formService.processUploadedFiles(req.files);
     
+    // Get the patient
     const patient = await Patient.findById(patientId);
-    
     if (!patient) {
       // Delete uploaded files if patient not found
       fileService.deleteFiles(req.files);
-      
-      return next(createError('Patient not found', 404));
+      throw createError('Patient not found', 404);
     }
     
-    // Find the specific form submission
-    const formSubmission = patient.formSubmissions.id(formId);
-    
+    // Get the form submission
+    const formSubmission = patient.formSubmissions.id(req.params.formId);
     if (!formSubmission) {
       // Delete uploaded files if form not found
       fileService.deleteFiles(req.files);
-      
-      return next(createError('Form submission not found', 404));
+      throw createError('Form submission not found', 404);
     }
     
-    // Process uploaded files
-    if (req.files && req.files.length > 0) {
-      req.files.forEach(file => {
-        formSubmission.medicalFiles.push({
-          fileName: file.originalname,
-          fileType: file.mimetype,
-          fileSize: file.size,
-          uploadDate: new Date(),
-          filePath: file.path
-        });
-      });
-    } else {
-      return next(createError('No files uploaded', 400));
-    }
-    
+    // Add new files to the form submission
+    formSubmission.medicalFiles.push(...newFiles);
     await patient.save();
     
-    res.status(200).json({
-      success: true,
-      message: 'Medical files uploaded successfully',
-      data: {
-        formSubmission
-      }
-    });
+    responseService.sendSuccess(res, 'Medical files uploaded successfully', formSubmission);
   } catch (error) {
-    // Delete uploaded files if an error occurs
-    fileService.deleteFiles(req.files);
-    
     next(error);
   }
 };
@@ -368,40 +159,26 @@ exports.uploadMedicalFiles = async (req, res, next) => {
 // Download a medical file
 exports.downloadMedicalFile = async (req, res, next) => {
   try {
-    let patientId;
+    const patientId = req.user.id;
+    validationService.validateObjectId(req.params.formId, 'form');
+    validationService.validateObjectId(req.params.fileId, 'file');
     
-    // If admin or doctor is downloading a specific patient's file
-    if ((req.user.role === 'admin' || req.user.role === 'doctor') && req.params.id) {
-      patientId = req.params.id;
-    } else {
-      // Otherwise use the authenticated patient's ID
-      patientId = req.user.id;
-    }
-    
-    const { formId, fileId } = req.params;
-    
-    if (!mongoose.Types.ObjectId.isValid(formId) || !mongoose.Types.ObjectId.isValid(fileId)) {
-      return next(createError('Invalid form or file ID', 400));
-    }
-    
+    // Get the patient
     const patient = await Patient.findById(patientId);
-    
     if (!patient) {
-      return next(createError('Patient not found', 404));
+      throw createError('Patient not found', 404);
     }
     
-    // Find the specific form submission
-    const formSubmission = patient.formSubmissions.id(formId);
-    
+    // Get the form submission
+    const formSubmission = patient.formSubmissions.id(req.params.formId);
     if (!formSubmission) {
-      return next(createError('Form submission not found', 404));
+      throw createError('Form submission not found', 404);
     }
     
     // Find the specific file
-    const file = formSubmission.medicalFiles.id(fileId);
-    
+    const file = formSubmission.medicalFiles.id(req.params.fileId);
     if (!file) {
-      return next(createError('File not found', 404));
+      throw createError('File not found', 404);
     }
     
     // Stream the file to response
@@ -414,53 +191,36 @@ exports.downloadMedicalFile = async (req, res, next) => {
 // Delete a medical file
 exports.deleteMedicalFile = async (req, res, next) => {
   try {
-    let patientId;
+    const patientId = req.user.id;
+    validationService.validateObjectId(req.params.formId, 'form');
+    validationService.validateObjectId(req.params.fileId, 'file');
     
-    // If admin is deleting a specific patient's file
-    if (req.user.role === 'admin' && req.params.id) {
-      patientId = req.params.id;
-    } else {
-      // Otherwise use the authenticated patient's ID
-      patientId = req.user.id;
-    }
-    
-    const { formId, fileId } = req.params;
-    
-    if (!mongoose.Types.ObjectId.isValid(formId) || !mongoose.Types.ObjectId.isValid(fileId)) {
-      return next(createError('Invalid form or file ID', 400));
-    }
-    
+    // Get the patient
     const patient = await Patient.findById(patientId);
-    
     if (!patient) {
-      return next(createError('Patient not found', 404));
+      throw createError('Patient not found', 404);
     }
     
-    // Find the specific form submission
-    const formSubmission = patient.formSubmissions.id(formId);
-    
+    // Get the form submission
+    const formSubmission = patient.formSubmissions.id(req.params.formId);
     if (!formSubmission) {
-      return next(createError('Form submission not found', 404));
+      throw createError('Form submission not found', 404);
     }
     
     // Find the specific file
-    const file = formSubmission.medicalFiles.id(fileId);
-    
+    const file = formSubmission.medicalFiles.id(req.params.fileId);
     if (!file) {
-      return next(createError('File not found', 404));
+      throw createError('File not found', 404);
     }
     
     // Delete the file from the filesystem
     fileService.deleteFileIfExists(file.filePath);
     
     // Remove the file from the database
-    formSubmission.medicalFiles.pull(fileId);
+    formSubmission.medicalFiles.pull(req.params.fileId);
     await patient.save();
     
-    res.status(200).json({
-      success: true,
-      message: 'File deleted successfully'
-    });
+    responseService.sendSuccess(res, 'File deleted successfully');
   } catch (error) {
     next(error);
   }
@@ -471,16 +231,39 @@ exports.getAllPatients = async (req, res, next) => {
   try {
     // Only allow admins to access this endpoint
     if (req.user.role !== 'admin') {
-      return next(createError('Not authorized to access this resource', 403));
+      return responseService.sendForbidden(res, 'Not authorized to access this resource');
     }
     
-    const patients = await Patient.find().select('-password');
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
     
-    res.status(200).json({
-      success: true,
-      count: patients.length,
-      data: patients
-    });
+    const result = await userService.getAllUsers(Patient, {}, page, limit);
+    
+    responseService.sendPaginated(
+      res, 
+      'Patients retrieved successfully', 
+      result.users, 
+      result.page, 
+      result.limit, 
+      result.total
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delete patient (admin function)
+exports.deletePatient = async (req, res, next) => {
+  try {
+    // Only allow admins to access this endpoint
+    if (req.user.role !== 'admin') {
+      return responseService.sendForbidden(res, 'Not authorized to access this resource');
+    }
+    
+    validationService.validateObjectId(req.params.id, 'patient');
+    
+    await userService.deleteUser(Patient, req.params.id);
+    responseService.sendSuccess(res, 'Patient deleted successfully');
   } catch (error) {
     next(error);
   }

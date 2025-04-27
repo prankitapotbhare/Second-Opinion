@@ -3,16 +3,14 @@ const Patient = require('../models/patient.model');
 const Doctor = require('../models/doctor.model');
 const { createError } = require('../utils/error.util');
 const userService = require('../services/user.service');
+const responseService = require('../services/response.service');
+const validationService = require('../services/validation.service');
 
 // Get admin profile (using authenticated user)
 exports.getAdminProfile = async (req, res, next) => {
   try {
     const admin = await userService.getUserProfile(Admin, req.user.id);
-    
-    res.status(200).json({
-      success: true,
-      data: admin
-    });
+    responseService.sendSuccess(res, 'Admin profile retrieved successfully', admin);
   } catch (error) {
     next(error);
   }
@@ -22,40 +20,49 @@ exports.getAdminProfile = async (req, res, next) => {
 exports.updateAdminProfile = async (req, res, next) => {
   try {
     const admin = await userService.updateUserProfile(Admin, req.user.id, req.body);
-    
-    res.status(200).json({
-      success: true,
-      message: 'Admin profile updated successfully',
-      data: admin
-    });
+    responseService.sendSuccess(res, 'Admin profile updated successfully', admin);
   } catch (error) {
     next(error);
   }
 };
 
-// Get all patients
+// Get all patients (admin function)
 exports.getAllPatients = async (req, res, next) => {
   try {
-    const patients = await Patient.find().select('-password');
-    res.status(200).json({
-      success: true,
-      count: patients.length,
-      data: patients
-    });
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    
+    const result = await userService.getAllUsers(Patient, {}, page, limit);
+    
+    responseService.sendPaginated(
+      res, 
+      'Patients retrieved successfully', 
+      result.users, 
+      result.page, 
+      result.limit, 
+      result.total
+    );
   } catch (error) {
     next(error);
   }
 };
 
-// Get all doctors
+// Get all doctors (admin function)
 exports.getAllDoctors = async (req, res, next) => {
   try {
-    const doctors = await Doctor.find().select('-password');
-    res.status(200).json({
-      success: true,
-      count: doctors.length,
-      data: doctors
-    });
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    
+    const result = await userService.getAllUsers(Doctor, {}, page, limit);
+    
+    responseService.sendPaginated(
+      res, 
+      'Doctors retrieved successfully', 
+      result.users, 
+      result.page, 
+      result.limit, 
+      result.total
+    );
   } catch (error) {
     next(error);
   }
@@ -67,16 +74,17 @@ exports.createAdmin = async (req, res, next) => {
     // Check if the requesting admin is a super admin
     const requestingAdmin = await Admin.findById(req.user.id);
     if (!requestingAdmin || requestingAdmin.role !== 'superadmin') {
-      return next(createError('Only super admins can create new admins', 403));
+      return responseService.sendForbidden(res, 'Only super admins can create new admins');
     }
     
-    const adminResponse = await userService.createUser(Admin, req.body);
+    // Validate required fields
+    validationService.validateRequiredFields(req.body, ['name', 'email', 'password']);
     
-    res.status(201).json({
-      success: true,
-      message: 'Admin created successfully',
-      data: adminResponse
-    });
+    // Validate email format
+    validationService.validateEmail(req.body.email);
+    
+    const adminResponse = await userService.createUser(Admin, req.body);
+    responseService.sendSuccess(res, 'Admin created successfully', adminResponse, 201);
   } catch (error) {
     next(error);
   }
@@ -85,16 +93,9 @@ exports.createAdmin = async (req, res, next) => {
 // Delete patient (admin function)
 exports.deletePatient = async (req, res, next) => {
   try {
-    const patient = await Patient.findByIdAndDelete(req.params.id);
-    
-    if (!patient) {
-      return next(createError('Patient not found', 404));
-    }
-    
-    res.status(200).json({
-      success: true,
-      message: 'Patient deleted successfully'
-    });
+    validationService.validateObjectId(req.params.id, 'patient');
+    await userService.deleteUser(Patient, req.params.id);
+    responseService.sendSuccess(res, 'Patient deleted successfully');
   } catch (error) {
     next(error);
   }
@@ -103,16 +104,9 @@ exports.deletePatient = async (req, res, next) => {
 // Delete doctor (admin function)
 exports.deleteDoctor = async (req, res, next) => {
   try {
-    const doctor = await Doctor.findByIdAndDelete(req.params.id);
-    
-    if (!doctor) {
-      return next(createError('Doctor not found', 404));
-    }
-    
-    res.status(200).json({
-      success: true,
-      message: 'Doctor deleted successfully'
-    });
+    validationService.validateObjectId(req.params.id, 'doctor');
+    await userService.deleteUser(Doctor, req.params.id);
+    responseService.sendSuccess(res, 'Doctor deleted successfully');
   } catch (error) {
     next(error);
   }
@@ -124,24 +118,17 @@ exports.deleteAdmin = async (req, res, next) => {
     // Check if the requesting admin is a super admin
     const requestingAdmin = await Admin.findById(req.user.id);
     if (!requestingAdmin || requestingAdmin.role !== 'superadmin') {
-      return next(createError('Only super admins can delete admins', 403));
+      return responseService.sendForbidden(res, 'Only super admins can delete admins');
     }
     
     // Prevent deleting yourself
     if (req.params.id === req.user.id) {
-      return next(createError('You cannot delete your own account', 400));
+      return responseService.sendError(res, 'You cannot delete your own account', 400);
     }
     
-    const admin = await Admin.findByIdAndDelete(req.params.id);
-    
-    if (!admin) {
-      return next(createError('Admin not found', 404));
-    }
-    
-    res.status(200).json({
-      success: true,
-      message: 'Admin deleted successfully'
-    });
+    validationService.validateObjectId(req.params.id, 'admin');
+    await userService.deleteUser(Admin, req.params.id);
+    responseService.sendSuccess(res, 'Admin deleted successfully');
   } catch (error) {
     next(error);
   }
@@ -153,16 +140,22 @@ exports.getAllAdmins = async (req, res, next) => {
     // Check if the requesting admin is a super admin
     const requestingAdmin = await Admin.findById(req.user.id);
     if (!requestingAdmin || requestingAdmin.role !== 'superadmin') {
-      return next(createError('Only super admins can view all admins', 403));
+      return responseService.sendForbidden(res, 'Only super admins can view all admins');
     }
     
-    const admins = await Admin.find().select('-password');
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
     
-    res.status(200).json({
-      success: true,
-      count: admins.length,
-      data: admins
-    });
+    const result = await userService.getAllUsers(Admin, {}, page, limit);
+    
+    responseService.sendPaginated(
+      res, 
+      'Admins retrieved successfully', 
+      result.users, 
+      result.page, 
+      result.limit, 
+      result.total
+    );
   } catch (error) {
     next(error);
   }
