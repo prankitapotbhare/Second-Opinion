@@ -169,6 +169,7 @@ export const AuthProvider = ({ children }) => {
       role: user.role,
       photoURL: user.photoURL,
       isEmailVerified: user.isEmailVerified,
+      emailVerifiedAt: user.emailVerifiedAt,
       termsAccepted: user.termsAccepted,
       termsAcceptedAt: user.termsAcceptedAt
     };

@@ -32,16 +32,22 @@ const ResetPasswordForm = ({ token }) => {
     e.preventDefault();
     setError('');
     
-    // Validate passwords match
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
+    // Validate password
+    if (!password) {
+      setError('Password is required');
       return;
     }
     
-    // Validate password strength
+    // Check password validation
     const validation = validatePassword(password);
     if (!validation.isValid) {
       setError(validation.message);
+      return;
+    }
+    
+    // Check if passwords match
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
       return;
     }
     
@@ -51,10 +57,10 @@ const ResetPasswordForm = ({ token }) => {
       const result = await resetPassword(token, password);
       
       if (result.success) {
-        // Redirect to login page with success message
-        router.push('/login?message=Your+password+has+been+reset+successfully');
+        // Redirect to login with success message
+        router.push(`/login?message=${encodeURIComponent('Password reset successful. You can now log in with your new password.')}`);
       } else {
-        setError(result.error || 'Failed to reset password. Please try again.');
+        setError(result.error || 'Failed to reset password');
         setIsSubmitting(false);
       }
     } catch (err) {
@@ -65,15 +71,15 @@ const ResetPasswordForm = ({ token }) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-md text-sm mb-4">
+        <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-md text-sm">
           {error}
         </div>
       )}
       
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-4">
+        <div>
           <PasswordInput
             id="password"
             name="password"
@@ -83,12 +89,14 @@ const ResetPasswordForm = ({ token }) => {
             label="New Password"
           />
           
-          {!passwordValidation.isValid && password && (
-            <div className="text-xs text-amber-600 px-1">
+          {password && !passwordValidation.isValid && (
+            <p className="mt-1 text-sm text-red-600">
               {passwordValidation.message}
-            </div>
+            </p>
           )}
-          
+        </div>
+        
+        <div>
           <PasswordInput
             id="confirmPassword"
             name="confirmPassword"
@@ -102,25 +110,11 @@ const ResetPasswordForm = ({ token }) => {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mt-4"
+          className="w-full py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {isSubmitting ? (
-            <span className="flex items-center justify-center">
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Resetting...
-            </span>
-          ) : 'Reset Password'}
+          {isSubmitting ? 'Resetting Password...' : 'Reset Password'}
         </button>
       </form>
-      
-      <div className="mt-4 text-center">
-        <a href="/login" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
-          Back to Login
-        </a>
-      </div>
     </div>
   );
 };

@@ -19,24 +19,25 @@ const ForgotPasswordForm = ({ onSuccess }) => {
       const result = await requestPasswordReset(email);
       
       if (result.success) {
+        // Call the onSuccess callback with the email
         if (onSuccess) {
           onSuccess(email);
         }
       } else {
-        setError(result.error || 'Failed to send reset link');
+        setError(result.error || 'Failed to send password reset email');
+        setIsLoading(false);
       }
     } catch (err) {
       setError('An unexpected error occurred');
-      console.error(err);
-    } finally {
       setIsLoading(false);
+      console.error(err);
     }
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-md text-sm mb-4">
+        <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-md text-sm">
           {error}
         </div>
       )}
@@ -64,14 +65,17 @@ const ForgotPasswordForm = ({ onSuccess }) => {
           disabled={isLoading}
           className="w-full py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {isLoading ? 'Sending...' : 'Send Reset Link'}
+          {isLoading ? 'Sending...' : 'Reset Password'}
         </button>
       </form>
       
-      <div className="mt-4 text-center">
-        <Link href="/login" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
-          Back to Login
-        </Link>
+      <div className="text-center mt-4">
+        <p className="text-sm text-gray-600">
+          Remember your password?{' '}
+          <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+            Back to login
+          </Link>
+        </p>
       </div>
     </div>
   );
