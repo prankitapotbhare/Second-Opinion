@@ -37,31 +37,31 @@ const upload = multer({
 
 // Apply authentication to all patient routes
 router.use(authenticate);
+router.use(checkRole(['patient']));
 
 // Patient profile routes
-router.get('/:id', checkRole(['patient', 'doctor', 'admin']), patientController.getPatientDetails);
-router.post('/', checkRole(['admin']), patientController.createPatient);
-router.put('/:id', checkRole(['patient', 'admin']), patientController.updatePatient);
+router.get('/profile/:id', patientController.getPatientDetails);
+router.put('/profile/:id', patientController.updatePatient);
 
 // Form submission routes
-router.post('/:id/forms', checkRole(['patient']), patientController.submitForm);
-router.get('/:id/forms', checkRole(['patient', 'doctor', 'admin']), patientController.getFormSubmissions);
-router.get('/:id/forms/:formId', checkRole(['patient', 'doctor', 'admin']), patientController.getFormSubmission);
-router.put('/:id/forms/:formId', checkRole(['patient', 'doctor', 'admin']), patientController.updateFormSubmission);
+router.post('/:id/forms', patientController.submitForm);
+router.get('/:id/forms', patientController.getFormSubmissions);
+router.get('/:id/forms/:formId', patientController.getFormSubmission);
+router.put('/:id/forms/:formId', patientController.updateFormSubmission);
 
 // File handling routes for form submissions
 router.post('/:id/forms/:formId/files', 
-  checkRole(['patient']), 
   upload.single('file'), 
   patientController.uploadMedicalFile
 );
 router.get('/:id/forms/:formId/files/:fileId', 
-  checkRole(['patient', 'doctor', 'admin']), 
   patientController.downloadMedicalFile
 );
 router.delete('/:id/forms/:formId/files/:fileId', 
-  checkRole(['patient', 'admin']), 
   patientController.deleteMedicalFile
 );
+
+// Get all doctors (patients need to see available doctors)
+router.get('/doctors', patientController.getAllDoctors);
 
 module.exports = router;
