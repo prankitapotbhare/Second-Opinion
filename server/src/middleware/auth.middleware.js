@@ -10,7 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
  * @param {string} role - User role (patient, doctor, admin)
  * @returns {Model} Mongoose model
  */
-exports.getModelByRole = (role) => {
+const getModelByRole = (role) => {
   switch (role) {
     case 'doctor':
       return Doctor;
@@ -21,6 +21,10 @@ exports.getModelByRole = (role) => {
     default:
       return Patient;
   }
+};
+
+module.exports = {
+  getModelByRole
 };
 
 /**
