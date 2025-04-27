@@ -13,21 +13,28 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
  * @returns {Object} Email subject and HTML content
  */
 const verificationEmailTemplate = (name, otp, userType = 'patient') => {
-  const subject = 'Verify Your Email Address';
+  const subject = 'Verify Your Email - Second Opinion';
   
   const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #3b82f6;">Verify Your Email Address</h2>
-      <p>Hello ${name},</p>
-      <p>Thank you for registering with Second Opinion. To complete your registration, please use the following verification code:</p>
+      <p>Hello ${name || 'there'},</p>
+      <p>Thank you for registering with Second Opinion. Please use the following verification code to complete your registration:</p>
       
-      <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; text-align: center; margin: 20px 0; font-size: 24px; letter-spacing: 5px; font-weight: bold;">
-        ${otp}
+      <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; text-align: center; margin: 20px 0;">
+        <h2 style="margin: 0; color: #1f2937; letter-spacing: 5px;">${otp}</h2>
       </div>
       
-      <p>This code will expire in 1 hour.</p>
-      <p>If you did not request this verification, please ignore this email.</p>
-      <p>Best regards,<br>The Second Opinion Team</p>
+      <p>This code will expire in 24 hours.</p>
+      <p><strong>Note:</strong> After verification, you'll be automatically logged in to your account.</p>
+      
+      <p>If you did not create an account with Second Opinion, please ignore this email.</p>
+      
+      <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+        <p style="font-size: 12px; color: #6b7280;">
+          &copy; ${new Date().getFullYear()} Second Opinion. All rights reserved.
+        </p>
+      </div>
     </div>
   `;
   

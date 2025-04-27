@@ -76,9 +76,15 @@ const patientSchema = new mongoose.Schema({
       return `https://ui-avatars.com/api/?name=${encodeURIComponent(this.name)}&background=3b82f6&color=fff`;
     }
   },
-  emailVerified: {
+  // Update field name for consistency with auth.service.js
+  isEmailVerified: {
     type: Boolean,
     default: false
+  },
+  // Add new field for tracking when email was verified
+  emailVerifiedAt: {
+    type: Date,
+    default: null
   },
   termsAccepted: {
     type: Boolean,
@@ -88,6 +94,11 @@ const patientSchema = new mongoose.Schema({
   termsAcceptedAt: {
     type: Date,
     default: null
+  },
+  // Add role field for consistency
+  role: {
+    type: String,
+    default: 'patient'
   },
   // Collection of form submissions
   formSubmissions: [formSubmissionSchema],
@@ -123,6 +134,15 @@ patientSchema.pre('save', async function(next) {
 patientSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
+
+// Add a virtual property to ensure backward compatibility
+patientSchema.virtual('emailVerified').get(function() {
+  return this.isEmailVerified;
+});
+
+patientSchema.virtual('emailVerified').set(function(value) {
+  this.isEmailVerified = value;
+});
 
 const Patient = mongoose.model('Patient', patientSchema);
 

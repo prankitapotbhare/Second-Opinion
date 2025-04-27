@@ -30,9 +30,15 @@ const adminSchema = new mongoose.Schema({
       return `https://ui-avatars.com/api/?name=${encodeURIComponent(this.name)}&background=3b82f6&color=fff`;
     }
   },
-  emailVerified: {
+  // Update field name for consistency with auth.service.js
+  isEmailVerified: {
     type: Boolean,
     default: true
+  },
+  // Add new field for tracking when email was verified
+  emailVerifiedAt: {
+    type: Date,
+    default: Date.now
   },
   createdAt: {
     type: Date,
@@ -44,6 +50,15 @@ const adminSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true
+});
+
+// Add a virtual property to ensure backward compatibility
+adminSchema.virtual('emailVerified').get(function() {
+  return this.isEmailVerified;
+});
+
+adminSchema.virtual('emailVerified').set(function(value) {
+  this.isEmailVerified = value;
 });
 
 // Pre-save hook to hash password

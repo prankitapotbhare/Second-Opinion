@@ -62,12 +62,16 @@ exports.verifyEmail = async (req, res, next) => {
       });
     }
     
-    const user = await authService.verifyEmail(email, otp);
+    // Updated to get user and tokens from the service
+    const { user, tokens } = await authService.verifyEmail(email, otp);
 
     res.status(200).json({
       success: true,
       message: 'Email verified successfully',
-      email: user.email
+      data: {
+        user,
+        tokens
+      }
     });
   } catch (error) {
     next(error);

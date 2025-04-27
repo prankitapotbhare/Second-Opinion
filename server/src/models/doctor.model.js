@@ -27,20 +27,17 @@ const doctorSchema = new mongoose.Schema({
   },
   specialization: {
     type: String,
-    // Make it not required initially, but will be validated during profile completion
     required: false
   },
   experience: {
     type: Number,
-    // Make it not required initially, but will be validated during profile completion
     required: false
   },
   licenseNumber: {
     type: String,
-    // Make it not required initially, but will be validated during profile completion
     required: false,
     unique: true,
-    sparse: true // Allow multiple null values (for initial registration)
+    sparse: true
   },
   photoURL: {
     type: String,
@@ -52,9 +49,15 @@ const doctorSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  emailVerified: {
+  // Update field name for consistency with auth.service.js
+  isEmailVerified: {
     type: Boolean,
     default: false
+  },
+  // Add new field for tracking when email was verified
+  emailVerifiedAt: {
+    type: Date,
+    default: null
   },
   termsAccepted: {
     type: Boolean,
@@ -64,6 +67,11 @@ const doctorSchema = new mongoose.Schema({
   termsAcceptedAt: {
     type: Date,
     default: null
+  },
+  // Add role field for consistency
+  role: {
+    type: String,
+    default: 'doctor'
   },
   createdAt: {
     type: Date,
@@ -75,6 +83,15 @@ const doctorSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true
+});
+
+// Add a virtual property to ensure backward compatibility
+doctorSchema.virtual('emailVerified').get(function() {
+  return this.isEmailVerified;
+});
+
+doctorSchema.virtual('emailVerified').set(function(value) {
+  this.isEmailVerified = value;
 });
 
 // Pre-save hook to hash password

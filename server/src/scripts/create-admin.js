@@ -65,8 +65,9 @@ async function createAdmin() {
       email,
       password,
       role: 'admin',
-      emailVerified: true,
-      termsAccepted: true,
+      isEmailVerified: true,
+      emailVerifiedAt: new Date(),
+      termsAccepted: true, 
       termsAcceptedAt: new Date()
     };
 

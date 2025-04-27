@@ -117,6 +117,7 @@ const registerUser = async (userData) => {
  * Verify a user's email using OTP
  * @param {string} email - User email
  * @param {string} otp - Verification OTP
+ * @returns {Object} Object containing user and tokens
  */
 const verifyEmail = async (email, otp) => {
   if (!email || !otp) {
@@ -142,9 +143,14 @@ const verifyEmail = async (email, otp) => {
   }
   
   if (!user) {
-    throw errorUtil.notFoundError('User not found');
+    throw errorUtil.createError('User not found', 404);
   }
-
+  
+  // Check if email is already verified
+  if (user.isEmailVerified) {
+    throw errorUtil.createError('Email is already verified', 400);
+  }
+  
   // Find the verification token
   const tokenDoc = await Token.findOne({
     userId: user._id,
@@ -152,19 +158,34 @@ const verifyEmail = async (email, otp) => {
     type: 'verification',
     expiresAt: { $gt: new Date() }
   });
-
-  if (!tokenDoc) {
-    throw errorUtil.validationError('Invalid or expired OTP');
-  }
-
-  // Update user's email verification status
-  user.emailVerified = true;
-  await user.save();
-
-  // Delete the used token
-  await Token.findByIdAndDelete(tokenDoc._id);
   
-  return user;
+  if (!tokenDoc) {
+    throw errorUtil.createError('Invalid or expired OTP', 400);
+  }
+  
+  // Mark email as verified
+  user.isEmailVerified = true;
+  user.emailVerifiedAt = new Date();
+  await user.save();
+  
+  // Delete the verification token
+  await Token.deleteOne({ _id: tokenDoc._id });
+  
+  // Generate authentication tokens
+  const tokens = await generateTokens(user._id, user.role);
+  
+  // Return user and tokens
+  return { 
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: userRole,
+      photoURL: user.photoURL,
+      isEmailVerified: user.isEmailVerified,
+    }, 
+    tokens
+  };
 };
 
 /**
@@ -199,7 +220,7 @@ const resendVerification = async (email) => {
   }
 
   // Check if email is already verified
-  if (user.emailVerified) {
+  if (user.isEmailVerified) {
     throw errorUtil.validationError('Email is already verified');
   }
 
@@ -263,7 +284,7 @@ const loginUser = async (email, password, role = null) => {
     throw error;
   }
 
-  if (userRole !== 'admin' && !user.emailVerified) {
+  if (userRole !== 'admin' && !user.isEmailVerified) {
     const error = new Error('Please verify your email before logging in');
     error.statusCode = 401;
     error.needsVerification = true;
@@ -280,7 +301,7 @@ const loginUser = async (email, password, role = null) => {
       email: user.email,
       role: userRole,
       photoURL: user.photoURL,
-      emailVerified: user.emailVerified,
+      isEmailVerified: user.isEmailVerified,
     },
     tokens,
   };
@@ -505,7 +526,8 @@ const googleAuth = async (idToken, userType = 'patient') => {
         googleId: payload.sub,
         password: crypto.randomBytes(20).toString('hex'), // Random password for Google users
         photoURL: picture,
-        emailVerified: email_verified,
+        isEmailVerified: email_verified,
+        emailVerifiedAt: new Date(),
         termsAccepted: true,
         termsAcceptedAt: new Date()
       });
@@ -521,7 +543,6 @@ const googleAuth = async (idToken, userType = 'patient') => {
       email: user.email,
       role: userType,
       photoURL: user.photoURL,
-      emailVerified: user.emailVerified,
       termsAccepted: user.termsAccepted,
       termsAcceptedAt: user.termsAcceptedAt
     };
