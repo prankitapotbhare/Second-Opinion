@@ -1,5 +1,19 @@
 import React from 'react';
-import { FaStar, FaGraduationCap, FaIdBadge, FaAward, FaLanguage, FaCalendarAlt, FaComments, FaMapMarkerAlt, FaCheckCircle } from 'react-icons/fa';
+import {
+  FaStar,
+  FaGraduationCap,
+  FaIdBadge,
+  FaLanguage,
+  FaCalendarAlt,
+  FaComments,
+  FaMapMarkerAlt,
+  FaCheckCircle
+} from 'react-icons/fa';
+
+import { MdLocalHospital, MdAttachMoney } from 'react-icons/md';
+import { BiMoney } from 'react-icons/bi';
+import { GoLocation } from 'react-icons/go';
+
 
 // Helper for Detail Items
 const DetailItem = ({ icon, label, value, verified, children }) => (
@@ -28,20 +42,23 @@ const ProfessionalDetails = ({ doctor }) => (
       <div>
         <DetailItem icon={<FaGraduationCap />} label="Qualification" value={doctor.qualification} />
         <DetailItem icon={<FaIdBadge />} label="License" value={doctor.license} verified={doctor.licenseVerified} />
-        <DetailItem icon={<FaAward />} label="Award" value={doctor.awards?.join(', ')} />
+        {/* <DetailItem icon={<FaAward />} label="Award" value={doctor.awards?.join(', ')} /> */}
         <DetailItem icon={<FaLanguage />} label="Languages" value={doctor.languages?.join(', ')} />
+        <DetailItem icon={<BiMoney />} label="Consultation Fee" value={`₹${doctor.fee}`} />
       </div>
       {/* Right Column */}
       <div>
         <DetailItem icon={<FaCalendarAlt />} label="Availability" value={doctor.availability} />
         <DetailItem icon={<FaComments />} label="Consult Options" value={doctor.consultOptions?.join(', ')} />
-        <DetailItem icon={<FaStar className="text-yellow-400"/>} label="Reviews">
+        {/* <DetailItem icon={<FaStar className="text-yellow-400"/>} label="Reviews">
             <div className="flex items-center">
                 <span className="text-yellow-500 font-semibold mr-1">{doctor.rating?.toFixed(1)}/5</span>
                 <span className="text-gray-500">({doctor.reviewCount}+ Patient Reviews)</span>
             </div>
-        </DetailItem>
-        <DetailItem icon={<FaMapMarkerAlt />} label="Address" value={doctor.address} />
+        </DetailItem> */}
+        <DetailItem icon={<MdLocalHospital />} label="Hospital Address" value={doctor.address} />
+        <DetailItem icon={<GoLocation />} label="Location" value={doctor.location} />
+
       </div>
     </div>
   </div>

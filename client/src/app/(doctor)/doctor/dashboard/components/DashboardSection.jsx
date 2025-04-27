@@ -58,11 +58,6 @@ const DashboardSection = () => {
             <span className={`text-3xl sm:text-4xl font-bold ${item.text} mt-2 block`}>
               {item.value}
             </span>
-            <button
-              className={`mt-4 w-full py-2 ${item.bg} ${item.text} rounded-md font-medium text-sm ${item.hover} transition-all duration-300`}
-            >
-              View All
-            </button>
           </div>
         ))}
       </div>

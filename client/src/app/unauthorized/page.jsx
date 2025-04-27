@@ -31,7 +31,10 @@ export default function UnauthorizedPage() {
               </button>
               
               <button
-                onClick={() => router.back()}
+                onClick={() => {
+                  router.back();
+                  router.back();
+                }}
                 className="w-full py-2 px-4 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-md transition duration-150 ease-in-out"
               >
                 Go Back

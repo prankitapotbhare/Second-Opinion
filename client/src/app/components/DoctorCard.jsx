@@ -20,7 +20,7 @@ export default function DoctorCard({ doctor }) {
           <img
             src={doctor.imageUrl || defaultImage}
             alt={doctor.name || 'Doctor'}
-            className="w-full h-full object-cover rounded-lg"
+            className="w-full h-full object-cover rounded-full"
           />
         </div>
 

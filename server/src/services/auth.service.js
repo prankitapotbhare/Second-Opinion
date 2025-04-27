@@ -72,14 +72,17 @@ const registerUser = async (userData) => {
       );
     }
     
-    // Get the appropriate model based on role
-    const UserModel = getModelByRole(role);
-
-    // Check if user already exists
-    const existingUser = await UserModel.findOne({ email });
-    if (existingUser) {
+    // Check if user already exists in ANY model
+    const existingPatient = await Patient.findOne({ email });
+    const existingDoctor = await Doctor.findOne({ email });
+    const existingAdmin = await Admin.findOne({ email });
+    
+    if (existingPatient || existingDoctor || existingAdmin) {
       throw errorUtil.createError('User already exists with this email', 409);
     }
+    
+    // Get the appropriate model based on role
+    const UserModel = getModelByRole(role);
 
     // Create user object with basic information
     const userObj = {

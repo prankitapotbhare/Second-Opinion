@@ -36,7 +36,7 @@ export default function DoctorProfilePage() {
             awards: ['Excellence in Cardiac Care – 2021 (Fortis Healthcare)'],
             languages: ['English', 'Hindi', 'Marathi'],
             availability: 'Mon – Sat, 10:00 AM – 6:00 PM',
-            consultOptions: ['Video Call', 'Chat', 'In-Person Visit'],
+            consultOptions: ['Response', 'In-Person Visit'],
             rating: foundDoctor.rating || 4.9,
             reviewCount: foundDoctor.reviewCount || 500,
             address: foundDoctor.location || 'Fortis Hospital, Bandra West, Mumbai',

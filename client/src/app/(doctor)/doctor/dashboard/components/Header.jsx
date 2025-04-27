@@ -27,7 +27,7 @@ const Header = ({ user, setIsSidebarOpen, title = "Dashboard" }) => {
           >
             <FaBars />
           </button>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-800 bg-gray-600 bg-clip-text text-transparent">{title}</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800 bg-gray-600 bg-clip-text">{title}</h1>
         </div>
         
         <div className="flex items-center">

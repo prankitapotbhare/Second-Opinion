@@ -7,7 +7,8 @@ const EmailVerificationStatus = ({
   email, 
   isVerified = false,
   onResendVerification,
-  isResending = false
+  isResending = false,
+  resendCountdown = 0
 }) => {
   return (
     <div className={`rounded-md p-4 mb-6 ${isVerified ? 'bg-green-50' : 'bg-yellow-50'}`}>
@@ -36,10 +37,12 @@ const EmailVerificationStatus = ({
                 <div className="mt-2">
                   <button
                     onClick={onResendVerification}
-                    disabled={isResending}
+                    disabled={isResending || resendCountdown > 0}
                     className="text-sm font-medium text-yellow-800 hover:text-yellow-900 disabled:opacity-50"
                   >
-                    {isResending ? 'Sending...' : 'Resend verification email'}
+                    {isResending ? 'Sending...' : 
+                     resendCountdown > 0 ? `Resend in ${resendCountdown}s` : 
+                     'Resend verification email'}
                   </button>
                 </div>
               </div>

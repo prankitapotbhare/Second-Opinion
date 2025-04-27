@@ -106,7 +106,7 @@ const ProfileSection = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Specialization<span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Specialization </label>
             <div className="relative">
               <select className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700 appearance-none">
                 <option>Eg. Cardiology</option>
@@ -122,7 +122,7 @@ const ProfileSection = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Years of Experience<span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Years of Experience </label>
             <input
               type="text"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
@@ -132,7 +132,7 @@ const ProfileSection = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Current Hospital/Clinic Affiliation<span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Current Hospital/Clinic Affiliation </label>
             <input
               type="text"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
@@ -152,7 +152,7 @@ const ProfileSection = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Medical License Number<span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Medical License Number </label>
             <input
               type="text"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
@@ -162,7 +162,7 @@ const ProfileSection = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Issuing Medical Council<span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Issuing Medical Council </label>
             <input
               type="text"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
@@ -172,7 +172,7 @@ const ProfileSection = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Consultation Fee<span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Consultation Fee </label>
             <input
               type="text"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
@@ -182,7 +182,7 @@ const ProfileSection = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Registration Certificate Upload<span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Registration Certificate Upload </label>
             <div className="relative">
               <input
                 type="file"
@@ -205,7 +205,7 @@ const ProfileSection = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Phone number<span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Phone number </label>
             <input
               type="tel"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
@@ -215,7 +215,7 @@ const ProfileSection = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address<span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address </label>
             <input
               type="email"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
@@ -225,7 +225,7 @@ const ProfileSection = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Emergency Contact number<span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Emergency Contact number </label>
             <input
               type="tel"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
@@ -244,8 +244,17 @@ const ProfileSection = () => {
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Location:</label>
+            <input
+              type="text"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+              placeholder="Eg. Fortis Hospital, Bandra, Mumbai"
+              onChange={() => {}}
+            />
+          </div>
           <div className="col-span-1 lg:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Bio<span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Bio </label>
             <textarea
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700 h-32"
               placeholder="Eg. I am a licensed doctor with 10 years of experience in the field."
@@ -255,10 +264,84 @@ const ProfileSection = () => {
         </div>
       </section>
 
+      {/* Consultation Settings */}
+      <section className="bg-white rounded-lg shadow-sm p-4 sm:p-6 border border-gray-100 mb-8">
+        <h2 className="text-xl font-medium text-gray-800 mb-6">Consultation Settings</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Available Consultation Modes</label>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked
+                className="h-4 w-4 text-blue-600 border-gray-300"
+                onChange={() => {}}
+              />
+              <span className="ml-2 text-sm text-gray-700">Report Review</span>
+            </label>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Languages Spoken</label>
+            <div className="flex flex-wrap gap-2">
+              {["English", "Spanish"].map((lang, i) => (
+                <div
+                  key={i}
+                  className="flex items-center bg-blue-100 text-blue-800 px-4 py-1 rounded-full text-sm"
+                >
+                  {lang}
+                  <button className="ml-2 text-blue-600 hover:text-blue-800">
+                    <FaTimesCircle />
+                  </button>
+                </div>
+              ))}
+              <button className="flex items-center px-3 py-1 border border-dashed border-gray-300 rounded-full text-sm text-gray-600 hover:bg-gray-100">
+                <FaPlus className="mr-1" />
+                Add
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Availability / Working Hours
+            </label>
+            <div className="space-y-2">
+              {[
+                ["Monday - Friday", "9:00 AM - 5:00 PM"],
+                ["Saturday", "10:00 AM - 2:00 PM"],
+                ["Sunday", "Closed"],
+              ].map(([day, time], i) => (
+                <div key={i} className="flex justify-between text-sm text-gray-700">
+                  <span>{day}</span>
+                  <span>{time}</span>
+                </div>
+              ))}
+              <button className="mt-2 text-sm text-blue-600 hover:text-blue-800">
+                <FaEdit className="inline mr-1" />
+                Edit Schedule
+              </button>
+            </div>
+          </div>
+
+          <div className="col-span-1 lg:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Short Bio</label>
+            <textarea
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700 h-32"
+              value="Dr. Jane Doe is a board-certified cardiologist with over 12 years of experience..."
+              onChange={() => {}}
+            ></textarea>
+          </div>
+        </div>
+      </section>
+
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row justify-end gap-4">
+        <button className="w-full sm:w-auto px-6 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">
+          Cancel
+        </button>
         <button className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-          Submit
+          Save Changes
         </button>
       </div>
     </main>

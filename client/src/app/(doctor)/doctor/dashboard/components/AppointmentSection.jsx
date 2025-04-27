@@ -14,12 +14,12 @@ import {
 
 // Sample data for requests
 const sampleRequests = [
-  { id: 1, name: "Shuvam Sharma", time: "10:00 A.M" },
-  { id: 2, name: "Karuna Sharma", time: "11:00 A.M" },
-  { id: 3, name: "Suryam Sharma", time: "12:00 A.M" },
-  { id: 4, name: "vanikta Sharma", time: "01:00 A.M" },
-  { id: 5, name: "Rajvam Sharma", time: "02:00 P.M" },
-  { id: 6, name: "Shuvam Khajuria", time: "03:00 A.M" },
+  { id: 1, name: "Shuvam Sharma", time: "12 Jun 2024 at 10:00 A.M" },
+  { id: 2, name: "Karuna Sharma", time: "13 Jun 2024 at 11:00 A.M" },
+  { id: 3, name: "Suryam Sharma", time: "13 Jun 2024 at 12:00 A.M" },
+  { id: 4, name: "vanikta Sharma", time: "13 Jun 2024 at 01:00 A.M" },
+  { id: 5, name: "Rajvam Sharma", time: "13 Jun  2024 at 02:00 P.M" },
+  { id: 6, name: "Shuvam Khajuria", time: "13 Jun  2024 at 03:00 A.M" },
 ];
 
 const AppointmentSection = () => {
@@ -226,8 +226,8 @@ const AppointmentSection = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {sampleRequests.map((request) => (
               <div key={request.id} className="border border-gray-300 rounded-lg p-4 shadow-sm">
-                <h3 className="text-base font-semibold text-gray-800 mb-1">Appointment Request</h3>
-                <p className="text-sm text-gray-600 mb-3">{request.name} {request.time}</p>
+                <h3 className="text-base font-semibold text-gray-800 mb-1">{request.name}</h3>
+                <p className="text-sm text-gray-600 mb-3">{request.time}</p>
                 <div className="flex space-x-2">
                   <button 
                     className="flex-1 px-3 py-1.5 border border-green-500 bg-green-50 text-green-700 rounded-md hover:bg-green-100 text-sm font-medium"

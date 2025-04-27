@@ -4,7 +4,7 @@
  */
 require('dotenv').config();
 const mongoose = require('mongoose');
-const User = require('../models/user.model');
+const Admin = require('../models/admin.model');
 const readline = require('readline');
 
 // Connect to MongoDB
@@ -51,7 +51,7 @@ async function createAdmin() {
     }
 
     // Check if admin already exists
-    const existingAdmin = await User.findOne({ email });
+    const existingAdmin = await Admin.findOne({ email });
     
     if (existingAdmin) {
       console.log('Admin user already exists with this email');
@@ -71,7 +71,7 @@ async function createAdmin() {
       termsAcceptedAt: new Date()
     };
 
-    const admin = await User.create(adminUser);
+    const admin = await Admin.create(adminUser);
     console.log(`Admin user created successfully with ID: ${admin._id}`);
     
     rl.close();

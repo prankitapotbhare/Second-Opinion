@@ -46,18 +46,18 @@ const ResponsePage = () => {
               onClick={() => setSecondOpinionRequired('yes')}
               className={`flex-1 py-2 px-4 rounded-md border text-center transition-colors ${
                 secondOpinionRequired === 'yes'
-                  ? 'bg-red-500 text-white border-red-600'
-                  : 'bg-red-50 text-red-700 border-red-300 hover:bg-red-100'
+                ? 'bg-green-500 text-white border-green-600'
+                : 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
               }`}
-            >
+              >
               Yes
             </button>
             <button
               onClick={() => setSecondOpinionRequired('no')}
               className={`flex-1 py-2 px-4 rounded-md border text-center transition-colors ${
                 secondOpinionRequired === 'no'
-                  ? 'bg-green-500 text-white border-green-600'
-                  : 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
+                ? 'bg-red-500 text-white border-red-600'
+                : 'bg-red-50 text-red-700 border-red-300 hover:bg-red-100'
               }`}
             >
               No
@@ -103,7 +103,7 @@ const ResponsePage = () => {
         <div className="flex justify-end">
           <button
             onClick={handleSendResponse}
-            className="px-6 py-2 border border-gray-400 rounded-md text-gray-800 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center"
+            className="px-6 py-2 border border-gray-400 rounded-md text-white bg-blue-500 hover:bg-blue-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center"
           >
             Send Response
             <FaArrowRight className="ml-2 h-4 w-4" />
