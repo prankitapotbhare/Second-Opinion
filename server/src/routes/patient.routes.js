@@ -5,17 +5,30 @@ const doctorController = require('../controllers/doctor.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { checkRole } = require('../middleware/role.middleware');
 const multer = require('multer');
-const { MEDICAL_FILES_DIR, ALLOWED_FILE_TYPES } = require('../utils/constants');
+const { MEDICAL_FILES_DIR, ALLOWED_FILE_TYPES, FILE_SIZE_LIMITS } = require('../utils/constants');
+const path = require('path');
+const fs = require('fs');
+
+// Ensure medical files directory exists
+if (!fs.existsSync(MEDICAL_FILES_DIR)) {
+  fs.mkdirSync(MEDICAL_FILES_DIR, { recursive: true });
+}
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, MEDICAL_FILES_DIR);
+    // Create patient-specific directory using authenticated user ID
+    const patientDir = path.join(MEDICAL_FILES_DIR, req.user.id);
+    if (!fs.existsSync(patientDir)) {
+      fs.mkdirSync(patientDir, { recursive: true });
+    }
+    cb(null, patientDir);
   },
   filename: function (req, file, cb) {
     // Add a timestamp and sanitize the filename
     const sanitizedName = file.originalname.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9.-]/g, '');
-    cb(null, `${Date.now()}-${sanitizedName}`);
+    const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1E9)}-${sanitizedName}`;
+    cb(null, uniqueName);
   }
 });
 
@@ -24,14 +37,14 @@ const fileFilter = (req, file, cb) => {
   if (ALLOWED_FILE_TYPES.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Unsupported file type. Please upload PDF, JPEG, PNG, or DICOM files.'), false);
+    cb(new Error(`Unsupported file type. Allowed types: ${ALLOWED_FILE_TYPES.join(', ')}`), false);
   }
 };
 
 const upload = multer({ 
   storage: storage,
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
+    fileSize: FILE_SIZE_LIMITS.MEDICAL_FILE
   },
   fileFilter: fileFilter
 });
@@ -40,25 +53,28 @@ const upload = multer({
 router.use(authenticate);
 router.use(checkRole(['patient']));
 
-// Patient profile routes
-router.get('/profile/:id', patientController.getPatientDetails);
-router.put('/profile/:id', patientController.updatePatient);
+// Patient profile routes (using authenticated user)
+router.get('/profile', patientController.getPatientProfile);
+router.put('/profile', patientController.updatePatientProfile);
 
-// Form submission routes
-router.post('/:id/forms', patientController.submitForm);
-router.get('/:id/forms', patientController.getFormSubmissions);
-router.get('/:id/forms/:formId', patientController.getFormSubmission);
-router.put('/:id/forms/:formId', patientController.updateFormSubmission);
-
-// File handling routes for form submissions
-router.post('/:id/forms/:formId/files', 
-  upload.single('file'), 
-  patientController.uploadMedicalFile
+// Form submission routes (using authenticated user)
+router.post('/forms', 
+  upload.array('medicalFiles', 5), // Allow up to 5 files in a single submission
+  patientController.submitForm
 );
-router.get('/:id/forms/:formId/files/:fileId', 
+router.get('/forms', patientController.getFormSubmissions);
+router.get('/forms/:formId', patientController.getFormSubmission);
+router.put('/forms/:formId', patientController.updateFormSubmission);
+
+// Additional file handling routes for form submissions
+router.post('/forms/:formId/files', 
+  upload.array('files', 5), // Allow up to 5 files in a single upload
+  patientController.uploadMedicalFiles
+);
+router.get('/forms/:formId/files/:fileId', 
   patientController.downloadMedicalFile
 );
-router.delete('/:id/forms/:formId/files/:fileId', 
+router.delete('/forms/:formId/files/:fileId', 
   patientController.deleteMedicalFile
 );
 

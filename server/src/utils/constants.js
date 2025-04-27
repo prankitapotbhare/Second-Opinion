@@ -18,13 +18,21 @@ const ALLOWED_FILE_TYPES = [
 const ALLOWED_DOCUMENT_TYPES = [
   'application/pdf',
   'image/jpeg',
+  'image/jpg',
   'image/png'
 ];
+
+// Define file size limits (in bytes)
+const FILE_SIZE_LIMITS = {
+  MEDICAL_FILE: 10 * 1024 * 1024, // 10MB for medical files
+  DOCTOR_DOCUMENT: 5 * 1024 * 1024 // 5MB for doctor documents
+};
 
 module.exports = {
   UPLOADS_DIR,
   MEDICAL_FILES_DIR,
   DOCTOR_FILES_DIR,
   ALLOWED_FILE_TYPES,
-  ALLOWED_DOCUMENT_TYPES
+  ALLOWED_DOCUMENT_TYPES,
+  FILE_SIZE_LIMITS
 };

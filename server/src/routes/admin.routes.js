@@ -10,9 +10,9 @@ const { checkRole } = require('../middleware/role.middleware');
 router.use(authenticate);
 router.use(checkRole(['admin']));
 
-// Admin profile routes
-router.get('/profile/:id', adminController.getAdminDetails);
-router.put('/profile/:id', adminController.updateAdmin);
+// Admin profile routes (using authenticated user)
+router.get('/profile', adminController.getAdminProfile);
+router.put('/profile', adminController.updateAdminProfile);
 
 // User management routes - Patients
 router.get('/patients', adminController.getAllPatients);

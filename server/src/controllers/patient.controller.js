@@ -2,22 +2,78 @@ const Patient = require('../models/patient.model');
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
+const { MEDICAL_FILES_DIR } = require('../utils/constants');
+const { createError } = require('../utils/error.util');
 
-// Get patient details
-exports.getPatientDetails = async (req, res) => {
+// Get patient profile (using authenticated user)
+exports.getPatientProfile = async (req, res, next) => {
   try {
-    const patient = await Patient.findById(req.params.id).select('-password');
+    const patient = await Patient.findById(req.user.id).select('-password');
     if (!patient) {
-      return res.status(404).json({ message: 'Patient not found' });
+      return next(createError('Patient not found', 404));
     }
-    res.json(patient);
+    
+    res.status(200).json({
+      success: true,
+      data: patient
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-// Create new patient
-exports.createPatient = async (req, res) => {
+// Update patient profile (using authenticated user)
+exports.updatePatientProfile = async (req, res, next) => {
+  try {
+    // Don't allow password updates through this endpoint
+    if (req.body.password) {
+      delete req.body.password;
+    }
+    
+    // Don't allow role changes through this endpoint
+    if (req.body.role) {
+      delete req.body.role;
+    }
+    
+    const patient = await Patient.findByIdAndUpdate(
+      req.user.id,
+      req.body,
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    if (!patient) {
+      return next(createError('Patient not found', 404));
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: 'Patient profile updated successfully',
+      data: patient
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get patient details (for admin or doctor viewing a specific patient)
+exports.getPatientDetails = async (req, res, next) => {
+  try {
+    const patient = await Patient.findById(req.params.id).select('-password');
+    if (!patient) {
+      return next(createError('Patient not found', 404));
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: patient
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Create new patient (admin function)
+exports.createPatient = async (req, res, next) => {
   try {
     const patient = new Patient(req.body);
     await patient.save();
@@ -26,14 +82,18 @@ exports.createPatient = async (req, res) => {
     const patientResponse = patient.toObject();
     delete patientResponse.password;
     
-    res.status(201).json(patientResponse);
+    res.status(201).json({
+      success: true,
+      message: 'Patient created successfully',
+      data: patientResponse
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    next(error);
   }
 };
 
-// Update patient details
-exports.updatePatient = async (req, res) => {
+// Update patient details (admin function)
+exports.updatePatient = async (req, res, next) => {
   try {
     // Don't allow password updates through this endpoint
     if (req.body.password) {
@@ -47,72 +107,93 @@ exports.updatePatient = async (req, res) => {
     ).select('-password');
     
     if (!patient) {
-      return res.status(404).json({ message: 'Patient not found' });
+      return next(createError('Patient not found', 404));
     }
     
-    res.json(patient);
+    res.status(200).json({
+      success: true,
+      message: 'Patient profile updated successfully',
+      data: patient
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    next(error);
   }
 };
 
-// Submit a new form
-exports.submitForm = async (req, res) => {
+// Submit a form (using authenticated user)
+exports.submitForm = async (req, res, next) => {
   try {
+    const patientId = req.user.id;
+    
     const { doctorId, age, gender, phone, emergencyContact, problem } = req.body;
     
     // Validate required fields
     if (!doctorId || !age || !gender || !phone || !problem) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Missing required fields',
-        details: {
-          doctorId: !doctorId ? 'Doctor ID is required' : null,
-          age: !age ? 'Age is required' : null,
-          gender: !gender ? 'Gender is required' : null,
-          phone: !phone ? 'Phone number is required' : null,
-          problem: !problem ? 'Problem description is required' : null
-        }
-      });
+      // Delete uploaded files if validation fails
+      if (req.files && req.files.length > 0) {
+        req.files.forEach(file => {
+          if (fs.existsSync(file.path)) {
+            fs.unlinkSync(file.path);
+          }
+        });
+      }
+      
+      return next(createError('Missing required fields', 400));
     }
     
     // Validate age
     if (isNaN(age) || age <= 0 || age > 120) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Invalid age value' 
-      });
+      // Delete uploaded files if validation fails
+      if (req.files && req.files.length > 0) {
+        req.files.forEach(file => {
+          if (fs.existsSync(file.path)) {
+            fs.unlinkSync(file.path);
+          }
+        });
+      }
+      
+      return next(createError('Invalid age value', 400));
     }
     
     // Validate gender
     if (!['Male', 'Female', 'Other'].includes(gender)) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Gender must be Male, Female, or Other' 
-      });
+      // Delete uploaded files if validation fails
+      if (req.files && req.files.length > 0) {
+        req.files.forEach(file => {
+          if (fs.existsSync(file.path)) {
+            fs.unlinkSync(file.path);
+          }
+        });
+      }
+      
+      return next(createError('Invalid gender value', 400));
     }
     
-    // Ensure doctorId is a valid ObjectId
-    if (!mongoose.Types.ObjectId.isValid(doctorId)) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Invalid doctor ID' 
-      });
-    }
-    
-    // Ensure patient ID matches authenticated user or user has admin role
-    if (req.params.id !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ 
-        success: false,
-        message: 'You are not authorized to submit forms for this patient' 
-      });
-    }
-    
-    const patient = await Patient.findById(req.params.id);
+    const patient = await Patient.findById(patientId);
     if (!patient) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Patient not found' 
+      // Delete uploaded files if patient not found
+      if (req.files && req.files.length > 0) {
+        req.files.forEach(file => {
+          if (fs.existsSync(file.path)) {
+            fs.unlinkSync(file.path);
+          }
+        });
+      }
+      
+      return next(createError('Patient not found', 404));
+    }
+    
+    // Process uploaded files
+    const medicalFiles = [];
+    if (req.files && req.files.length > 0) {
+      req.files.forEach(file => {
+        medicalFiles.push({
+          fileName: file.originalname,
+          fileType: file.mimetype,
+          fileSize: file.size,
+          uploadDate: new Date(),
+          filePath: file.path
+        });
       });
     }
     
@@ -124,7 +205,7 @@ exports.submitForm = async (req, res) => {
       phone,
       emergencyContact,
       problem,
-      medicalFiles: [],
+      medicalFiles,
       status: 'pending',
       submittedAt: new Date()
     };
@@ -144,236 +225,345 @@ exports.submitForm = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Form submission error:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'An error occurred while submitting the form',
-      error: error.message
-    });
+    // Delete uploaded files if an error occurs
+    if (req.files && req.files.length > 0) {
+      req.files.forEach(file => {
+        if (fs.existsSync(file.path)) {
+          fs.unlinkSync(file.path);
+        }
+      });
+    }
+    
+    next(error);
   }
 };
 
-// Get all form submissions for a patient
-exports.getFormSubmissions = async (req, res) => {
+// Get patient's form submissions (using authenticated user)
+exports.getFormSubmissions = async (req, res, next) => {
   try {
-    const patient = await Patient.findById(req.params.id)
-      .select('formSubmissions')
-      .populate({
-        path: 'formSubmissions.doctorId',
-        select: 'name specialization'
-      });
+    let patientId;
     
-    if (!patient) {
-      return res.status(404).json({ message: 'Patient not found' });
+    // If admin or doctor is requesting a specific patient's forms
+    if ((req.user.role === 'admin' || req.user.role === 'doctor') && req.params.id) {
+      patientId = req.params.id;
+    } else {
+      // Otherwise use the authenticated patient's ID
+      patientId = req.user.id;
     }
     
-    res.json({
+    const patient = await Patient.findById(patientId)
+      .select('formSubmissions')
+      .populate('formSubmissions.doctorId', 'name email specialization');
+    
+    if (!patient) {
+      return next(createError('Patient not found', 404));
+    }
+    
+    res.status(200).json({
       success: true,
-      data: {
-        formSubmissions: patient.formSubmissions
-      }
+      count: patient.formSubmissions.length,
+      data: patient.formSubmissions
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get a specific form submission
-exports.getFormSubmission = async (req, res) => {
+exports.getFormSubmission = async (req, res, next) => {
   try {
-    const { id, formId } = req.params;
+    let patientId;
     
-    const patient = await Patient.findById(id);
+    // If admin or doctor is requesting a specific patient's form
+    if ((req.user.role === 'admin' || req.user.role === 'doctor') && req.params.id) {
+      patientId = req.params.id;
+    } else {
+      // Otherwise use the authenticated patient's ID
+      patientId = req.user.id;
+    }
+    
+    const { formId } = req.params;
+    
+    if (!mongoose.Types.ObjectId.isValid(formId)) {
+      return next(createError('Invalid form ID', 400));
+    }
+    
+    const patient = await Patient.findById(patientId)
+      .populate('formSubmissions.doctorId', 'name email specialization');
+    
     if (!patient) {
-      return res.status(404).json({ message: 'Patient not found' });
+      return next(createError('Patient not found', 404));
     }
     
+    // Find the specific form submission
     const formSubmission = patient.formSubmissions.id(formId);
+    
     if (!formSubmission) {
-      return res.status(404).json({ message: 'Form submission not found' });
+      return next(createError('Form submission not found', 404));
     }
     
-    res.json({
+    res.status(200).json({
       success: true,
-      data: {
-        formSubmission
-      }
+      data: formSubmission
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-// Upload medical file to a specific form submission
-exports.uploadMedicalFile = async (req, res) => {
+// Update a form submission
+exports.updateFormSubmission = async (req, res, next) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'No file uploaded' 
-      });
-    }
-
-    const { id, formId } = req.params;
+    let patientId;
     
-    // Ensure patient ID matches authenticated user or user has appropriate role
-    if (id !== req.user.id && !['admin', 'doctor'].includes(req.user.role)) {
-      return res.status(403).json({ 
-        success: false,
-        message: 'You are not authorized to upload files for this patient' 
-      });
+    // If admin or doctor is updating a specific patient's form
+    if ((req.user.role === 'admin' || req.user.role === 'doctor') && req.params.id) {
+      patientId = req.params.id;
+    } else {
+      // Otherwise use the authenticated patient's ID
+      patientId = req.user.id;
     }
     
-    const patient = await Patient.findById(id);
+    const { formId } = req.params;
+    
+    if (!mongoose.Types.ObjectId.isValid(formId)) {
+      return next(createError('Invalid form ID', 400));
+    }
+    
+    const patient = await Patient.findById(patientId);
+    
     if (!patient) {
-      // Delete the uploaded file if patient not found
-      fs.unlinkSync(req.file.path);
-      return res.status(404).json({ 
-        success: false,
-        message: 'Patient not found' 
-      });
+      return next(createError('Patient not found', 404));
     }
     
+    // Find the specific form submission
     const formSubmission = patient.formSubmissions.id(formId);
+    
     if (!formSubmission) {
-      // Delete the uploaded file if form submission not found
-      fs.unlinkSync(req.file.path);
-      return res.status(404).json({ 
-        success: false,
-        message: 'Form submission not found' 
-      });
+      return next(createError('Form submission not found', 404));
     }
-
-    const fileInfo = {
-      fileName: req.file.originalname,
-      fileType: req.file.mimetype,
-      fileSize: req.file.size,
-      uploadDate: new Date(),
-      filePath: req.file.path
-    };
-
-    formSubmission.medicalFiles.push(fileInfo);
-    await patient.save();
-
-    res.status(201).json({
-      success: true,
-      message: 'File uploaded successfully',
-      data: {
-        file: fileInfo
+    
+    // If patient is updating, only allow updates to problem field
+    if (req.user.role === 'patient') {
+      if (req.body.problem) {
+        formSubmission.problem = req.body.problem;
       }
-    });
-  } catch (error) {
-    // Delete the uploaded file if an error occurs
-    if (req.file && req.file.path) {
-      fs.unlinkSync(req.file.path);
-    }
-    console.error('File upload error:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'An error occurred while uploading the file',
-      error: error.message
-    });
-  }
-};
-
-// Add a new method to update a form submission
-exports.updateFormSubmission = async (req, res) => {
-  try {
-    const { id, formId } = req.params;
-    const { status, problem } = req.body;
-    
-    // Ensure patient ID matches authenticated user or user has admin role
-    if (id !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ 
-        success: false,
-        message: 'You are not authorized to update forms for this patient' 
-      });
-    }
-    
-    const patient = await Patient.findById(id);
-    if (!patient) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Patient not found' 
-      });
-    }
-    
-    const formSubmission = patient.formSubmissions.id(formId);
-    if (!formSubmission) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Form submission not found' 
-      });
-    }
-    
-    // Only allow updating certain fields
-    if (problem) formSubmission.problem = problem;
-    
-    // Only allow doctors or admins to update status
-    if (status && ['doctor', 'admin'].includes(req.user.role)) {
-      if (!['pending', 'in-review', 'completed', 'rejected'].includes(status)) {
-        return res.status(400).json({ 
-          success: false,
-          message: 'Invalid status value' 
-        });
+    } else {
+      // Admin or doctor can update status and add notes
+      if (req.body.status) {
+        formSubmission.status = req.body.status;
       }
-      formSubmission.status = status;
+      
+      if (req.body.doctorNotes) {
+        formSubmission.doctorNotes = req.body.doctorNotes;
+      }
     }
     
     await patient.save();
     
-    res.json({
+    res.status(200).json({
       success: true,
       message: 'Form submission updated successfully',
+      data: formSubmission
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Upload additional medical files to a form submission
+exports.uploadMedicalFiles = async (req, res, next) => {
+  try {
+    const patientId = req.user.id;
+    const { formId } = req.params;
+    
+    if (!mongoose.Types.ObjectId.isValid(formId)) {
+      // Delete uploaded files if validation fails
+      if (req.files && req.files.length > 0) {
+        req.files.forEach(file => {
+          if (fs.existsSync(file.path)) {
+            fs.unlinkSync(file.path);
+          }
+        });
+      }
+      
+      return next(createError('Invalid form ID', 400));
+    }
+    
+    const patient = await Patient.findById(patientId);
+    
+    if (!patient) {
+      // Delete uploaded files if patient not found
+      if (req.files && req.files.length > 0) {
+        req.files.forEach(file => {
+          if (fs.existsSync(file.path)) {
+            fs.unlinkSync(file.path);
+          }
+        });
+      }
+      
+      return next(createError('Patient not found', 404));
+    }
+    
+    // Find the specific form submission
+    const formSubmission = patient.formSubmissions.id(formId);
+    
+    if (!formSubmission) {
+      // Delete uploaded files if form not found
+      if (req.files && req.files.length > 0) {
+        req.files.forEach(file => {
+          if (fs.existsSync(file.path)) {
+            fs.unlinkSync(file.path);
+          }
+        });
+      }
+      
+      return next(createError('Form submission not found', 404));
+    }
+    
+    // Process uploaded files
+    if (req.files && req.files.length > 0) {
+      req.files.forEach(file => {
+        formSubmission.medicalFiles.push({
+          fileName: file.originalname,
+          fileType: file.mimetype,
+          fileSize: file.size,
+          uploadDate: new Date(),
+          filePath: file.path
+        });
+      });
+    } else {
+      return next(createError('No files uploaded', 400));
+    }
+    
+    await patient.save();
+    
+    res.status(200).json({
+      success: true,
+      message: 'Medical files uploaded successfully',
       data: {
         formSubmission
       }
     });
   } catch (error) {
-    console.error('Form update error:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'An error occurred while updating the form',
-      error: error.message
-    });
+    // Delete uploaded files if an error occurs
+    if (req.files && req.files.length > 0) {
+      req.files.forEach(file => {
+        if (fs.existsSync(file.path)) {
+          fs.unlinkSync(file.path);
+        }
+      });
+    }
+    
+    next(error);
   }
 };
 
-// Add a method to delete a medical file
-exports.deleteMedicalFile = async (req, res) => {
+// Download a medical file
+exports.downloadMedicalFile = async (req, res, next) => {
   try {
-    const { id, formId, fileId } = req.params;
+    let patientId;
     
-    // Ensure patient ID matches authenticated user or user has admin role
-    if (id !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ 
-        success: false,
-        message: 'You are not authorized to delete files for this patient' 
-      });
+    // If admin or doctor is downloading a specific patient's file
+    if ((req.user.role === 'admin' || req.user.role === 'doctor') && req.params.id) {
+      patientId = req.params.id;
+    } else {
+      // Otherwise use the authenticated patient's ID
+      patientId = req.user.id;
     }
     
-    const patient = await Patient.findById(id);
+    const { formId, fileId } = req.params;
+    
+    if (!mongoose.Types.ObjectId.isValid(formId) || !mongoose.Types.ObjectId.isValid(fileId)) {
+      return next(createError('Invalid form or file ID', 400));
+    }
+    
+    const patient = await Patient.findById(patientId);
+    
     if (!patient) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Patient not found' 
-      });
+      return next(createError('Patient not found', 404));
     }
     
+    // Find the specific form submission
     const formSubmission = patient.formSubmissions.id(formId);
+    
     if (!formSubmission) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Form submission not found' 
-      });
+      return next(createError('Form submission not found', 404));
     }
     
+    // Find the specific file
     const file = formSubmission.medicalFiles.id(fileId);
+    
     if (!file) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'File not found' 
-      });
+      return next(createError('File not found', 404));
+    }
+    
+    // Check if file exists
+    if (!fs.existsSync(file.filePath)) {
+      return next(createError('File not found on server', 404));
+    }
+    
+    // Determine content type
+    let contentType = 'application/octet-stream';
+    if (file.fileType) {
+      contentType = file.fileType;
+    } else if (file.filePath.endsWith('.pdf')) {
+      contentType = 'application/pdf';
+    } else if (file.filePath.endsWith('.jpg') || file.filePath.endsWith('.jpeg')) {
+      contentType = 'image/jpeg';
+    } else if (file.filePath.endsWith('.png')) {
+      contentType = 'image/png';
+    }
+    
+    // Set headers
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `inline; filename="${file.fileName}"`);
+    
+    // Stream the file
+    const fileStream = fs.createReadStream(file.filePath);
+    fileStream.pipe(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delete a medical file
+exports.deleteMedicalFile = async (req, res, next) => {
+  try {
+    let patientId;
+    
+    // If admin is deleting a specific patient's file
+    if (req.user.role === 'admin' && req.params.id) {
+      patientId = req.params.id;
+    } else {
+      // Otherwise use the authenticated patient's ID
+      patientId = req.user.id;
+    }
+    
+    const { formId, fileId } = req.params;
+    
+    if (!mongoose.Types.ObjectId.isValid(formId) || !mongoose.Types.ObjectId.isValid(fileId)) {
+      return next(createError('Invalid form or file ID', 400));
+    }
+    
+    const patient = await Patient.findById(patientId);
+    
+    if (!patient) {
+      return next(createError('Patient not found', 404));
+    }
+    
+    // Find the specific form submission
+    const formSubmission = patient.formSubmissions.id(formId);
+    
+    if (!formSubmission) {
+      return next(createError('Form submission not found', 404));
+    }
+    
+    // Find the specific file
+    const file = formSubmission.medicalFiles.id(fileId);
+    
+    if (!file) {
+      return next(createError('File not found', 404));
     }
     
     // Delete the file from the filesystem
@@ -381,50 +571,128 @@ exports.deleteMedicalFile = async (req, res) => {
       fs.unlinkSync(file.filePath);
     }
     
-    // Remove the file from the formSubmission
+    // Remove the file from the database
     formSubmission.medicalFiles.pull(fileId);
     await patient.save();
     
-    res.json({
+    res.status(200).json({
       success: true,
       message: 'File deleted successfully'
     });
   } catch (error) {
-    console.error('File deletion error:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'An error occurred while deleting the file',
-      error: error.message
-    });
+    next(error);
   }
 };
 
-// Download medical file from a specific form submission
-exports.downloadMedicalFile = async (req, res) => {
+// Get all patients (admin function)
+exports.getAllPatients = async (req, res, next) => {
   try {
-    const { id, formId, fileId } = req.params;
-    
-    const patient = await Patient.findById(id);
-    if (!patient) {
-      return res.status(404).json({ message: 'Patient not found' });
+    // Only allow admins to access this endpoint
+    if (req.user.role !== 'admin') {
+      return next(createError('Not authorized to access this resource', 403));
     }
     
-    const formSubmission = patient.formSubmissions.id(formId);
-    if (!formSubmission) {
-      return res.status(404).json({ message: 'Form submission not found' });
-    }
+    const patients = await Patient.find().select('-password');
     
-    const file = formSubmission.medicalFiles.id(fileId);
-    if (!file) {
-      return res.status(404).json({ message: 'File not found' });
-    }
-
-    if (!fs.existsSync(file.filePath)) {
-      return res.status(404).json({ message: 'File not found on server' });
-    }
-
-    res.download(file.filePath, file.fileName);
+    res.status(200).json({
+      success: true,
+      count: patients.length,
+      data: patients
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
+  }
+};
+
+// Search patients (admin or doctor function)
+exports.searchPatients = async (req, res, next) => {
+  try {
+    // Only allow admins or doctors to access this endpoint
+    if (req.user.role !== 'admin' && req.user.role !== 'doctor') {
+      return next(createError('Not authorized to access this resource', 403));
+    }
+    
+    const { name, email, phone } = req.query;
+    
+    // Build search query
+    const searchQuery = {};
+    
+    if (name) {
+      searchQuery.name = { $regex: name, $options: 'i' };
+    }
+    
+    if (email) {
+      searchQuery.email = { $regex: email, $options: 'i' };
+    }
+    
+    if (phone) {
+      searchQuery.phone = { $regex: phone, $options: 'i' };
+    }
+    
+    const patients = await Patient.find(searchQuery).select('-password');
+    
+    res.status(200).json({
+      success: true,
+      count: patients.length,
+      data: patients
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get patient's medical history (for doctors or admins)
+exports.getPatientMedicalHistory = async (req, res, next) => {
+  try {
+    // Only allow admins or doctors to access this endpoint
+    if (req.user.role !== 'admin' && req.user.role !== 'doctor') {
+      return next(createError('Not authorized to access this resource', 403));
+    }
+    
+    const patientId = req.params.id;
+    
+    const patient = await Patient.findById(patientId)
+      .select('name email formSubmissions')
+      .populate('formSubmissions.doctorId', 'name email specialization');
+    
+    if (!patient) {
+      return next(createError('Patient not found', 404));
+    }
+    
+    // If doctor is requesting, only return forms submitted to them
+    if (req.user.role === 'doctor') {
+      const doctorForms = patient.formSubmissions.filter(
+        form => form.doctorId && form.doctorId._id.toString() === req.user.id
+      );
+      
+      return res.status(200).json({
+        success: true,
+        count: doctorForms.length,
+        data: {
+          patient: {
+            id: patient._id,
+            name: patient.name,
+            email: patient.email
+          },
+          formSubmissions: doctorForms
+        }
+      });
+    }
+    
+    // For admins, return all forms
+    res.status(200).json({
+      success: true,
+      count: patient.formSubmissions.length,
+      data: {
+        patient: {
+          id: patient._id,
+          name: patient.name,
+          email: patient.email
+        },
+        formSubmissions: patient.formSubmissions
+      }
+    });
+  } catch (error) {
+    next(error);
   }
 };
