@@ -4,16 +4,12 @@ const patientController = require('../controllers/patient.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { checkRole } = require('../middleware/role.middleware');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-
-// Get the uploads directory path - use the same path as in app.js
-const uploadsDir = path.join(__dirname, '../../uploads/medical_files');
+const { MEDICAL_FILES_DIR, ALLOWED_FILE_TYPES } = require('../utils/constants');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, uploadsDir);
+    cb(null, MEDICAL_FILES_DIR);
   },
   filename: function (req, file, cb) {
     // Add a timestamp and sanitize the filename
@@ -21,15 +17,6 @@ const storage = multer.diskStorage({
     cb(null, `${Date.now()}-${sanitizedName}`);
   }
 });
-
-// Define allowed file types
-const ALLOWED_FILE_TYPES = [
-  'application/pdf', 
-  'image/jpeg', 
-  'image/png', 
-  'image/dicom', 
-  'application/dicom'
-];
 
 // File filter to validate file types
 const fileFilter = (req, file, cb) => {

@@ -4,6 +4,7 @@ const app = express();
 const path = require('path');
 const fs = require('fs');
 const { errorHandler } = require('./middleware/error.middleware');
+const { UPLOADS_DIR, MEDICAL_FILES_DIR } = require('./utils/constants');
 
 // Load environment variables
 require('dotenv').config();
@@ -14,19 +15,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Ensure main uploads directory exists
-const uploadsDir = path.join(__dirname, '../uploads');
-const medicalFilesDir = path.join(uploadsDir, 'medical_files');
-
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
-if (!fs.existsSync(medicalFilesDir)) {
-  fs.mkdirSync(medicalFilesDir, { recursive: true });
+if (!fs.existsSync(MEDICAL_FILES_DIR)) {
+  fs.mkdirSync(MEDICAL_FILES_DIR, { recursive: true });
 }
 
 // Serve static files from uploads directory
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 // Import routes
 const authRoutes = require('./routes/auth.routes');
