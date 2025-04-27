@@ -1,10 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
-const path = require('path');
-const fs = require('fs');
 const { errorHandler } = require('./middleware/error.middleware');
 const { UPLOADS_DIR, MEDICAL_FILES_DIR, DOCTOR_FILES_DIR } = require('./utils/constants');
+const fileService = require('./services/file.service');
 
 // Load environment variables
 require('dotenv').config();
@@ -15,31 +14,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Ensure upload directories exist
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-}
-
-if (!fs.existsSync(MEDICAL_FILES_DIR)) {
-  fs.mkdirSync(MEDICAL_FILES_DIR, { recursive: true });
-}
-
-if (!fs.existsSync(DOCTOR_FILES_DIR)) {
-  fs.mkdirSync(DOCTOR_FILES_DIR, { recursive: true });
-}
+fileService.ensureDirectoryExists(UPLOADS_DIR);
+fileService.ensureDirectoryExists(MEDICAL_FILES_DIR);
+fileService.ensureDirectoryExists(DOCTOR_FILES_DIR);
 
 // Serve static files from uploads directory with proper MIME types
 app.use('/uploads', express.static(UPLOADS_DIR, {
   setHeaders: (res, path) => {
     // Set appropriate content type for different file types
-    if (path.endsWith('.pdf')) {
-      res.setHeader('Content-Type', 'application/pdf');
-    } else if (path.endsWith('.jpg') || path.endsWith('.jpeg')) {
-      res.setHeader('Content-Type', 'image/jpeg');
-    } else if (path.endsWith('.png')) {
-      res.setHeader('Content-Type', 'image/png');
-    } else if (path.endsWith('.dcm')) {
-      res.setHeader('Content-Type', 'application/dicom');
-    }
+    res.setHeader('Content-Type', fileService.getContentType(path));
     
     // Set cache control for better performance
     res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
@@ -60,7 +43,11 @@ app.use('/api/admin', adminRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', message: 'Server is running' });
+  res.status(200).json({ 
+    status: 'ok', 
+    message: 'Server is running',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Error handling middleware
