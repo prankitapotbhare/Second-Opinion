@@ -45,7 +45,7 @@ const DashboardSection = ({ statCards }) => {
       
       {/* Quick Action Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
-        <Link href="/user/appointment/booking">
+        <Link href="/user/patient-details">
           <div className="bg-white rounded-xl shadow-sm p-4 flex items-center cursor-pointer border border-blue-200 hover:shadow-md hover:scale-[1.02] transition-all duration-300">
             <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-4">
               <FaCalendarAlt size={20} />
@@ -93,7 +93,7 @@ const DashboardSection = ({ statCards }) => {
             </span>
             Upcoming Appointments
           </h2>
-          <Link href="/user/appointment/booking">
+          <Link href="/user/patient-details">
             <button className="text-sm px-4 py-2 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200 transition-all duration-300">
               Book New
             </button>

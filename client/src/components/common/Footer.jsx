@@ -5,7 +5,12 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function Footer() {
-  const { currentUser, isAuthenticated } = useAuth();
+  const { currentUser } = useAuth();
+  
+  // Add isAuthenticated function
+  const isAuthenticated = () => {
+    return !!currentUser;
+  };
   
   // Get dashboard link based on user role
   const getDashboardLink = () => {
@@ -15,99 +20,46 @@ export default function Footer() {
   
   return (
     <footer className="bg-teal-700 text-white py-12 mt-auto">
-      <div className="container mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <h3 className="text-xl font-semibold mb-4 flex items-center">
-              <i className="fas fa-comment-medical mr-2"></i>
-              Second Opinion
-            </h3>
-            <p className="text-teal-100 mb-4">
-              Connecting patients with medical experts for trusted second opinions.
-            </p>
-            <div className="flex space-x-4 mt-4">
-              <a href="#" className="text-white hover:text-teal-200 transition-colors cursor-pointer">
-                <i className="fab fa-facebook-square text-2xl"></i>
-              </a>
-              <a href="#" className="text-white hover:text-teal-200 transition-colors cursor-pointer">
-                <i className="fab fa-twitter-square text-2xl"></i>
-              </a>
-              <a href="#" className="text-white hover:text-teal-200 transition-colors cursor-pointer">
-                <i className="fab fa-linkedin-square text-2xl"></i>
-              </a>
-              <a href="#" className="text-white hover:text-teal-200 transition-colors cursor-pointer">
-                <i className="fab fa-instagram-square text-2xl"></i>
-              </a>
-            </div>
+            <h3 className="text-xl font-semibold mb-4">Contact information</h3>
+            <ul className="space-y-2">
+              <li className="flex items-start">
+                <span>Ph no. +91 657357459465</span>
+              </li>
+              <li className="flex items-start">
+                <span>Gmail - secop@gmail.com</span>
+              </li>
+            </ul>
           </div>
+          
           <div>
-            <h3 className="text-xl font-semibold mb-4">Quick Links</h3>
+            <h3 className="text-xl font-semibold mb-4">Social Media</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/" className="text-teal-100 hover:text-white cursor-pointer">
-                  Home
+                <Link href="#" className="text-teal-100 hover:text-white cursor-pointer">
+                  LinkedIn
                 </Link>
               </li>
-              {isAuthenticated() ? (
-                <>
-                  <li>
-                    <Link href={getDashboardLink()} className="text-teal-100 hover:text-white cursor-pointer">
-                      Dashboard
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href={`${getDashboardLink()}/profile`} className="text-teal-100 hover:text-white cursor-pointer">
-                      Profile
-                    </Link>
-                  </li>
-                </>
-              ) : (
-                <>
-                  <li>
-                    <Link href="/login" className="text-teal-100 hover:text-white cursor-pointer">
-                      Login
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/signup" className="text-teal-100 hover:text-white cursor-pointer">
-                      Sign-Up
-                    </Link>
-                  </li>
-                </>
-              )}
               <li>
-                <Link href="/find-doctors" className="text-teal-100 hover:text-white cursor-pointer">
-                  Find Doctors
+                <Link href="#" className="text-teal-100 hover:text-white cursor-pointer">
+                  Twitter
                 </Link>
               </li>
             </ul>
           </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-4">Contact Information</h3>
-            <ul className="space-y-2">
-              <li className="flex items-start">
-                <i className="fas fa-phone-alt mt-1 mr-3"></i>
-                <span>+91-XXXXXXXXXX</span>
-              </li>
-              <li className="flex items-start">
-                <i className="fas fa-envelope mt-1 mr-3"></i>
-                <span>support@secondopinion.com</span>
-              </li>
-              <li className="flex items-start">
-                <i className="fas fa-map-marker-alt mt-1 mr-3"></i>
-                <span>123 Health Street, Wellness City, India</span>
-              </li>
-            </ul>
-          </div>
+          
           <div>
             <h3 className="text-xl font-semibold mb-4">Support Hours</h3>
             <div className="space-y-2">
-              <p>Available 24/7</p>
-              <p>Priority Support</p>
-              <p>For urgent medical requests, response within 24 hours</p>
+              <p>Available 24X7</p>
+              <p>Priority Support:</p>
+              <p>For urgent medical inquiries, responses within 2 hours</p>
             </div>
           </div>
         </div>
+        
         <div className="border-t border-teal-600 mt-8 pt-8 text-center text-teal-200">
           <p>&copy; {new Date().getFullYear()} Second Opinion. All rights reserved.</p>
         </div>

@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { FaUserMd, FaUsers, FaCalendarCheck, FaClock } from 'react-icons/fa';
-import { statCards, doctors, activities } from '@/data/mockData';
+import { statCards, activities } from '@/data/mockData';
+import { doctors } from '@/data/doctorsData';
 import { useAuth } from "@/contexts/AuthContext";
 
 // Import components

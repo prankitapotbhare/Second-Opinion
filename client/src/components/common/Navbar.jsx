@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { FaBars, FaTimes, FaUser, FaSignOutAlt } from 'react-icons/fa';
 import { useOnClickOutside } from '@/hooks/useOnClickOutside';
+import LogoutConfirmationModal from '@/components/modals/LogoutConfirmationModal';
 
 const Navbar = ({ scrollToFAQs, simplifiedNav = false }) => {
-  const { currentUser, logout, isAuthenticated } = useAuth();
+  const { currentUser, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   
   // Create refs for the dropdown menus
   const menuRef = useRef(null);
@@ -28,6 +30,11 @@ const Navbar = ({ scrollToFAQs, simplifiedNav = false }) => {
     if (isProfileOpen) setIsProfileOpen(false);
   });
 
+  // Add isAuthenticated function
+  const isAuthenticated = () => {
+    return !!currentUser;
+  };
+
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
@@ -36,10 +43,19 @@ const Navbar = ({ scrollToFAQs, simplifiedNav = false }) => {
     setIsProfileOpen(!isProfileOpen);
   };
 
-  const handleLogout = () => {
+  const handleLogoutClick = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleConfirmLogout = () => {
     logout();
+    setShowLogoutConfirm(false);
     setIsProfileOpen(false);
     setIsMenuOpen(false);
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
   };
 
   // Get dashboard link based on user role
@@ -65,7 +81,7 @@ const Navbar = ({ scrollToFAQs, simplifiedNav = false }) => {
             
             {!simplifiedNav && (
               <>
-                <Link href="/user/responses" className="hover:text-teal-200 transition-colors">
+                <Link href="/user/response" className="hover:text-teal-200 transition-colors">
                   Response
                 </Link>
                 <button 
@@ -125,7 +141,7 @@ const Navbar = ({ scrollToFAQs, simplifiedNav = false }) => {
                       </Link>
                     )}
                     <button
-                      onClick={handleLogout}
+                      onClick={handleLogoutClick}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       Logout
@@ -163,7 +179,7 @@ const Navbar = ({ scrollToFAQs, simplifiedNav = false }) => {
               {!simplifiedNav && (
                 <>
                   <Link 
-                    href="/user/responses" 
+                    href="/user/response" 
                     className="hover:text-teal-200 transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
@@ -226,7 +242,7 @@ const Navbar = ({ scrollToFAQs, simplifiedNav = false }) => {
                     </Link>
                   )}
                   <button
-                    onClick={handleLogout}
+                    onClick={handleLogoutClick}
                     className="flex items-center space-x-2 hover:text-teal-200 transition-colors"
                   >
                     <FaSignOutAlt />
@@ -238,6 +254,13 @@ const Navbar = ({ scrollToFAQs, simplifiedNav = false }) => {
           </div>
         )}
       </div>
+      
+      {/* Render the Confirmation Modal */}
+      <LogoutConfirmationModal
+        isOpen={showLogoutConfirm}
+        onClose={handleCancelLogout}
+        onConfirm={handleConfirmLogout}
+      />
     </nav>
   );
 };

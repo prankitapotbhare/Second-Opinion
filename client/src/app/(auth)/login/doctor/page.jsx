@@ -1,20 +1,13 @@
 "use client";
 
-import React from 'react';
-import { useRouter } from 'next/navigation';
+import React, { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { SplitScreen, AuthHeader } from '../../components';
 import { LoginForm } from '../../components';
 
-export default function DoctorLogin() {
-  const router = useRouter();
-
-  const handleSubmit = ({ email, password, rememberMe }) => {
-    // Handle login logic here
-    console.log({ email, password, rememberMe });
-    
-    // Redirect to doctor dashboard after successful login
-    router.push('/doctor/dashboard');
-  };
+function  DoctorLoginContent() {
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/doctor/dashboard';
 
   return (
     <SplitScreen 
@@ -33,9 +26,17 @@ export default function DoctorLogin() {
         
       <LoginForm 
         userType="doctor"
-        onSubmit={handleSubmit}
-        redirectPath="/doctor/dashboard"
+        redirectPath={redirectTo}
       />
     </SplitScreen>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function DoctorLogin() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <DoctorLoginContent />
+    </Suspense>
   );
 }

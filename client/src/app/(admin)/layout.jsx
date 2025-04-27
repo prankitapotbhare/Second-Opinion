@@ -8,7 +8,7 @@ import { AdminProvider } from '@/contexts/AdminContext';
 // Create a wrapper component that uses the context
 const AdminLayoutContent = ({ children }) => {
   return (
-    <div className="flex h-screen bg-[#f0f8ff] overflow-hidden">
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Sidebar */}
       <Sidebar />
 
