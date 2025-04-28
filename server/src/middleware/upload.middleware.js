@@ -33,18 +33,20 @@ const patientStorage = multer.diskStorage({
 /**
  * Configure storage for doctor documents
  */
+// For doctor document uploads
 const doctorStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    // Create doctor-specific directory using authenticated user ID
-    const doctorDir = path.join(DOCTOR_FILES_DIR, req.user.id);
+    // Convert ObjectId to string before using it in path.join
+    const doctorId = req.user.id.toString();
+    const doctorDir = path.join(DOCTOR_FILES_DIR, doctorId);
     fileService.ensureDirectoryExists(doctorDir);
     cb(null, doctorDir);
   },
   filename: function (req, file, cb) {
-    // Add a timestamp and sanitize the filename
-    const sanitizedName = file.originalname.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9.-]/g, '');
-    const uniqueName = `${file.fieldname}-${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(sanitizedName)}`;
-    cb(null, uniqueName);
+    // Generate unique filename
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
   }
 });
 

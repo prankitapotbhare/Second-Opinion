@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const patientController = require('../controllers/patient.controller');
-const doctorController = require('../controllers/doctor.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { checkRole } = require('../middleware/role.middleware');
 const { patientFileUpload, handleUploadError } = require('../middleware/upload.middleware');
@@ -36,10 +35,5 @@ router.get('/forms/:formId/files/:fileId',
 router.delete('/forms/:formId/files/:fileId', 
   patientController.deleteMedicalFile
 );
-
-// Doctor listing and details (patients need to see available doctors)
-router.get('/doctors', doctorController.getAllDoctors);
-router.get('/doctors/:id', doctorController.getDoctorDetails);
-router.get('/doctors/:id/availability', doctorController.getAvailability);
 
 module.exports = router;

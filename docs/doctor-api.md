@@ -4,7 +4,7 @@ This document provides details about the Doctor API endpoints available in the S
 
 ## Base URL
 
-All endpoints are relative to the base URL: `/api/doctors`
+All endpoints are relative to the base URL: `/api/doctor`
 
 ## Authentication
 
