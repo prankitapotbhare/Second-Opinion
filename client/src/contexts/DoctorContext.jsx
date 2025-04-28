@@ -1,3 +1,5 @@
+"use client";
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   getDoctorProfile, 
@@ -12,8 +14,6 @@ import { useAuth } from './AuthContext';
 import { useRouter } from 'next/navigation';
 
 const DoctorContext = createContext();
-
-export const useDoctorContext = () => useContext(DoctorContext);
 
 export const DoctorProvider = ({ children }) => {
   const { currentUser, authToken, logout } = useAuth();
@@ -42,7 +42,7 @@ export const DoctorProvider = ({ children }) => {
       
       // Ensure languages is an array
       if (profileData.languages && typeof profileData.languages === 'string') {
-        profileData.languages = profileData.languages.split(',').map(lang => lang.trim());
+        profileData.languages = profileData.languages.split(',').map(lang => lang.trim()).filter(Boolean);
       }
       
       const response = await completeProfile(profileData, files);
@@ -87,6 +87,10 @@ export const DoctorProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
+      // Ensure languages is an array
+      if (profileData.languages && typeof profileData.languages === 'string') {
+        profileData.languages = profileData.languages.split(',').map(lang => lang.trim()).filter(Boolean);
+      }
       const response = await updateProfile(profileData, files);
       setDoctor(response.data);
       return response;
@@ -237,4 +241,12 @@ export const DoctorProvider = ({ children }) => {
       {children}
     </DoctorContext.Provider>
   );
+};
+
+export const useDoctor = () => {
+  const context = useContext(DoctorContext);
+  if (context === undefined) {
+    throw new Error('useDoctor must be used within a DoctorProvider');
+  }
+  return context;
 };

@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useDoctorContext } from '@/contexts/DoctorContext';
+import { useDoctor } from '@/contexts/DoctorContext';
 import FileUpload from './FileUpload';
 import DropdownSelect from './DropdownSelect';
 
 export default function DoctorDetailsForm() {
   const router = useRouter();
-  const { completeProfile, setAvailability, loading, error } = useDoctorContext();
+  const { completeProfile, setAvailability, loading, error } = useDoctor();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -93,15 +93,17 @@ export default function DoctorDetailsForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     // Prepare data for API
     const profileData = {
       ...formData,
-      languages: formData.languages.split(',').map(lang => lang.trim()),
+      languages: typeof formData.languages === 'string'
+        ? formData.languages.split(',').map(lang => lang.trim()).filter(Boolean)
+        : formData.languages,
     };
 
     // Create availability data object

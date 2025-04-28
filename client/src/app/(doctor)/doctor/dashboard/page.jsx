@@ -8,9 +8,11 @@ import SettingSection from "./components/SettingSection";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDoctor } from "@/contexts/DoctorContext";
 
 const DoctorDashboard = () => {
   const { currentUser } = useAuth();
+  const { doctor } = useDoctor();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -60,15 +62,14 @@ const DoctorDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header 
-          user={currentUser} 
           setIsSidebarOpen={setIsSidebarOpen}
           title={activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
         />
         <div className="flex-1 overflow-y-auto pb-6">
           {activeTab === "dashboard" && <DashboardSection statCards={statCards} />}
           {activeTab === "appointments" && <AppointmentSection />}
-          {activeTab === "profile" && <ProfileSection user={currentUser} />}
-          {activeTab === "settings" && <SettingSection user={currentUser} />}
+          {activeTab === "profile" && <ProfileSection />}
+          {activeTab === "settings" && <SettingSection user={currentUser} doctor={doctor} />}
         </div>
       </div>
     </div>

@@ -77,22 +77,25 @@ export const getDoctorProfile = async () => {
 export const completeProfile = async (profileData, files) => {
   try {
     const token = getAuthToken();
-    
-    // Create FormData object to handle file uploads
     const formData = new FormData();
-    
-    // Add profile data to FormData
+
     Object.keys(profileData).forEach(key => {
       if (profileData[key] !== undefined && profileData[key] !== null) {
         if (Array.isArray(profileData[key])) {
-          // Handle array values (like languages)
-          formData.append(key, JSON.stringify(profileData[key]));
+          // Append each language as its own field
+          if (key === 'languages') {
+            profileData[key].forEach(lang => {
+              formData.append('languages', lang);
+            });
+          } else {
+            formData.append(key, profileData[key]);
+          }
         } else {
           formData.append(key, profileData[key]);
         }
       }
     });
-    
+
     // Add files to FormData if they exist
     if (files) {
       Object.keys(files).forEach(key => {
@@ -127,22 +130,25 @@ export const completeProfile = async (profileData, files) => {
 export const updateProfile = async (profileData, files) => {
   try {
     const token = getAuthToken();
-    
-    // Create FormData object to handle file uploads
     const formData = new FormData();
-    
-    // Add profile data to FormData
+
     Object.keys(profileData).forEach(key => {
       if (profileData[key] !== undefined && profileData[key] !== null) {
         if (Array.isArray(profileData[key])) {
-          // Handle array values (like languages)
-          formData.append(key, JSON.stringify(profileData[key]));
+          // Append each language as its own field
+          if (key === 'languages') {
+            profileData[key].forEach(lang => {
+              formData.append('languages', lang);
+            });
+          } else {
+            formData.append(key, profileData[key]);
+          }
         } else {
           formData.append(key, profileData[key]);
         }
       }
     });
-    
+
     // Add files to FormData if they exist
     if (files) {
       Object.keys(files).forEach(key => {
