@@ -75,9 +75,12 @@ const LoginForm = ({
         if (result.needsVerification) {
           setNeedsVerification(true);
           setVerificationEmail(email);
-        } else if (result.wrongRole) {
-          // Handle wrong role (e.g., trying to log in as doctor with a patient account)
-          setError(result.error);
+        } else if (result.wrongRole && result.actualRole) {
+          // Handle wrong role error - redirect to correct login page
+          setError(`This account is registered as a ${result.actualRole}. Redirecting to the correct login page...`);
+          setTimeout(() => {
+            router.push(`/login/${result.actualRole}`);
+          }, 2000);
         } else {
           setError(result.error || 'Login failed. Please check your credentials.');
         }

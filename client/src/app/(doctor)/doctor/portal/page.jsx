@@ -3,7 +3,6 @@
 import React from 'react';
 import {Navbar, Footer} from '@/components';
 import DoctorDetailsForm from './components/DoctorDetailsForm';
-import { DoctorProvider } from '@/contexts/DoctorContext';
 
 const DoctorPortalPage = () => {
   return (
@@ -11,9 +10,7 @@ const DoctorPortalPage = () => {
       <Navbar
             simplifiedNav={true}
       />
-      <DoctorProvider>
-        <DoctorDetailsForm />
-      </DoctorProvider>
+      <DoctorDetailsForm />
       <Footer/>
     </>
   );
