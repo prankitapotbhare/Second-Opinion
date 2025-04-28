@@ -35,6 +35,11 @@ exports.updateDoctorProfile = async (req, res, next) => {
       delete req.body.role;
     }
     
+    // Don't allow email updates through this function
+    if (req.body.email) {
+      delete req.body.email;
+    }
+    
     // Process uploaded documents if any
     const updateData = { ...req.body };
     
@@ -88,6 +93,11 @@ exports.completeProfile = async (req, res, next) => {
     
     if (missingFields.length > 0) {
       return next(createError(`Missing required fields: ${missingFields.join(', ')}`, 400));
+    }
+    
+    // Don't allow email updates through this function
+    if (req.body.email) {
+      delete req.body.email;
     }
     
     // Update doctor profile with documents and additional information
