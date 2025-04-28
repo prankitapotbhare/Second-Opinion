@@ -93,15 +93,17 @@ export default function DoctorDetailsForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     // Prepare data for API
     const profileData = {
       ...formData,
-      languages: formData.languages.split(',').map(lang => lang.trim()),
+      languages: typeof formData.languages === 'string'
+        ? formData.languages.split(',').map(lang => lang.trim()).filter(Boolean)
+        : formData.languages,
     };
 
     // Create availability data object

@@ -42,7 +42,7 @@ export const DoctorProvider = ({ children }) => {
       
       // Ensure languages is an array
       if (profileData.languages && typeof profileData.languages === 'string') {
-        profileData.languages = profileData.languages.split(',').map(lang => lang.trim());
+        profileData.languages = profileData.languages.split(',').map(lang => lang.trim()).filter(Boolean);
       }
       
       const response = await completeProfile(profileData, files);
@@ -87,6 +87,10 @@ export const DoctorProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
+      // Ensure languages is an array
+      if (profileData.languages && typeof profileData.languages === 'string') {
+        profileData.languages = profileData.languages.split(',').map(lang => lang.trim()).filter(Boolean);
+      }
       const response = await updateProfile(profileData, files);
       setDoctor(response.data);
       return response;

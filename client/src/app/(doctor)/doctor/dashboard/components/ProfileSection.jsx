@@ -88,9 +88,15 @@ const ProfileSection = () => {
     setIsSubmitting(true);
     setUpdateSuccess(false);
     setUpdateError(null);
-    
+
+    // Ensure languages is an array before sending
+    let submitData = { ...formData };
+    if (typeof submitData.languages === 'string') {
+      submitData.languages = submitData.languages.split(',').map(lang => lang.trim()).filter(Boolean);
+    }
+
     try {
-      await updateProfile(formData, files);
+      await updateProfile(submitData, files);
       setUpdateSuccess(true);
       // Reset file inputs after successful upload
       setFiles({});
