@@ -1,7 +1,21 @@
 import React from "react";
+import { useDoctor } from "@/contexts/DoctorContext";
 import { FaPhoneAlt, FaEnvelope, FaLock, FaTrash, FaUserCircle } from "react-icons/fa";
 
 const SettingSection = ({ user }) => {
+  const { doctor, loading, deleteAccount } = useDoctor();
+
+  const handleDeleteAccount = async () => {
+    if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+      try {
+        await deleteAccount();
+        // Redirect or show success message will be handled by the context
+      } catch (error) {
+        console.error("Error deleting account:", error);
+      }
+    }
+  };
+
   return (
     <main className="flex-1 overflow-y-auto p-4 sm:p-6">
 
@@ -72,7 +86,10 @@ const SettingSection = ({ user }) => {
                 Permanently delete your account and all associated data.
               </p>
             </div>
-            <button className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center">
+            <button 
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center"
+              onClick={handleDeleteAccount}
+            >
               <FaTrash className="mr-2" />
               Delete Account
             </button>

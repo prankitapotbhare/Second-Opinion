@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useDoctorContext } from '@/contexts/DoctorContext';
+import { useDoctor } from '@/contexts/DoctorContext';
 import FileUpload from './FileUpload';
 import DropdownSelect from './DropdownSelect';
 
 export default function DoctorDetailsForm() {
   const router = useRouter();
-  const { completeProfile, setAvailability, loading, error } = useDoctorContext();
+  const { completeProfile, setAvailability, loading, error } = useDoctor();
   
   // Form state
   const [formData, setFormData] = useState({
