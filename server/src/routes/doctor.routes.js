@@ -9,10 +9,6 @@ const { doctorFileUpload, handleUploadError } = require('../middleware/upload.mi
 router.use(authenticate);
 router.use(checkRole(['doctor']));
 
-// Doctor profile routes (using authenticated user)
-router.get('/profile', doctorController.getDoctorProfile);
-router.put('/profile', doctorController.updateDoctorProfile);
-
 // Updated profile completion route (using authenticated user)
 router.post('/profile/complete', 
   doctorFileUpload.fields([
@@ -23,6 +19,10 @@ router.post('/profile/complete',
   handleUploadError,
   doctorController.completeProfile
 );
+
+// Doctor profile routes (using authenticated user)
+router.get('/profile', doctorController.getDoctorProfile);
+router.put('/profile', doctorController.updateDoctorProfile);
 
 // Separate document upload routes (using authenticated user)
 router.post('/profile/documents', 
