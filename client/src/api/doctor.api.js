@@ -25,16 +25,33 @@ const handleResponse = async (response) => {
 };
 
 /**
+ * Helper function to get authentication token
+ * @returns {string} Authentication token
+ * @throws {Error} If no token is found
+ */
+const getAuthToken = () => {
+  // Try to get token from sessionStorage
+  let token = sessionStorage.getItem('authToken');
+  
+  // If not in sessionStorage, try localStorage as fallback
+  if (!token) {
+    token = localStorage.getItem('authToken');
+  }
+  
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+  
+  return token;
+};
+
+/**
  * Get doctor profile
  * @returns {Promise<Object>} Doctor profile data
  */
 export const getDoctorProfile = async () => {
   try {
-    const token = localStorage.getItem('accessToken');
-    
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
+    const token = getAuthToken();
     
     const response = await fetch(`${API_URL}/doctor/profile`, {
       method: 'GET',
@@ -59,11 +76,7 @@ export const getDoctorProfile = async () => {
  */
 export const completeProfile = async (profileData, files) => {
   try {
-    const token = localStorage.getItem('accessToken');
-    
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
+    const token = getAuthToken();
     
     // Create FormData object to handle file uploads
     const formData = new FormData();
@@ -113,11 +126,7 @@ export const completeProfile = async (profileData, files) => {
  */
 export const updateProfile = async (profileData, files) => {
   try {
-    const token = localStorage.getItem('accessToken');
-    
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
+    const token = getAuthToken();
     
     // Create FormData object to handle file uploads
     const formData = new FormData();
@@ -166,11 +175,7 @@ export const updateProfile = async (profileData, files) => {
  */
 export const setAvailability = async (availabilityData) => {
   try {
-    const token = localStorage.getItem('accessToken');
-    
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
+    const token = getAuthToken();
     
     const response = await fetch(`${API_URL}/doctor/profile/availability`, {
       method: 'POST',
@@ -194,11 +199,7 @@ export const setAvailability = async (availabilityData) => {
  */
 export const getAvailability = async () => {
   try {
-    const token = localStorage.getItem('accessToken');
-    
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
+    const token = getAuthToken();
     
     const response = await fetch(`${API_URL}/doctor/profile/availability`, {
       method: 'GET',
@@ -221,11 +222,7 @@ export const getAvailability = async () => {
  */
 export const deleteAccount = async () => {
   try {
-    const token = localStorage.getItem('accessToken');
-    
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
+    const token = getAuthToken();
     
     const response = await fetch(`${API_URL}/doctor/account`, {
       method: 'DELETE',
@@ -249,11 +246,7 @@ export const deleteAccount = async () => {
  */
 export const downloadDocument = async (documentType) => {
   try {
-    const token = localStorage.getItem('accessToken');
-    
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
+    const token = getAuthToken();
     
     const response = await fetch(`${API_URL}/doctor/profile/documents/${documentType}`, {
       method: 'GET',

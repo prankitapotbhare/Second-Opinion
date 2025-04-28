@@ -9,24 +9,63 @@ import {
   downloadDocument
 } from '@/api/doctor.api';
 import { useAuth } from './AuthContext';
+import { useRouter } from 'next/navigation';
 
 const DoctorContext = createContext();
 
 export const useDoctorContext = () => useContext(DoctorContext);
 
 export const DoctorProvider = ({ children }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { currentUser, authToken, logout } = useAuth();
   const [doctor, setDoctor] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [availability, setAvailabilityState] = useState(null);
+  const router = useRouter();
 
   // Fetch doctor profile when authenticated
   useEffect(() => {
-    if (isAuthenticated && user?.role === 'doctor') {
+    if (currentUser && authToken && currentUser.role === 'doctor') {
       fetchDoctorProfile();
     }
-  }, [isAuthenticated, user]);
+  }, [currentUser, authToken]);
+
+  // Complete doctor profile
+  const handleCompleteProfile = async (profileData, files) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Check if user is authenticated before proceeding
+      if (!currentUser || !authToken) {
+        throw new Error('You must be logged in to complete your profile');
+      }
+      
+      // Ensure languages is an array
+      if (profileData.languages && typeof profileData.languages === 'string') {
+        profileData.languages = profileData.languages.split(',').map(lang => lang.trim());
+      }
+      
+      const response = await completeProfile(profileData, files);
+      setDoctor(response.data);
+      return response;
+    } catch (err) {
+      // Handle authentication errors specifically
+      if (err.message === 'No authentication token found') {
+        setError('Your session has expired. Please log in again.');
+        // Optionally redirect to login
+        setTimeout(() => {
+          if (logout) logout();
+          router.push('/login/doctor');
+        }, 3000);
+      } else {
+        setError(err.message || 'Failed to complete profile');
+      }
+      console.error('Error completing profile:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Fetch doctor profile
   const fetchDoctorProfile = async () => {
@@ -38,23 +77,6 @@ export const DoctorProvider = ({ children }) => {
     } catch (err) {
       setError(err.message || 'Failed to fetch doctor profile');
       console.error('Error fetching doctor profile:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Complete doctor profile
-  const handleCompleteProfile = async (profileData, files) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await completeProfile(profileData, files);
-      setDoctor(response.data);
-      return response;
-    } catch (err) {
-      setError(err.message || 'Failed to complete profile');
-      console.error('Error completing profile:', err);
-      throw err;
     } finally {
       setLoading(false);
     }
@@ -82,11 +104,26 @@ export const DoctorProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
+      // Check if user is authenticated before proceeding
+      if (!currentUser || !authToken) {
+        throw new Error('You must be logged in to set availability');
+      }
+      
       const response = await setAvailability(availabilityData);
       setAvailabilityState(response.data);
       return response;
     } catch (err) {
-      setError(err.message || 'Failed to set availability');
+      // Handle authentication errors specifically
+      if (err.message === 'No authentication token found') {
+        setError('Your session has expired. Please log in again.');
+        // Optionally redirect to login
+        setTimeout(() => {
+          if (logout) logout();
+          router.push('/login/doctor');
+        }, 3000);
+      } else {
+        setError(err.message || 'Failed to set availability');
+      }
       console.error('Error setting availability:', err);
       throw err;
     } finally {

@@ -1,24 +1,70 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useDoctorContext } from '@/contexts/DoctorContext';
 import FileUpload from './FileUpload';
 import DropdownSelect from './DropdownSelect';
 
 export default function DoctorDetailsForm() {
-  const [specialization, setSpecialization] = useState('');
+  const router = useRouter();
+  const { completeProfile, setAvailability, loading, error } = useDoctorContext();
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    specialization: '',
+    experience: '',
+    hospitalAffiliation: '',
+    hospitalAddress: '',
+    licenseNumber: '',
+    issuingMedicalCouncil: '',
+    languages: '',
+    phone: '',
+    email: '',
+    emergencyContact: '',
+    consultationFee: '',
+    consultationAddress: '',
+    location: '',
+    bio: '', // Added bio field
+  });
+  
+  // Files state
+  const [files, setFiles] = useState({
+    registrationCertificate: null,
+    governmentId: null,
+    // profilePhoto removed
+  });
+  
+  // UI state
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [workingDays, setWorkingDays] = useState([]);
   const [weeklyHoliday, setWeeklyHoliday] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
-  const [location, setLocation] = useState('');
-  const router = useRouter();
+  const [formErrors, setFormErrors] = useState({});
 
   const specializationOptions = [
     "Cardiology", "Dermatology", "Endocrinology", "Gastroenterology", "Neurology",
     "Oncology", "Orthopedics", "Pediatrics", "Psychiatry", "Radiology", "Surgery", "Urology"
   ];
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleFileChange = (e) => {
+    const { name, files: uploadedFiles } = e.target;
+    if (uploadedFiles && uploadedFiles[0]) {
+      setFiles(prev => ({
+        ...prev,
+        [name]: uploadedFiles[0]
+      }));
+    }
+  };
 
   const toggleDay = (day) => {
     setWorkingDays(prev =>
@@ -26,13 +72,65 @@ export default function DoctorDetailsForm() {
     );
   };
 
-  const handleSubmit = (e) => {
+  const validateForm = () => {
+    const errors = {};
+    const requiredFields = [
+      'specialization', 'experience', 'hospitalAffiliation', 
+      'licenseNumber', 'issuingMedicalCouncil', 'languages', 
+      'phone', 'emergencyContact', 'consultationFee', 'bio' // Added bio
+    ];
+    
+    requiredFields.forEach(field => {
+      if (!formData[field]) {
+        errors[field] = 'This field is required';
+      }
+    });
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: submit all form data including availability
-    setShowSuccessPopup(true);
-    setTimeout(() => {
-      router.push('/doctor/dashboard');
-    }, 2000);
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    // Prepare data for API
+    const profileData = {
+      ...formData,
+      languages: formData.languages.split(',').map(lang => lang.trim()),
+    };
+
+    // Create availability data object
+    const availabilityData = {
+      workingDays: workingDays.reduce((acc, day) => {
+        acc[day.toLowerCase()] = true;
+        return acc;
+      }, {}),
+      weeklyHoliday: weeklyHoliday.toLowerCase(),
+      startTime: startTime,
+      endTime: endTime
+    };
+    
+    try {
+      // First complete the profile
+      const profileResponse = await completeProfile(profileData, files);
+      
+      // Then set availability if we have working days
+      if (workingDays.length > 0) {
+        await setAvailability(availabilityData);
+      }
+      
+      setShowSuccessPopup(true);
+      setTimeout(() => {
+        router.push('/doctor/dashboard');
+      }, 2000);
+    } catch (err) {
+      console.error("Error completing profile:", err);
+      // Handle error state
+    }
   };
 
   return (
@@ -63,11 +161,12 @@ export default function DoctorDetailsForm() {
           </label>
           <DropdownSelect
             options={specializationOptions}
-            value={specialization}
-            onChange={setSpecialization}
+            value={formData.specialization}
+            onChange={(value) => setFormData(prev => ({ ...prev, specialization: value }))}
             placeholder="Eg. Cardiology"
             required
           />
+          {formErrors.specialization && <p className="text-red-500 text-xs mt-1">{formErrors.specialization}</p>}
         </div>
 
         {/* Experience */}
@@ -77,10 +176,14 @@ export default function DoctorDetailsForm() {
           </label>
           <input
             type="text"
+            name="experience"
+            value={formData.experience}
+            onChange={handleInputChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="Eg. 5 (in years)"
             required
           />
+          {formErrors.experience && <p className="text-red-500 text-xs mt-1">{formErrors.experience}</p>}
         </div>
 
         {/* Hospital Affiliation */}
@@ -90,10 +193,14 @@ export default function DoctorDetailsForm() {
           </label>
           <input
             type="text"
+            name="hospitalAffiliation"
+            value={formData.hospitalAffiliation}
+            onChange={handleInputChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="Eg. Apollo Hospitals, Chennai"
             required
           />
+          {formErrors.hospitalAffiliation && <p className="text-red-500 text-xs mt-1">{formErrors.hospitalAffiliation}</p>}
         </div>
 
         {/* Hospital Address */}
@@ -103,6 +210,9 @@ export default function DoctorDetailsForm() {
           </label>
           <input
             type="text"
+            name="hospitalAddress"
+            value={formData.hospitalAddress}
+            onChange={handleInputChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="Eg. AIIMS, Delhi, India"
           />
@@ -115,10 +225,14 @@ export default function DoctorDetailsForm() {
           </label>
           <input
             type="text"
+            name="licenseNumber"
+            value={formData.licenseNumber}
+            onChange={handleInputChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="Eg. 4456748"
             required
           />
+          {formErrors.licenseNumber && <p className="text-red-500 text-xs mt-1">{formErrors.licenseNumber}</p>}
         </div>
 
         {/* Medical Council */}
@@ -128,10 +242,14 @@ export default function DoctorDetailsForm() {
           </label>
           <input
             type="text"
+            name="issuingMedicalCouncil"
+            value={formData.issuingMedicalCouncil}
+            onChange={handleInputChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="Eg. MCI / USMLE"
             required
           />
+          {formErrors.issuingMedicalCouncil && <p className="text-red-500 text-xs mt-1">{formErrors.issuingMedicalCouncil}</p>}
         </div>
 
         {/* Languages */}
@@ -141,10 +259,15 @@ export default function DoctorDetailsForm() {
           </label>
           <input
             type="text"
+            name="languages"
+            value={formData.languages}
+            onChange={handleInputChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="Eg. English, Hindi"
             required
           />
+          <p className="text-xs text-gray-500 mt-1">Separate languages with commas (e.g., English, Hindi)</p>
+          {formErrors.languages && <p className="text-red-500 text-xs mt-1">{formErrors.languages}</p>}
         </div>
 
         {/* Phone */}
@@ -154,10 +277,14 @@ export default function DoctorDetailsForm() {
           </label>
           <input
             type="tel"
+            name="phone"
+            value={formData.phone}
+            onChange={handleInputChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="Eg. 9843XXXXXX"
             required
           />
+          {formErrors.phone && <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>}
         </div>
 
         {/* Email */}
@@ -167,6 +294,9 @@ export default function DoctorDetailsForm() {
           </label>
           <input
             type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleInputChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="Eg. you@example.com"
             required
@@ -180,10 +310,14 @@ export default function DoctorDetailsForm() {
           </label>
           <input
             type="tel"
+            name="emergencyContact"
+            value={formData.emergencyContact}
+            onChange={handleInputChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="Eg. 7843XXXXXX"
             required
           />
+          {formErrors.emergencyContact && <p className="text-red-500 text-xs mt-1">{formErrors.emergencyContact}</p>}
         </div>
 
         {/* Consultation Fee */}
@@ -193,10 +327,14 @@ export default function DoctorDetailsForm() {
           </label>
           <input
             type="number"
+            name="consultationFee"
+            value={formData.consultationFee}
+            onChange={handleInputChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="Eg. 500"
             required
           />
+          {formErrors.consultationFee && <p className="text-red-500 text-xs mt-1">{formErrors.consultationFee}</p>}
         </div>
 
         {/* Consultation Address */}
@@ -206,6 +344,9 @@ export default function DoctorDetailsForm() {
           </label>
           <input
             type="text"
+            name="consultationAddress"
+            value={formData.consultationAddress}
+            onChange={handleInputChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="Eg. Fortis Hospital, Bandra, Mumbai"
           />
@@ -218,123 +359,151 @@ export default function DoctorDetailsForm() {
           </label>
           <input
             type="text"
+            name="location"
+            value={formData.location}
+            onChange={handleInputChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-            placeholder="Eg. Fortis Hospital, Bandra, Mumbai"
+            placeholder="Eg. Mumbai, India"
           />
         </div>
 
-        {/* File Upload */}
+        {/* Registration Certificate */}
+        <div className="md:col-span-2">
+          <FileUpload
+            label="Registration Certificate"
+            accept=".pdf,.jpg,.jpeg,.png"
+            required={true}
+            isDragDrop={true}
+            fileTypes="PDF, JPG, PNG (Max 5MB)"
+            onChange={(e) => handleFileChange({
+              target: {
+                name: 'registrationCertificate',
+                files: e.target.files
+              }
+            })}
+          />
+        </div>
+
+        {/* Government ID */}
+        <div className="md:col-span-2">
+          <FileUpload
+            label="Government ID"
+            accept=".pdf,.jpg,.jpeg,.png"
+            required={true}
+            isDragDrop={true}
+            fileTypes="PDF, JPG, PNG (Max 5MB)"
+            onChange={(e) => handleFileChange({
+              target: {
+                name: 'governmentId',
+                files: e.target.files
+              }
+            })}
+          />
+        </div>
+
+        {/* Bio - New section */}
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Registration Certificate Upload:<span className="text-red-500">*</span>
-          </label>
-          <FileUpload
-            accept=".pdf,.jpg,.jpeg,.png"
-            required
-            isDragDrop
-            fileTypes="PDF, JPG or PNG (max. 5MB)"
-            placeholder="Upload PDF/JPG"
-          />
-        </div>
-
-         {/* government id Upload */}
-         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Government ID Upload:<span className="text-red-500">* PAN, Aadhar card</span>
-          </label>
-          <FileUpload
-            accept=".pdf,.jpg,.jpeg,.png"
-            required
-            isDragDrop
-            fileTypes="PDF, JPG or PNG (max. 5MB)"
-            placeholder="Upload PDF/JPG"
-          />
-        </div>
-
-        {/* Bio */}
-        <div className="md:col-span-2">
-          <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">
-            Bio:<span className="text-red-500">*</span>
+            Professional Bio:<span className="text-red-500">*</span>
           </label>
           <textarea
-            id="bio"
+            name="bio"
+            value={formData.bio}
+            onChange={handleInputChange}
             rows={4}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-            placeholder="Eg. I am a cardiology specialist with 10 years of experience."
+            placeholder="Write a brief professional bio highlighting your expertise, experience, and approach to patient care..."
+            required
           />
+          {formErrors.bio && <p className="text-red-500 text-xs mt-1">{formErrors.bio}</p>}
         </div>
 
-        {/* Availability / Working Hours */}
-        <div className="md:col-span-2 bg-white p-6 rounded-lg shadow-md mb-6">
-          <label className="block text-lg font-semibold text-gray-800 mb-4">
-            Availability / Working Hours:<span className="text-red-500">*</span>
-          </label>
-
+        <div className='md:col-span-2 bg-white rounded-lg shadow-sm p-8 border border-gray-100'>
           {/* Working Days */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Working Days</label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday','Sunday'].map((day) => (
-                <label key={day} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={workingDays.includes(day)}
-                    onChange={() => toggleDay(day)}
-                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                  />
-                  <span className="text-sm text-gray-700">{day}</span>
-                </label>
+          <div className="md:col-span-2 mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Availability / Working Days:<span className="text-red-500">*</span>
+            </label>
+            <div className="flex flex-wrap gap-3">
+              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => toggleDay(day)}
+                  className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ease-in-out ${
+                    workingDays.includes(day)
+                      ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700'
+                      : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                  }`}
+                >
+                  {day}
+                </button>
               ))}
             </div>
           </div>
 
           {/* Working Hours */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-              <input
-                type="time"
-                value={startTime}
-                onChange={e => setStartTime(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-              <input
-                type="time"
-                value={endTime}
-                onChange={e => setEndTime(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Working Hours:
+            </label>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="relative">
+                <label className="block text-xs font-medium text-gray-500 mb-2">Start Time</label>
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                />
+              </div>
+              <div className="relative">
+                <label className="block text-xs font-medium text-gray-500 mb-2">End Time</label>
+                <input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                />
+              </div>
             </div>
           </div>
 
           {/* Weekly Holiday */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Weekly Holiday</label>
-            <select
-              value={weeklyHoliday}
-              onChange={e => setWeeklyHoliday(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-500 focus:border-red-500"
-            >
-              <option value="">-- Select a Day Off --</option>
-              {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day) => (
-                <option key={day} value={day}>{day}</option>
-              ))}
-            </select>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Weekly Holiday:
+            </label>
+            <div className="relative">
+              <DropdownSelect
+                options={['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']}
+                value={weeklyHoliday}
+                onChange={setWeeklyHoliday}
+                placeholder="Select weekly holiday"
+                className="w-full bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
         </div>
 
         {/* Submit Button */}
-        <div className="md:col-span-2 flex justify-end">
+        <div className="md:col-span-2 flex justify-end mt-6">
           <button
             type="submit"
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            disabled={loading}
+            className={`px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+              loading ? 'opacity-70 cursor-not-allowed' : ''
+            }`}
           >
-            Submit
+            {loading ? 'Submitting...' : 'Submit'}
           </button>
         </div>
+
+        {error && (
+          <div className="md:col-span-2 mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">
+            {error}
+          </div>
+        )}
       </form>
     </div>
   );
