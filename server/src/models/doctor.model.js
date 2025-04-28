@@ -25,6 +25,12 @@ const doctorSchema = new mongoose.Schema({
     sparse: true,
     index: true
   },
+  // Add gender field
+  gender: {
+    type: String,
+    enum: ['Male', 'Female', 'Other'],
+    required: false
+  },
   specialization: {
     type: String,
     required: false
