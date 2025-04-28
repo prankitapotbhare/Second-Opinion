@@ -1,13 +1,21 @@
 const Admin = require('../models/admin.model');
 const Patient = require('../models/patient.model');
 const Doctor = require('../models/doctor.model');
-const userService = require('../services/user.service');
 const validationService = require('../services/validation.service');
+const mongoose = require('mongoose');
 
 // Get admin profile (using authenticated user)
 exports.getAdminProfile = async (req, res, next) => {
   try {
-    const admin = await userService.getUserProfile(Admin, req.user.id);
+    const admin = await Admin.findById(req.user.id).select('-password');
+    
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        message: 'Admin not found'
+      });
+    }
+    
     res.status(200).json({
       success: true,
       message: 'Admin profile retrieved successfully',
@@ -21,7 +29,29 @@ exports.getAdminProfile = async (req, res, next) => {
 // Update admin profile (using authenticated user)
 exports.updateAdminProfile = async (req, res, next) => {
   try {
-    const admin = await userService.updateUserProfile(Admin, req.user.id, req.body);
+    // Don't allow password updates through this function
+    if (req.body.password) {
+      delete req.body.password;
+    }
+    
+    // Don't allow role changes through this function
+    if (req.body.role) {
+      delete req.body.role;
+    }
+    
+    const admin = await Admin.findByIdAndUpdate(
+      req.user.id,
+      req.body,
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        message: 'Admin not found'
+      });
+    }
+    
     res.status(200).json({
       success: true,
       message: 'Admin profile updated successfully',
@@ -37,22 +67,29 @@ exports.getAllPatients = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const sort = '-createdAt';
     
-    const result = await userService.getAllUsers(Patient, {}, page, limit);
+    const patients = await Patient.find({})
+      .select('-password')
+      .sort(sort)
+      .skip(skip)
+      .limit(limit);
     
-    const totalPages = Math.ceil(result.total / result.limit);
+    const total = await Patient.countDocuments({});
+    const totalPages = Math.ceil(total / limit);
     
     res.status(200).json({
       success: true,
       message: 'Patients retrieved successfully',
-      data: result.users,
+      data: patients,
       pagination: {
-        page: Number(result.page),
-        limit: Number(result.limit),
-        total: result.total,
+        page: Number(page),
+        limit: Number(limit),
+        total,
         totalPages,
-        hasNext: result.page < totalPages,
-        hasPrev: result.page > 1
+        hasNext: page < totalPages,
+        hasPrev: page > 1
       }
     });
   } catch (error) {
@@ -65,22 +102,29 @@ exports.getAllDoctors = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const sort = '-createdAt';
     
-    const result = await userService.getAllUsers(Doctor, {}, page, limit);
+    const doctors = await Doctor.find({})
+      .select('-password')
+      .sort(sort)
+      .skip(skip)
+      .limit(limit);
     
-    const totalPages = Math.ceil(result.total / result.limit);
+    const total = await Doctor.countDocuments({});
+    const totalPages = Math.ceil(total / limit);
     
     res.status(200).json({
       success: true,
       message: 'Doctors retrieved successfully',
-      data: result.users,
+      data: doctors,
       pagination: {
-        page: Number(result.page),
-        limit: Number(result.limit),
-        total: result.total,
+        page: Number(page),
+        limit: Number(limit),
+        total,
         totalPages,
-        hasNext: result.page < totalPages,
-        hasPrev: result.page > 1
+        hasNext: page < totalPages,
+        hasPrev: page > 1
       }
     });
   } catch (error) {
@@ -106,7 +150,14 @@ exports.createAdmin = async (req, res, next) => {
     // Validate email format
     validationService.validateEmail(req.body.email);
     
-    const adminResponse = await userService.createUser(Admin, req.body);
+    // Create new admin
+    const admin = new Admin(req.body);
+    await admin.save();
+    
+    // Remove password from response
+    const adminResponse = admin.toObject();
+    delete adminResponse.password;
+    
     res.status(201).json({
       success: true,
       message: 'Admin created successfully',
@@ -121,7 +172,24 @@ exports.createAdmin = async (req, res, next) => {
 exports.deletePatient = async (req, res, next) => {
   try {
     validationService.validateObjectId(req.params.id, 'patient');
-    await userService.deleteUser(Patient, req.params.id);
+    
+    // Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid patient ID'
+      });
+    }
+    
+    const patient = await Patient.findByIdAndDelete(req.params.id);
+    
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient not found'
+      });
+    }
+    
     res.status(200).json({
       success: true,
       message: 'Patient deleted successfully'
@@ -135,7 +203,24 @@ exports.deletePatient = async (req, res, next) => {
 exports.deleteDoctor = async (req, res, next) => {
   try {
     validationService.validateObjectId(req.params.id, 'doctor');
-    await userService.deleteUser(Doctor, req.params.id);
+    
+    // Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid doctor ID'
+      });
+    }
+    
+    const doctor = await Doctor.findByIdAndDelete(req.params.id);
+    
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor not found'
+      });
+    }
+    
     res.status(200).json({
       success: true,
       message: 'Doctor deleted successfully'
@@ -166,7 +251,24 @@ exports.deleteAdmin = async (req, res, next) => {
     }
     
     validationService.validateObjectId(req.params.id, 'admin');
-    await userService.deleteUser(Admin, req.params.id);
+    
+    // Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid admin ID'
+      });
+    }
+    
+    const admin = await Admin.findByIdAndDelete(req.params.id);
+    
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        message: 'Admin not found'
+      });
+    }
+    
     res.status(200).json({
       success: true,
       message: 'Admin deleted successfully'
@@ -190,22 +292,29 @@ exports.getAllAdmins = async (req, res, next) => {
     
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const sort = '-createdAt';
     
-    const result = await userService.getAllUsers(Admin, {}, page, limit);
+    const admins = await Admin.find({})
+      .select('-password')
+      .sort(sort)
+      .skip(skip)
+      .limit(limit);
     
-    const totalPages = Math.ceil(result.total / result.limit);
+    const total = await Admin.countDocuments({});
+    const totalPages = Math.ceil(total / limit);
     
     res.status(200).json({
       success: true,
       message: 'Admins retrieved successfully',
-      data: result.users,
+      data: admins,
       pagination: {
-        page: Number(result.page),
-        limit: Number(result.limit),
-        total: result.total,
+        page: Number(page),
+        limit: Number(limit),
+        total,
         totalPages,
-        hasNext: result.page < totalPages,
-        hasPrev: result.page > 1
+        hasNext: page < totalPages,
+        hasPrev: page > 1
       }
     });
   } catch (error) {

@@ -2,7 +2,6 @@
  * Global error handling middleware
  */
 const logger = require('../utils/logger.util');
-const responseService = require('../services/response.service');
 
 const errorHandler = (err, req, res, next) => {
   // Log the error
@@ -12,11 +11,21 @@ const errorHandler = (err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
   
-  // Additional error details for development environment
-  const errorDetails = process.env.NODE_ENV !== 'production' ? { stack: err.stack } : null;
+  // Create response object
+  const responseObj = {
+    success: false,
+    message
+  };
   
-  // Send error response
-  responseService.sendError(res, message, statusCode, errorDetails);
+  // Additional error details for development environment
+  if (process.env.NODE_ENV !== 'production') {
+    if (err.stack) {
+      responseObj.stack = err.stack;
+    }
+  }
+  
+  // Send error response directly
+  return res.status(statusCode).json(responseObj);
 };
 
 module.exports = { errorHandler };
