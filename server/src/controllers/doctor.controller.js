@@ -2,7 +2,6 @@ const Doctor = require('../models/doctor.model');
 const Availability = require('../models/availability.model');
 const { createError } = require('../utils/error.util');
 const fileService = require('../services/file.service');
-const mongoose = require('mongoose');
 
 // Get doctor profile (using authenticated user)
 exports.getDoctorProfile = async (req, res, next) => {
@@ -256,115 +255,6 @@ exports.deleteAccount = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: 'Account deleted successfully'
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Get all doctors (for patients or admin)
-exports.getAllDoctors = async (req, res, next) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-    const sort = req.query.sort || '-createdAt';
-    
-    // Build filter based on query parameters
-    const filter = {};
-    
-    if (req.query.specialization) {
-      filter.specialization = req.query.specialization;
-    }
-    
-    if (req.query.experience) {
-      filter.experience = { $gte: parseInt(req.query.experience) };
-    }
-    
-    // Only return doctors with completed profiles
-    filter.isProfileComplete = true;
-    
-    // Execute query with pagination
-    const doctors = await Doctor.find(filter)
-      .select('-password -registrationCertificate -governmentId')
-      .sort(sort)
-      .skip(skip)
-      .limit(limit);
-    
-    // Get total count
-    const total = await Doctor.countDocuments(filter);
-    
-    res.status(200).json({
-      success: true,
-      message: 'Doctors retrieved successfully',
-      data: doctors,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Get doctor details by ID (for patients or admin)
-exports.getDoctorDetails = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    
-    // Validate MongoDB ObjectId
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return next(createError('Invalid doctor ID', 400));
-    }
-    
-    // Find doctor
-    const doctor = await Doctor.findById(id)
-      .select('-password -registrationCertificate -governmentId');
-    
-    if (!doctor) {
-      return next(createError('Doctor not found', 404));
-    }
-    
-    // Get availability
-    const availability = await Availability.findOne({ doctorId: id });
-    
-    res.status(200).json({
-      success: true,
-      message: 'Doctor details retrieved successfully',
-      data: {
-        doctor,
-        availability: availability || null
-      }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Get doctor availability by ID (for patients)
-exports.getAvailability = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    
-    // Validate MongoDB ObjectId
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return next(createError('Invalid doctor ID', 400));
-    }
-    
-    // Find availability
-    const availability = await Availability.findOne({ doctorId: id });
-    
-    if (!availability) {
-      return next(createError('Availability not found for this doctor', 404));
-    }
-    
-    res.status(200).json({
-      success: true,
-      message: 'Availability retrieved successfully',
-      data: availability
     });
   } catch (error) {
     next(error);

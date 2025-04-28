@@ -49,29 +49,6 @@ exports.validateFormData = (formData, files = []) => {
 };
 
 /**
- * Process uploaded medical files
- * @param {Array} files - Uploaded files
- * @returns {Array} Processed file objects
- */
-exports.processUploadedFiles = (files) => {
-  const medicalFiles = [];
-  
-  if (files && files.length > 0) {
-    files.forEach(file => {
-      medicalFiles.push({
-        fileName: file.originalname,
-        fileType: file.mimetype,
-        fileSize: file.size,
-        uploadDate: new Date(),
-        filePath: file.path
-      });
-    });
-  }
-  
-  return medicalFiles;
-};
-
-/**
  * Submit a new form
  * @param {string} patientId - Patient ID
  * @param {Object} formData - Form data

@@ -123,7 +123,8 @@ const doctorSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    default: 'doctor'
+    default: 'doctor',
+    immutable: true
   },
   createdAt: {
     type: Date,
