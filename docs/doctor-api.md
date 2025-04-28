@@ -65,25 +65,27 @@ Retrieves the profile of the authenticated doctor.
 
 ### Update Doctor Profile
 
-Updates the profile of the authenticated doctor.
+Updates the profile of the authenticated doctor. This endpoint now supports document uploads.
 
 - **URL**: `/profile`
 - **Method**: `PUT`
 - **Authentication**: Required (doctor role)
+- **Content-Type**: `multipart/form-data`
 - **Request Body**:
-  ```json
-  {
-    "name": "Updated Name",
-    "specialization": "Neurology",
-    "experience": 12,
-    "hospitalAffiliation": "Metro Hospital",
-    "licenseNumber": "MED67890",
-    "languages": ["English", "French"],
-    "phone": "+1234567890",
-    "bio": "Experienced doctor with focus on neurological disorders"
-    // Other updatable fields
-  }
-  ```
+  - `name` (string, optional): Doctor's name
+  - `specialization` (string, optional): Doctor's specialization
+  - `experience` (number, optional): Years of experience
+  - `hospitalAffiliation` (string, optional): Hospital affiliation
+  - `hospitalAddress` (string, optional): Hospital address
+  - `licenseNumber` (string, optional): Medical license number
+  - `issuingMedicalCouncil` (string, optional): Issuing medical council
+  - `languages` (array, optional): Languages spoken
+  - `phone` (string, optional): Contact phone number
+  - `emergencyContact` (string, optional): Emergency contact
+  - `education` (string, optional): Educational background
+  - `registrationCertificate` (file, optional): Registration certificate document
+  - `governmentId` (file, optional): Government ID document
+  - `profilePhoto` (file, optional): Profile photo
 - **Response**:
   - **Success (200)**:
     ```json
@@ -94,8 +96,7 @@ Updates the profile of the authenticated doctor.
         "_id": "doctor_id",
         "name": "Updated Name",
         "email": "doctor@example.com",
-        "specialization": "Neurology",
-        "experience": 12,
+        "specialization": "Updated Specialization",
         // Updated fields
         "updatedAt": "2023-01-02T00:00:00.000Z"
       }
@@ -105,36 +106,32 @@ Updates the profile of the authenticated doctor.
     ```json
     {
       "success": false,
-      "message": "Invalid input data",
-      "errors": { /* Validation errors */ }
+      "message": "Invalid file type. Allowed types: application/pdf, image/jpeg, image/png"
     }
     ```
 
 ### Complete Doctor Profile
 
-Completes the doctor's profile with required documents and information.
+Completes the doctor's profile with required information and documents.
 
 - **URL**: `/profile/complete`
 - **Method**: `POST`
 - **Authentication**: Required (doctor role)
 - **Content-Type**: `multipart/form-data`
 - **Request Body**:
-  - Form fields:
-    ```
-    specialization: "Cardiology"
-    experience: 10
-    licenseNumber: "MED12345"
-    education: "Medical University"
-    hospitalAffiliation: "City Hospital"
-    languages: ["English", "Spanish"]
-    bio: "Experienced cardiologist"
-    ```
-  - Files:
-    ```
-    registrationCertificate: [file] (PDF/JPG/PNG)
-    governmentId: [file] (PDF/JPG/PNG)
-    profilePhoto: [file] (JPG/PNG)
-    ```
+  - `specialization` (string, required): Doctor's specialization
+  - `experience` (number, required): Years of experience
+  - `licenseNumber` (string, required): Medical license number
+  - `education` (string, required): Educational background
+  - `hospitalAffiliation` (string, optional): Hospital affiliation
+  - `hospitalAddress` (string, optional): Hospital address
+  - `issuingMedicalCouncil` (string, optional): Issuing medical council
+  - `languages` (array, optional): Languages spoken
+  - `phone` (string, optional): Contact phone number
+  - `emergencyContact` (string, optional): Emergency contact
+  - `registrationCertificate` (file, optional): Registration certificate document
+  - `governmentId` (file, optional): Government ID document
+  - `profilePhoto` (file, optional): Profile photo
 - **Response**:
   - **Success (200)**:
     ```json
@@ -176,74 +173,18 @@ Completes the doctor's profile with required documents and information.
       "message": "Missing required fields: specialization, experience, licenseNumber, education"
     }
     ```
-  - **Error (400)**:
-    ```json
-    {
-      "success": false,
-      "message": "Upload error: File too large"
-    }
-    ```
-
-### Upload Doctor Documents
-
-Uploads or updates specific documents for the doctor's profile.
-
-- **URL**: `/profile/documents`
-- **Method**: `POST`
-- **Authentication**: Required (doctor role)
-- **Content-Type**: `multipart/form-data`
-- **Request Body**:
-  - Files:
-    ```
-    registrationCertificate: [file] (PDF/JPG/PNG)
-    governmentId: [file] (PDF/JPG/PNG)
-    ```
-- **Response**:
-  - **Success (200)**:
-    ```json
-    {
-      "success": true,
-      "message": "Documents uploaded successfully",
-      "data": {
-        "_id": "doctor_id",
-        "name": "Doctor Name",
-        "email": "doctor@example.com",
-        "registrationCertificate": {
-          "fileName": "certificate.pdf",
-          "fileType": "application/pdf",
-          "fileSize": 1024000,
-          "uploadDate": "2023-01-02T00:00:00.000Z",
-          "filePath": "path/to/file"
-        },
-        "governmentId": {
-          "fileName": "id.pdf",
-          "fileType": "application/pdf",
-          "fileSize": 512000,
-          "uploadDate": "2023-01-02T00:00:00.000Z",
-          "filePath": "path/to/file"
-        }
-      }
-    }
-    ```
-  - **Error (400)**:
-    ```json
-    {
-      "success": false,
-      "message": "Upload error: Unsupported file type. Allowed types: application/pdf, image/jpeg, image/png"
-    }
-    ```
 
 ### Download Doctor Document
 
-Downloads a specific document from the doctor's profile.
+Downloads a specific document uploaded by the doctor.
 
 - **URL**: `/profile/documents/:documentType`
 - **Method**: `GET`
 - **Authentication**: Required (doctor role)
 - **URL Parameters**:
-  - `documentType`: Type of document to download (registrationCertificate or governmentId)
+  - `documentType` (string, required): Type of document to download. Allowed values: `registrationCertificate`, `governmentId`
 - **Response**:
-  - **Success**: The file is streamed to the client with appropriate content type and disposition headers
+  - **Success**: The document file is streamed to the client
   - **Error (400)**:
     ```json
     {
@@ -267,9 +208,9 @@ Sets the doctor's availability for appointments.
 - **Method**: `POST`
 - **Authentication**: Required (doctor role)
 - **Request Body**:
-  ```json
-  {
-    "availableDays": {
+  - `workingDays` (object, required): Working days configuration
+    ```json
+    {
       "monday": true,
       "tuesday": true,
       "wednesday": true,
@@ -277,31 +218,12 @@ Sets the doctor's availability for appointments.
       "friday": true,
       "saturday": true,
       "sunday": false
-    },
-    "availableTimeSlots": {
-      "startTime": "09:00",
-      "endTime": "17:00"
-    },
-    "weeklyHoliday": "sunday",
-    "timeSlots": [
-      {
-        "day": "monday",
-        "slots": [
-          {
-            "startTime": "09:00",
-            "endTime": "10:00",
-            "isAvailable": true
-          },
-          {
-            "startTime": "10:00",
-            "endTime": "11:00",
-            "isAvailable": true
-          }
-        ]
-      }
-    ]
-  }
-  ```
+    }
+    ```
+  - `startTime` (string, required): Start time in 24-hour format (e.g., "09:00")
+  - `endTime` (string, required): End time in 24-hour format (e.g., "17:00")
+  - `weeklyHoliday` (string, optional): Day of the week for weekly holiday
+  - `timeSlots` (array, optional): Specific time slots configuration
 - **Response**:
   - **Success (200)**:
     ```json
@@ -323,25 +245,8 @@ Sets the doctor's availability for appointments.
         "startTime": "09:00",
         "endTime": "17:00",
         "weeklyHoliday": "sunday",
-        "timeSlots": [
-          {
-            "day": "monday",
-            "slots": [
-              {
-                "startTime": "09:00",
-                "endTime": "10:00",
-                "isAvailable": true
-              },
-              {
-                "startTime": "10:00",
-                "endTime": "11:00",
-                "isAvailable": true
-              }
-            ]
-          }
-        ],
-        "createdAt": "2023-01-02T00:00:00.000Z",
-        "updatedAt": "2023-01-02T00:00:00.000Z"
+        "createdAt": "2023-01-01T00:00:00.000Z",
+        "updatedAt": "2023-01-01T00:00:00.000Z"
       }
     }
     ```
@@ -349,7 +254,7 @@ Sets the doctor's availability for appointments.
     ```json
     {
       "success": false,
-      "message": "Missing required fields: availableDays, availableTimeSlots"
+      "message": "Missing required fields: workingDays, startTime, endTime"
     }
     ```
 
@@ -381,25 +286,8 @@ Retrieves the doctor's availability settings.
         "startTime": "09:00",
         "endTime": "17:00",
         "weeklyHoliday": "sunday",
-        "timeSlots": [
-          {
-            "day": "monday",
-            "slots": [
-              {
-                "startTime": "09:00",
-                "endTime": "10:00",
-                "isAvailable": true
-              },
-              {
-                "startTime": "10:00",
-                "endTime": "11:00",
-                "isAvailable": true
-              }
-            ]
-          }
-        ],
-        "createdAt": "2023-01-02T00:00:00.000Z",
-        "updatedAt": "2023-01-02T00:00:00.000Z"
+        "createdAt": "2023-01-01T00:00:00.000Z",
+        "updatedAt": "2023-01-01T00:00:00.000Z"
       }
     }
     ```
@@ -411,123 +299,68 @@ Retrieves the doctor's availability settings.
     }
     ```
 
-## File Upload Specifications
+### Delete Doctor Account
 
-### Allowed File Types
+Deletes the doctor's account and all associated data.
 
-- **Documents** (registrationCertificate, governmentId):
-  - PDF (application/pdf)
-  - JPEG (image/jpeg)
-  - PNG (image/png)
-
-- **Profile Photo**:
-  - JPEG (image/jpeg)
-  - PNG (image/png)
-
-### File Size Limits
-
-- **Documents**: Maximum size defined in FILE_SIZE_LIMITS.DOCTOR_DOCUMENT (typically 5MB)
-- **Profile Photo**: Maximum size defined in FILE_SIZE_LIMITS.DOCTOR_DOCUMENT (typically 2MB)
-
-## Data Models
-
-### Doctor Model
-
-```javascript
-{
-  name: String,                  // Required
-  email: String,                 // Required, unique
-  password: String,              // Required (min 6 chars)
-  googleId: String,              // Optional
-  specialization: String,        // Optional
-  experience: Number,            // Optional
-  hospitalAffiliation: String,   // Optional
-  hospitalAddress: String,       // Optional
-  licenseNumber: String,         // Optional, unique
-  issuingMedicalCouncil: String, // Optional
-  languages: [String],           // Optional
-  phone: String,                 // Optional
-  emergencyContact: String,      // Optional
-  consultationFee: Number,       // Optional
-  consultationAddress: String,   // Optional
-  location: String,              // Optional
-  registrationCertificate: {     // Optional
-    fileName: String,
-    fileType: String,
-    fileSize: Number,
-    uploadDate: Date,
-    filePath: String
-  },
-  governmentId: {                // Optional
-    fileName: String,
-    fileType: String,
-    fileSize: Number,
-    uploadDate: Date,
-    filePath: String
-  },
-  bio: String,                   // Optional
-  photoURL: String,              // Optional
-  profileCompleted: Boolean,     // Default: false
-  isEmailVerified: Boolean,      // Default: false
-  emailVerifiedAt: Date,         // Default: null
-  termsAccepted: Boolean,        // Required, default: false
-  termsAcceptedAt: Date,         // Default: null
-  role: String,                  // Default: 'doctor'
-  createdAt: Date,               // Auto-generated
-  updatedAt: Date                // Auto-generated
-}
-```
-
-### Availability Model
-
-```javascript
-{
-  doctorId: ObjectId,            // Required, reference to Doctor
-  workingDays: {                 // Default values
-    monday: Boolean,             // Default: true
-    tuesday: Boolean,            // Default: true
-    wednesday: Boolean,          // Default: true
-    thursday: Boolean,           // Default: true
-    friday: Boolean,             // Default: true
-    saturday: Boolean,           // Default: true
-    sunday: Boolean              // Default: false
-  },
-  startTime: String,             // Required, default: '09:00'
-  endTime: String,               // Required, default: '17:00'
-  weeklyHoliday: String,         // Default: 'sunday'
-  timeSlots: [                   // Optional
+- **URL**: `/account`
+- **Method**: `DELETE`
+- **Authentication**: Required (doctor role)
+- **Response**:
+  - **Success (200)**:
+    ```json
     {
-      day: String,               // One of: monday, tuesday, etc.
-      slots: [
-        {
-          startTime: String,
-          endTime: String,
-          isAvailable: Boolean   // Default: true
-        }
-      ]
+      "success": true,
+      "message": "Account deleted successfully"
     }
-  ],
-  createdAt: Date,               // Auto-generated
-  updatedAt: Date                // Auto-generated
-}
-```
+    ```
+  - **Error (404)**:
+    ```json
+    {
+      "success": false,
+      "message": "Doctor not found"
+    }
+    ```
 
-## Error Handling
+## Error Responses
 
-All endpoints use standardized error responses:
+All endpoints may return the following error responses:
 
-- **400 Bad Request**: Invalid input data or validation errors
-- **401 Unauthorized**: Missing or invalid authentication token
-- **403 Forbidden**: Insufficient permissions
-- **404 Not Found**: Resource not found
-- **500 Internal Server Error**: Server-side errors
+- **Unauthorized (401)**:
+  ```json
+  {
+    "success": false,
+    "message": "Unauthorized - No token provided"
+  }
+  ```
+  or
+  ```json
+  {
+    "success": false,
+    "message": "Unauthorized - Invalid token"
+  }
+  ```
+  or
+  ```json
+  {
+    "success": false,
+    "message": "Unauthorized - Token expired",
+    "tokenExpired": true
+  }
+  ```
 
-Error response format:
+- **Forbidden (403)**:
+  ```json
+  {
+    "success": false,
+    "message": "Forbidden - You do not have permission to access this resource"
+  }
+  ```
 
-```json
-{
-  "success": false,
-  "message": "Error message",
-  "errors": { /* Optional detailed errors */ }
-}
-```
+- **Server Error (500)**:
+  ```json
+  {
+    "success": false,
+    "message": "Internal server error"
+  }
+  ```

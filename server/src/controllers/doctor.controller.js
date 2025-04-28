@@ -36,9 +36,30 @@ exports.updateDoctorProfile = async (req, res, next) => {
       delete req.body.role;
     }
     
+    // Process uploaded documents if any
+    const updateData = { ...req.body };
+    
+    if (req.files) {
+      // Process uploaded documents
+      const documents = fileService.processDocuments(req.files);
+      
+      // Add document paths if they exist
+      if (documents.registrationCertificate) {
+        updateData.registrationCertificate = documents.registrationCertificate;
+      }
+      
+      if (documents.governmentId) {
+        updateData.governmentId = documents.governmentId;
+      }
+      
+      if (documents.profilePhoto) {
+        updateData.photoURL = documents.profilePhoto;
+      }
+    }
+    
     const doctor = await Doctor.findByIdAndUpdate(
       req.user.id,
-      req.body,
+      updateData,
       { new: true, runValidators: true }
     ).select('-password');
     
@@ -103,43 +124,6 @@ exports.completeProfile = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: 'Profile completed successfully',
-      data: doctor
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Upload doctor documents (using authenticated user)
-exports.uploadDocuments = async (req, res, next) => {
-  try {
-    // Process uploaded documents using file service
-    const documents = fileService.processDocuments(req.files);
-    
-    // Update doctor profile with documents
-    const updateData = {};
-    
-    if (documents.registrationCertificate) {
-      updateData.registrationCertificate = documents.registrationCertificate;
-    }
-    
-    if (documents.governmentId) {
-      updateData.governmentId = documents.governmentId;
-    }
-    
-    const doctor = await Doctor.findByIdAndUpdate(
-      req.user.id,
-      updateData,
-      { new: true, runValidators: true }
-    ).select('-password');
-    
-    if (!doctor) {
-      return next(createError('Doctor not found', 404));
-    }
-    
-    res.status(200).json({
-      success: true,
-      message: 'Documents uploaded successfully',
       data: doctor
     });
   } catch (error) {
@@ -236,6 +220,42 @@ exports.getDoctorAvailability = async (req, res, next) => {
       success: true,
       message: 'Availability retrieved successfully',
       data: availability
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delete doctor account
+exports.deleteAccount = async (req, res, next) => {
+  try {
+    const doctorId = req.user.id;
+    
+    // Find the doctor
+    const doctor = await Doctor.findById(doctorId);
+    
+    if (!doctor) {
+      return next(createError('Doctor not found', 404));
+    }
+    
+    // Delete doctor's documents if they exist
+    if (doctor.registrationCertificate && doctor.registrationCertificate.filePath) {
+      fileService.deleteFileIfExists(doctor.registrationCertificate.filePath);
+    }
+    
+    if (doctor.governmentId && doctor.governmentId.filePath) {
+      fileService.deleteFileIfExists(doctor.governmentId.filePath);
+    }
+    
+    // Delete doctor's availability
+    await Availability.findOneAndDelete({ doctorId });
+    
+    // Delete doctor account
+    await Doctor.findByIdAndDelete(doctorId);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Account deleted successfully'
     });
   } catch (error) {
     next(error);

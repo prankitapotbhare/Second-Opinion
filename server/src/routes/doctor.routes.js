@@ -22,21 +22,24 @@ router.post('/profile/complete',
 
 // Doctor profile routes (using authenticated user)
 router.get('/profile', doctorController.getDoctorProfile);
-router.put('/profile', doctorController.updateDoctorProfile);
-
-// Separate document upload routes (using authenticated user)
-router.post('/profile/documents', 
+router.put('/profile', 
   doctorFileUpload.fields([
     { name: 'registrationCertificate', maxCount: 1 },
-    { name: 'governmentId', maxCount: 1 }
+    { name: 'governmentId', maxCount: 1 },
+    { name: 'profilePhoto', maxCount: 1 }
   ]),
   handleUploadError,
-  doctorController.uploadDocuments
+  doctorController.updateDoctorProfile
 );
+
+// Document download route
 router.get('/profile/documents/:documentType', doctorController.downloadDocument);
 
 // Availability management (using authenticated user)
 router.post('/profile/availability', doctorController.setAvailability);
 router.get('/profile/availability', doctorController.getDoctorAvailability);
+
+// Delete account route
+router.delete('/account', doctorController.deleteAccount);
 
 module.exports = router;
