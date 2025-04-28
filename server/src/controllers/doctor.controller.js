@@ -95,6 +95,11 @@ exports.completeProfile = async (req, res, next) => {
       return next(createError(`Missing required fields: ${missingFields.join(', ')}`, 400));
     }
     
+    // Validate gender if provided
+    if (req.body.gender && !['Male', 'Female', 'Other'].includes(req.body.gender)) {
+      return next(createError('Invalid gender value. Must be Male, Female, or Other', 400));
+    }
+    
     // Don't allow email updates through this function
     if (req.body.email) {
       delete req.body.email;
