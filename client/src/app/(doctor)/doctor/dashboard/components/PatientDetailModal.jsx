@@ -5,6 +5,8 @@ import {
   FaFilePdf,
   FaDownload,
   FaPaperPlane,
+  FaFileAlt,
+  FaFileImage, // Added the missing import
 } from "react-icons/fa";
 
 const PatientDetailModal = ({
