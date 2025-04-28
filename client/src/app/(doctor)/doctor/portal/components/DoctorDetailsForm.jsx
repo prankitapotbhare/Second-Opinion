@@ -26,6 +26,7 @@ export default function DoctorDetailsForm() {
     consultationAddress: '',
     location: '',
     bio: '', // Added bio field
+    gender: '', // Added gender field
   });
   
   // Files state
@@ -77,7 +78,7 @@ export default function DoctorDetailsForm() {
     const requiredFields = [
       'specialization', 'experience', 'hospitalAffiliation', 
       'licenseNumber', 'issuingMedicalCouncil', 'languages', 
-      'phone', 'emergencyContact', 'consultationFee', 'bio' // Added bio
+      'phone', 'emergencyContact', 'consultationFee', 'bio', 'gender' // Added gender
     ];
     
     requiredFields.forEach(field => {
@@ -167,6 +168,21 @@ export default function DoctorDetailsForm() {
             required
           />
           {formErrors.specialization && <p className="text-red-500 text-xs mt-1">{formErrors.specialization}</p>}
+        </div>
+
+        {/* Gender - New field */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Gender:<span className="text-red-500">*</span>
+          </label>
+          <DropdownSelect
+            options={["Male", "Female", "Other"]}
+            value={formData.gender}
+            onChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}
+            placeholder="Select gender"
+            required
+          />
+          {formErrors.gender && <p className="text-red-500 text-xs mt-1">{formErrors.gender}</p>}
         </div>
 
         {/* Experience */}
