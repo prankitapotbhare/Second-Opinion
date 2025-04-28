@@ -2,7 +2,6 @@ const Doctor = require('../models/doctor.model');
 const Availability = require('../models/availability.model');
 const { createError } = require('../utils/error.util');
 const fileService = require('../services/file.service');
-const mongoose = require('mongoose');
 
 // Get doctor profile (using authenticated user)
 exports.getDoctorProfile = async (req, res, next) => {
@@ -36,9 +35,35 @@ exports.updateDoctorProfile = async (req, res, next) => {
       delete req.body.role;
     }
     
+    // Don't allow email updates through this function
+    if (req.body.email) {
+      delete req.body.email;
+    }
+    
+    // Process uploaded documents if any
+    const updateData = { ...req.body };
+    
+    if (req.files) {
+      // Process uploaded documents
+      const documents = fileService.processDocuments(req.files);
+      
+      // Add document paths if they exist
+      if (documents.registrationCertificate) {
+        updateData.registrationCertificate = documents.registrationCertificate;
+      }
+      
+      if (documents.governmentId) {
+        updateData.governmentId = documents.governmentId;
+      }
+      
+      if (documents.profilePhoto) {
+        updateData.photoURL = documents.profilePhoto;
+      }
+    }
+    
     const doctor = await Doctor.findByIdAndUpdate(
       req.user.id,
-      req.body,
+      updateData,
       { new: true, runValidators: true }
     ).select('-password');
     
@@ -63,11 +88,16 @@ exports.completeProfile = async (req, res, next) => {
     const documents = fileService.processDocuments(req.files);
     
     // Validate required fields for profile completion
-    const requiredFields = ['specialization', 'experience', 'licenseNumber', 'education'];
+    const requiredFields = ['specialization', 'experience', 'licenseNumber'];
     const missingFields = requiredFields.filter(field => !req.body[field]);
     
     if (missingFields.length > 0) {
       return next(createError(`Missing required fields: ${missingFields.join(', ')}`, 400));
+    }
+    
+    // Don't allow email updates through this function
+    if (req.body.email) {
+      delete req.body.email;
     }
     
     // Update doctor profile with documents and additional information
@@ -103,43 +133,6 @@ exports.completeProfile = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: 'Profile completed successfully',
-      data: doctor
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Upload doctor documents (using authenticated user)
-exports.uploadDocuments = async (req, res, next) => {
-  try {
-    // Process uploaded documents using file service
-    const documents = fileService.processDocuments(req.files);
-    
-    // Update doctor profile with documents
-    const updateData = {};
-    
-    if (documents.registrationCertificate) {
-      updateData.registrationCertificate = documents.registrationCertificate;
-    }
-    
-    if (documents.governmentId) {
-      updateData.governmentId = documents.governmentId;
-    }
-    
-    const doctor = await Doctor.findByIdAndUpdate(
-      req.user.id,
-      updateData,
-      { new: true, runValidators: true }
-    ).select('-password');
-    
-    if (!doctor) {
-      return next(createError('Doctor not found', 404));
-    }
-    
-    res.status(200).json({
-      success: true,
-      message: 'Documents uploaded successfully',
       data: doctor
     });
   } catch (error) {
@@ -242,109 +235,36 @@ exports.getDoctorAvailability = async (req, res, next) => {
   }
 };
 
-// Get all doctors (for patients or admin)
-exports.getAllDoctors = async (req, res, next) => {
+// Delete doctor account
+exports.deleteAccount = async (req, res, next) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-    const sort = req.query.sort || '-createdAt';
+    const doctorId = req.user.id;
     
-    // Build filter based on query parameters
-    const filter = {};
-    
-    if (req.query.specialization) {
-      filter.specialization = req.query.specialization;
-    }
-    
-    if (req.query.experience) {
-      filter.experience = { $gte: parseInt(req.query.experience) };
-    }
-    
-    // Only return doctors with completed profiles
-    filter.isProfileComplete = true;
-    
-    // Execute query with pagination
-    const doctors = await Doctor.find(filter)
-      .select('-password -registrationCertificate -governmentId')
-      .sort(sort)
-      .skip(skip)
-      .limit(limit);
-    
-    // Get total count
-    const total = await Doctor.countDocuments(filter);
-    
-    res.status(200).json({
-      success: true,
-      message: 'Doctors retrieved successfully',
-      data: doctors,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Get doctor details by ID (for patients or admin)
-exports.getDoctorDetails = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    
-    // Validate MongoDB ObjectId
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return next(createError('Invalid doctor ID', 400));
-    }
-    
-    // Find doctor
-    const doctor = await Doctor.findById(id)
-      .select('-password -registrationCertificate -governmentId');
+    // Find the doctor
+    const doctor = await Doctor.findById(doctorId);
     
     if (!doctor) {
       return next(createError('Doctor not found', 404));
     }
     
-    // Get availability
-    const availability = await Availability.findOne({ doctorId: id });
+    // Delete doctor's documents if they exist
+    if (doctor.registrationCertificate && doctor.registrationCertificate.filePath) {
+      fileService.deleteFileIfExists(doctor.registrationCertificate.filePath);
+    }
+    
+    if (doctor.governmentId && doctor.governmentId.filePath) {
+      fileService.deleteFileIfExists(doctor.governmentId.filePath);
+    }
+    
+    // Delete doctor's availability
+    await Availability.findOneAndDelete({ doctorId });
+    
+    // Delete doctor account
+    await Doctor.findByIdAndDelete(doctorId);
     
     res.status(200).json({
       success: true,
-      message: 'Doctor details retrieved successfully',
-      data: {
-        doctor,
-        availability: availability || null
-      }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Get doctor availability by ID (for patients)
-exports.getAvailability = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    
-    // Validate MongoDB ObjectId
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return next(createError('Invalid doctor ID', 400));
-    }
-    
-    // Find availability
-    const availability = await Availability.findOne({ doctorId: id });
-    
-    if (!availability) {
-      return next(createError('Availability not found for this doctor', 404));
-    }
-    
-    res.status(200).json({
-      success: true,
-      message: 'Availability retrieved successfully',
-      data: availability
+      message: 'Account deleted successfully'
     });
   } catch (error) {
     next(error);

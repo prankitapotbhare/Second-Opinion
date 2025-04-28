@@ -98,7 +98,8 @@ const patientSchema = new mongoose.Schema({
   // Add role field for consistency
   role: {
     type: String,
-    default: 'patient'
+    default: 'patient',
+    immutable: true
   },
   // Collection of form submissions
   formSubmissions: [formSubmissionSchema],

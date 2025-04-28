@@ -1,16 +1,26 @@
 const Admin = require('../models/admin.model');
 const Patient = require('../models/patient.model');
 const Doctor = require('../models/doctor.model');
-const { createError } = require('../utils/error.util');
-const userService = require('../services/user.service');
-const responseService = require('../services/response.service');
 const validationService = require('../services/validation.service');
+const mongoose = require('mongoose');
 
 // Get admin profile (using authenticated user)
 exports.getAdminProfile = async (req, res, next) => {
   try {
-    const admin = await userService.getUserProfile(Admin, req.user.id);
-    responseService.sendSuccess(res, 'Admin profile retrieved successfully', admin);
+    const admin = await Admin.findById(req.user.id).select('-password');
+    
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        message: 'Admin not found'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: 'Admin profile retrieved successfully',
+      data: admin
+    });
   } catch (error) {
     next(error);
   }
@@ -19,8 +29,34 @@ exports.getAdminProfile = async (req, res, next) => {
 // Update admin profile (using authenticated user)
 exports.updateAdminProfile = async (req, res, next) => {
   try {
-    const admin = await userService.updateUserProfile(Admin, req.user.id, req.body);
-    responseService.sendSuccess(res, 'Admin profile updated successfully', admin);
+    // Don't allow password updates through this function
+    if (req.body.password) {
+      delete req.body.password;
+    }
+    
+    // Don't allow role changes through this function
+    if (req.body.role) {
+      delete req.body.role;
+    }
+    
+    const admin = await Admin.findByIdAndUpdate(
+      req.user.id,
+      req.body,
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        message: 'Admin not found'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: 'Admin profile updated successfully',
+      data: admin
+    });
   } catch (error) {
     next(error);
   }
@@ -31,17 +67,31 @@ exports.getAllPatients = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const sort = '-createdAt';
     
-    const result = await userService.getAllUsers(Patient, {}, page, limit);
+    const patients = await Patient.find({})
+      .select('-password')
+      .sort(sort)
+      .skip(skip)
+      .limit(limit);
     
-    responseService.sendPaginated(
-      res, 
-      'Patients retrieved successfully', 
-      result.users, 
-      result.page, 
-      result.limit, 
-      result.total
-    );
+    const total = await Patient.countDocuments({});
+    const totalPages = Math.ceil(total / limit);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Patients retrieved successfully',
+      data: patients,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    });
   } catch (error) {
     next(error);
   }
@@ -52,17 +102,31 @@ exports.getAllDoctors = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const sort = '-createdAt';
     
-    const result = await userService.getAllUsers(Doctor, {}, page, limit);
+    const doctors = await Doctor.find({})
+      .select('-password')
+      .sort(sort)
+      .skip(skip)
+      .limit(limit);
     
-    responseService.sendPaginated(
-      res, 
-      'Doctors retrieved successfully', 
-      result.users, 
-      result.page, 
-      result.limit, 
-      result.total
-    );
+    const total = await Doctor.countDocuments({});
+    const totalPages = Math.ceil(total / limit);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Doctors retrieved successfully',
+      data: doctors,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    });
   } catch (error) {
     next(error);
   }
@@ -74,7 +138,10 @@ exports.createAdmin = async (req, res, next) => {
     // Check if the requesting admin is a super admin
     const requestingAdmin = await Admin.findById(req.user.id);
     if (!requestingAdmin || requestingAdmin.role !== 'superadmin') {
-      return responseService.sendForbidden(res, 'Only super admins can create new admins');
+      return res.status(403).json({
+        success: false,
+        message: 'Only super admins can create new admins'
+      });
     }
     
     // Validate required fields
@@ -83,8 +150,19 @@ exports.createAdmin = async (req, res, next) => {
     // Validate email format
     validationService.validateEmail(req.body.email);
     
-    const adminResponse = await userService.createUser(Admin, req.body);
-    responseService.sendSuccess(res, 'Admin created successfully', adminResponse, 201);
+    // Create new admin
+    const admin = new Admin(req.body);
+    await admin.save();
+    
+    // Remove password from response
+    const adminResponse = admin.toObject();
+    delete adminResponse.password;
+    
+    res.status(201).json({
+      success: true,
+      message: 'Admin created successfully',
+      data: adminResponse
+    });
   } catch (error) {
     next(error);
   }
@@ -94,8 +172,28 @@ exports.createAdmin = async (req, res, next) => {
 exports.deletePatient = async (req, res, next) => {
   try {
     validationService.validateObjectId(req.params.id, 'patient');
-    await userService.deleteUser(Patient, req.params.id);
-    responseService.sendSuccess(res, 'Patient deleted successfully');
+    
+    // Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid patient ID'
+      });
+    }
+    
+    const patient = await Patient.findByIdAndDelete(req.params.id);
+    
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient not found'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: 'Patient deleted successfully'
+    });
   } catch (error) {
     next(error);
   }
@@ -105,8 +203,28 @@ exports.deletePatient = async (req, res, next) => {
 exports.deleteDoctor = async (req, res, next) => {
   try {
     validationService.validateObjectId(req.params.id, 'doctor');
-    await userService.deleteUser(Doctor, req.params.id);
-    responseService.sendSuccess(res, 'Doctor deleted successfully');
+    
+    // Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid doctor ID'
+      });
+    }
+    
+    const doctor = await Doctor.findByIdAndDelete(req.params.id);
+    
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor not found'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: 'Doctor deleted successfully'
+    });
   } catch (error) {
     next(error);
   }
@@ -118,17 +236,43 @@ exports.deleteAdmin = async (req, res, next) => {
     // Check if the requesting admin is a super admin
     const requestingAdmin = await Admin.findById(req.user.id);
     if (!requestingAdmin || requestingAdmin.role !== 'superadmin') {
-      return responseService.sendForbidden(res, 'Only super admins can delete admins');
+      return res.status(403).json({
+        success: false,
+        message: 'Only super admins can delete admins'
+      });
     }
     
     // Prevent deleting yourself
     if (req.params.id === req.user.id) {
-      return responseService.sendError(res, 'You cannot delete your own account', 400);
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot delete your own account'
+      });
     }
     
     validationService.validateObjectId(req.params.id, 'admin');
-    await userService.deleteUser(Admin, req.params.id);
-    responseService.sendSuccess(res, 'Admin deleted successfully');
+    
+    // Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid admin ID'
+      });
+    }
+    
+    const admin = await Admin.findByIdAndDelete(req.params.id);
+    
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        message: 'Admin not found'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: 'Admin deleted successfully'
+    });
   } catch (error) {
     next(error);
   }
@@ -140,22 +284,39 @@ exports.getAllAdmins = async (req, res, next) => {
     // Check if the requesting admin is a super admin
     const requestingAdmin = await Admin.findById(req.user.id);
     if (!requestingAdmin || requestingAdmin.role !== 'superadmin') {
-      return responseService.sendForbidden(res, 'Only super admins can view all admins');
+      return res.status(403).json({
+        success: false,
+        message: 'Only super admins can view all admins'
+      });
     }
     
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const sort = '-createdAt';
     
-    const result = await userService.getAllUsers(Admin, {}, page, limit);
+    const admins = await Admin.find({})
+      .select('-password')
+      .sort(sort)
+      .skip(skip)
+      .limit(limit);
     
-    responseService.sendPaginated(
-      res, 
-      'Admins retrieved successfully', 
-      result.users, 
-      result.page, 
-      result.limit, 
-      result.total
-    );
+    const total = await Admin.countDocuments({});
+    const totalPages = Math.ceil(total / limit);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Admins retrieved successfully',
+      data: admins,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    });
   } catch (error) {
     next(error);
   }

@@ -100,15 +100,19 @@ const doctorSchema = new mongoose.Schema({
       return `https://ui-avatars.com/api/?name=${encodeURIComponent(this.name)}&background=3b82f6&color=fff`;
     }
   },
-  profileCompleted: {
-    type: Boolean,
-    default: false
-  },
   isEmailVerified: {
     type: Boolean,
     default: false
   },
   emailVerifiedAt: {
+    type: Date,
+    default: null
+  },
+  isProfileComplete: {
+    type: Boolean,
+    default: false
+  },
+  profileCompletedAt: {
     type: Date,
     default: null
   },
@@ -123,7 +127,8 @@ const doctorSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    default: 'doctor'
+    default: 'doctor',
+    immutable: true
   },
   createdAt: {
     type: Date,

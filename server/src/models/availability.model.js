@@ -7,12 +7,12 @@ const availabilitySchema = new mongoose.Schema({
     required: true
   },
   workingDays: {
-    monday: { type: Boolean, default: true },
-    tuesday: { type: Boolean, default: true },
-    wednesday: { type: Boolean, default: true },
-    thursday: { type: Boolean, default: true },
-    friday: { type: Boolean, default: true },
-    saturday: { type: Boolean, default: true },
+    monday: { type: Boolean, default: false },
+    tuesday: { type: Boolean, default: false },
+    wednesday: { type: Boolean, default: false },
+    thursday: { type: Boolean, default: false },
+    friday: { type: Boolean, default: false },
+    saturday: { type: Boolean, default: false },
     sunday: { type: Boolean, default: false }
   },
   startTime: {
