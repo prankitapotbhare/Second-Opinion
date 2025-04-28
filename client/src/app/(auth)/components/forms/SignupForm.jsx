@@ -9,7 +9,7 @@ import AuthDivider from '../common/AuthDivider';
 import { useAuth } from '@/contexts/AuthContext';
 
 const SignupForm = ({ 
-  userType = 'user', // 'user' or 'doctor'
+  userType = "patient", // "patient" or 'doctor'
   redirectPath
 }) => {
   const router = useRouter();

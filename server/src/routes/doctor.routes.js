@@ -1,23 +1,42 @@
 const express = require('express');
 const router = express.Router();
 const doctorController = require('../controllers/doctor.controller');
-const patientController = require('../controllers/patient.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { checkRole } = require('../middleware/role.middleware');
+const { doctorFileUpload, handleUploadError } = require('../middleware/upload.middleware');
 
 // Apply authentication to all doctor routes
 router.use(authenticate);
 router.use(checkRole(['doctor']));
 
-// Doctor profile routes
-router.get('/profile/:id', doctorController.getDoctorDetails);
-router.put('/profile/:id', doctorController.updateDoctor);
+// Updated profile completion route (using authenticated user)
+router.post('/profile/complete', 
+  doctorFileUpload.fields([
+    { name: 'registrationCertificate', maxCount: 1 },
+    { name: 'governmentId', maxCount: 1 },
+    { name: 'profilePhoto', maxCount: 1 }
+  ]),
+  handleUploadError,
+  doctorController.completeProfile
+);
 
-// Patient data access routes (doctors need to see patient data)
-router.get('/patients/:id', patientController.getPatientDetails);
-router.get('/patients/:id/forms', patientController.getFormSubmissions);
-router.get('/patients/:id/forms/:formId', patientController.getFormSubmission);
-router.put('/patients/:id/forms/:formId', patientController.updateFormSubmission);
-router.get('/patients/:id/forms/:formId/files/:fileId', patientController.downloadMedicalFile);
+// Doctor profile routes (using authenticated user)
+router.get('/profile', doctorController.getDoctorProfile);
+router.put('/profile', doctorController.updateDoctorProfile);
+
+// Separate document upload routes (using authenticated user)
+router.post('/profile/documents', 
+  doctorFileUpload.fields([
+    { name: 'registrationCertificate', maxCount: 1 },
+    { name: 'governmentId', maxCount: 1 }
+  ]),
+  handleUploadError,
+  doctorController.uploadDocuments
+);
+router.get('/profile/documents/:documentType', doctorController.downloadDocument);
+
+// Availability management (using authenticated user)
+router.post('/profile/availability', doctorController.setAvailability);
+router.get('/profile/availability', doctorController.getDoctorAvailability);
 
 module.exports = router;

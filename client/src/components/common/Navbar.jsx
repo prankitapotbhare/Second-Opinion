@@ -131,7 +131,7 @@ const Navbar = ({ scrollToFAQs, simplifiedNav = false }) => {
                 {isProfileOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
                     {/* Only show Dashboard link if NOT user role */}
-                    {currentUser?.role !== "user" && (
+                    {currentUser?.role !== "patient" && (
                       <Link 
                         href={getDashboardLink()}
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -231,7 +231,7 @@ const Navbar = ({ scrollToFAQs, simplifiedNav = false }) => {
                 <>
                   <div className="border-t border-teal-600 my-2"></div>
                   {/* Only show Dashboard link if NOT user role */}
-                  {currentUser?.role !== "user" && (
+                  {currentUser?.role !== "patient" && (
                     <Link 
                       href={getDashboardLink()}
                       className="flex items-center space-x-2 hover:text-teal-200 transition-colors"

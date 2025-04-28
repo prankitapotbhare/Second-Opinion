@@ -108,7 +108,7 @@ const sendVerificationEmail = async (to, name, otp, userType = 'patient') => {
  * @param {string} userType - Type of user (user, doctor, admin)
  * @returns {Promise} Nodemailer info
  */
-const sendPasswordResetEmail = async (to, name, token, userType = 'user') => {
+const sendPasswordResetEmail = async (to, name, token, userType = "patient") => {
   const { subject, html } = emailTemplates.passwordResetEmailTemplate(name, token, to, userType);
   return await sendEmail(to, subject, html);
 };

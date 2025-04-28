@@ -33,11 +33,66 @@ const doctorSchema = new mongoose.Schema({
     type: Number,
     required: false
   },
+  // New fields for doctor profile
+  hospitalAffiliation: {
+    type: String,
+    required: false
+  },
+  hospitalAddress: {
+    type: String,
+    required: false
+  },
   licenseNumber: {
     type: String,
     required: false,
     unique: true,
     sparse: true
+  },
+  issuingMedicalCouncil: {
+    type: String,
+    required: false
+  },
+  languages: {
+    type: [String],
+    default: []
+  },
+  phone: {
+    type: String,
+    required: false
+  },
+  emergencyContact: {
+    type: String,
+    required: false
+  },
+  consultationFee: {
+    type: Number,
+    required: false
+  },
+  consultationAddress: {
+    type: String,
+    required: false
+  },
+  location: {
+    type: String,
+    required: false
+  },
+  registrationCertificate: {
+    fileName: String,
+    fileType: String,
+    fileSize: Number,
+    uploadDate: Date,
+    filePath: String
+  },
+  governmentId: {
+    fileName: String,
+    fileType: String,
+    fileSize: Number,
+    uploadDate: Date,
+    filePath: String
+  },
+  bio: {
+    type: String,
+    required: false
   },
   photoURL: {
     type: String,
@@ -49,12 +104,10 @@ const doctorSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  // Update field name for consistency with auth.service.js
   isEmailVerified: {
     type: Boolean,
     default: false
   },
-  // Add new field for tracking when email was verified
   emailVerifiedAt: {
     type: Date,
     default: null
@@ -68,7 +121,6 @@ const doctorSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
-  // Add role field for consistency
   role: {
     type: String,
     default: 'doctor'

@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import OtpVerificationForm from './OtpVerificationForm';
 
 const LoginForm = ({ 
-  userType = 'user', // 'user', 'doctor', or 'admin'
+  userType = "patient", // "patient", 'doctor', or 'admin'
   hideOptions = false,
   redirectPath
 }) => {
@@ -55,7 +55,7 @@ const LoginForm = ({
     try {
       // Map userType to expected role for backend
       let expectedRole;
-      if (userType === 'user') {
+      if (userType === "patient") {
         expectedRole = 'patient';
       } else if (userType === 'doctor' || userType === 'admin') {
         expectedRole = userType;
@@ -97,7 +97,7 @@ const LoginForm = ({
     
     try {
       // Map userType to expected role for backend
-      const backendUserType = userType === 'user' ? 'patient' : userType;
+      const backendUserType = userType === "patient" ? 'patient' : userType;
       
       // Determine the redirect path
       const finalRedirectPath = redirectPath || (userType === 'admin' ? '/admin/dashboard' : 

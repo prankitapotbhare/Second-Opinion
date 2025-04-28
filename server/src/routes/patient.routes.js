@@ -3,65 +3,37 @@ const router = express.Router();
 const patientController = require('../controllers/patient.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { checkRole } = require('../middleware/role.middleware');
-const multer = require('multer');
-const { MEDICAL_FILES_DIR, ALLOWED_FILE_TYPES } = require('../utils/constants');
-
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, MEDICAL_FILES_DIR);
-  },
-  filename: function (req, file, cb) {
-    // Add a timestamp and sanitize the filename
-    const sanitizedName = file.originalname.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9.-]/g, '');
-    cb(null, `${Date.now()}-${sanitizedName}`);
-  }
-});
-
-// File filter to validate file types
-const fileFilter = (req, file, cb) => {
-  if (ALLOWED_FILE_TYPES.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Unsupported file type. Please upload PDF, JPEG, PNG, or DICOM files.'), false);
-  }
-};
-
-const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
-  },
-  fileFilter: fileFilter
-});
+const { patientFileUpload, handleUploadError } = require('../middleware/upload.middleware');
 
 // Apply authentication to all patient routes
 router.use(authenticate);
 router.use(checkRole(['patient']));
 
-// Patient profile routes
-router.get('/profile/:id', patientController.getPatientDetails);
-router.put('/profile/:id', patientController.updatePatient);
+// Patient profile routes (using authenticated user)
+router.get('/profile', patientController.getPatientProfile);
+router.put('/profile', patientController.updatePatientProfile);
 
-// Form submission routes
-router.post('/:id/forms', patientController.submitForm);
-router.get('/:id/forms', patientController.getFormSubmissions);
-router.get('/:id/forms/:formId', patientController.getFormSubmission);
-router.put('/:id/forms/:formId', patientController.updateFormSubmission);
-
-// File handling routes for form submissions
-router.post('/:id/forms/:formId/files', 
-  upload.single('file'), 
-  patientController.uploadMedicalFile
+// Form submission routes (using authenticated user)
+router.post('/forms', 
+  patientFileUpload.array('medicalFiles', 5), // Allow up to 5 files in a single submission
+  handleUploadError,
+  patientController.submitForm
 );
-router.get('/:id/forms/:formId/files/:fileId', 
+router.get('/forms', patientController.getFormSubmissions);
+router.get('/forms/:formId', patientController.getFormSubmission);
+router.put('/forms/:formId', patientController.updateFormSubmission);
+
+// Additional file handling routes for form submissions
+router.post('/forms/:formId/files', 
+  patientFileUpload.array('files', 5), // Allow up to 5 files in a single upload
+  handleUploadError,
+  patientController.uploadMedicalFiles
+);
+router.get('/forms/:formId/files/:fileId', 
   patientController.downloadMedicalFile
 );
-router.delete('/:id/forms/:formId/files/:fileId', 
+router.delete('/forms/:formId/files/:fileId', 
   patientController.deleteMedicalFile
 );
-
-// Get all doctors (patients need to see available doctors)
-router.get('/doctors', patientController.getAllDoctors);
 
 module.exports = router;

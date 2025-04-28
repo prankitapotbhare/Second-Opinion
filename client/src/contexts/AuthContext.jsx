@@ -411,13 +411,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Google authentication
-  const googleAuth = async (idToken, userType = 'user') => {
+  const googleAuth = async (idToken, userType = "patient") => {
     setAuthError(null);
     setLoading(true);
     
     try {
-      // Map 'user' type to 'patient' for backend compatibility
-      const backendUserType = userType === 'user' ? 'patient' : userType;
+      // Map "patient" type to 'patient' for backend compatibility
+      const backendUserType = userType === "patient" ? 'patient' : userType;
       
       const response = await authApi.googleAuth(idToken, backendUserType);
       
