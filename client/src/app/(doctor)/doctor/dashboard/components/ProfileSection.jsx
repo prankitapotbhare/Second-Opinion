@@ -130,20 +130,6 @@ const ProfileSection = () => {
 
   return (
     <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-      {/* Status Messages */}
-      {updateSuccess && (
-        <div className="mb-4 p-4 bg-green-100 border border-green-200 text-green-700 rounded-md flex items-center">
-          <FaCheck className="mr-2" />
-          Profile updated successfully!
-        </div>
-      )}
-      
-      {(updateError || error) && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-200 text-red-700 rounded-md">
-          {updateError || error}
-        </div>
-      )}
-
       <form onSubmit={handleSubmit}>
         {/* Personal Information */}
         <section className="bg-white rounded-lg shadow-sm p-4 sm:p-6 border border-gray-100 mb-8">

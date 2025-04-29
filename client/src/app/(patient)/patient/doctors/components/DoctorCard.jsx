@@ -23,13 +23,13 @@ const DoctorCard = ({ doctor }) => {
       </div>
       <div className="flex flex-col space-y-2 w-full sm:w-auto">
          {/* Use doctor.id */}
-        <Link href={`/user/doctors/${doctor.id}`} className="w-full">
+        <Link href={`/patient/doctors/${doctor.id}`} className="w-full">
           <button className="w-full bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 transition-colors duration-200 whitespace-nowrap">
             Know More
           </button>
         </Link>
          {/* Changed link to patient-details */}
-        <Link href={`/user/patient-details?doctorId=${doctor.id}`} className="w-full">
+        <Link href={`/patient/patient-details?doctorId=${doctor.id}`} className="w-full">
           <button className="w-full bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 transition-colors duration-200 whitespace-nowrap">
             Book Now
           </button>

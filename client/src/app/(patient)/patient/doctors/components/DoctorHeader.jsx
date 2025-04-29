@@ -31,7 +31,7 @@ const DoctorHeader = ({ doctor }) => (
     {/* Ensure doctor.id exists before rendering link */}
     {doctor.id && (
         <div className="absolute bottom-6 right-6 md:bottom-8 md:right-8 mt-4 md:mt-0 w-[calc(100%-3rem)] md:w-auto"> {/* Adjusted width for mobile */}
-            <Link href={`/user/patient-details?doctorId=${doctor.id}`} className="block w-full md:w-auto"> {/* Changed link to patient-details */}
+            <Link href={`/patient/patient-details?doctorId=${doctor.id}`} className="block w-full md:w-auto"> {/* Changed link to patient-details */}
                 <button className="w-full bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700 transition-colors duration-200 font-medium shadow-sm whitespace-nowrap">
                 Book a Consultation
                 </button>

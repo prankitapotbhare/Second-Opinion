@@ -98,7 +98,7 @@
 //     if (location) params.push(`location=${encodeURIComponent(location)}`);
 //     if (department) params.push(`department=${encodeURIComponent(department)}`);
 //     const query = params.length ? `?${params.join("&")}` : "";
-//     router.push(`/user/doctors${query}`);
+//     router.push(`/patient/doctors${query}`);
 //   };
 
 //   if (!mounted) {
@@ -360,7 +360,7 @@ export default function HeroSection() {
     if (location) params.push(`location=${encodeURIComponent(location)}`);
     if (department) params.push(`department=${encodeURIComponent(department)}`);
     const query = params.length ? `?${params.join("&")}` : "";
-    router.push(`/user/doctors${query}`);
+    router.push(`/patient/doctors${query}`);
   };
 
   if (!mounted) {

@@ -88,7 +88,7 @@
 //       });
       
 //       // Redirect to success page instead of directly to responses
-//       router.push('/user/response');
+//       router.push('/patient/response');
 //     } catch (err) {
 //       console.error('Error submitting patient details:', err);
 //       setError(err.message || 'Failed to submit patient details. Please try again.');
@@ -362,7 +362,7 @@
 //         doctorId: doctorId
 //       });
 
-//       router.push('/user/response');
+//       router.push('/patient/response');
 //     } catch (err) {
 //       console.error('Error submitting patient details:', err);
 //       setError(err.message || 'Failed to submit patient details. Please try again.');
@@ -609,7 +609,7 @@ export default function PatientDetailsPage() {
         doctorId: doctorId
       });
 
-      router.push('/user/response');
+      router.push('/patient/response');
     } catch (err) {
       console.error('Error submitting patient details:', err);
       setError(err.message || 'Failed to submit patient details. Please try again.');

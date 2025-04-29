@@ -51,12 +51,12 @@ export default function DoctorCard({ doctor }) {
           <div className="flex flex-col gap-2 justify-center mt-2 sm:mt-0">
             {mounted ? (
               <>
-                <Link href={`/user/doctors/${doctor.id}`} className="w-full">
+                <Link href={`/patient/doctors/${doctor.id}`} className="w-full">
                   <button className="w-full bg-teal-600 text-white px-4 py-2 rounded-md text-sm hover:bg-teal-700 transition-colors font-medium">
                     Know More
                   </button>
                 </Link>
-                <Link href={`/user/patient-details?doctorId=${doctor.id}`} className="w-full">
+                <Link href={`/patient/patient-details?doctorId=${doctor.id}`} className="w-full">
                   <button className="w-full border border-teal-600 text-teal-600 px-4 py-2 rounded-md text-sm hover:bg-teal-50 transition-colors font-medium">
                     Book a consultant
                   </button>

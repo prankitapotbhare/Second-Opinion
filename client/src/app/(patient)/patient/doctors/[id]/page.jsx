@@ -65,7 +65,7 @@ export default function DoctorProfilePage() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <h1 className="text-2xl font-bold text-gray-800 mb-4">Doctor Not Found</h1>
         <p className="text-gray-600 mb-6">We couldn't find the doctor profile you were looking for.</p>
-        <Link href="/user/doctors" className="text-teal-600 hover:text-teal-700 font-medium px-6 py-2 rounded-lg border border-teal-600 hover:bg-teal-50 transition-colors duration-200">
+        <Link href="/patient/doctors" className="text-teal-600 hover:text-teal-700 font-medium px-6 py-2 rounded-lg border border-teal-600 hover:bg-teal-50 transition-colors duration-200">
           Browse Other Doctors
         </Link>
       </div>

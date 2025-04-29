@@ -81,7 +81,7 @@ const Navbar = ({ scrollToFAQs, simplifiedNav = false }) => {
             
             {!simplifiedNav && (
               <>
-                <Link href="/user/response" className="hover:text-teal-200 transition-colors">
+                <Link href="/patient/response" className="hover:text-teal-200 transition-colors">
                   Response
                 </Link>
                 <button 
@@ -179,7 +179,7 @@ const Navbar = ({ scrollToFAQs, simplifiedNav = false }) => {
               {!simplifiedNav && (
                 <>
                   <Link 
-                    href="/user/response" 
+                    href="/patient/response" 
                     className="hover:text-teal-200 transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
