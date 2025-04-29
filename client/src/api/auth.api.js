@@ -119,8 +119,13 @@ export const login = async (email, password, expectedRole = null) => {
       body: JSON.stringify(body)
     });
     
-    return handleResponse(response);
+    // Return the full response, not just data
+    return await handleResponse(response);
   } catch (error) {
+    // Pass through error fields if present
+    if (error.data) {
+      return error.data;
+    }
     console.error('Login error:', error);
     throw error;
   }

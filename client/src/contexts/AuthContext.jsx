@@ -270,7 +270,15 @@ export const AuthProvider = ({ children }) => {
       }
       
       setLoading(false);
-      return { success: false, error: response.message };
+      // Pass through all relevant fields from backend
+      return { 
+        success: false, 
+        error: response.message, 
+        needsVerification: response.needsVerification, 
+        email: response.email,
+        wrongRole: response.wrongRole,
+        actualRole: response.actualRole
+      };
     } catch (error) {
       console.error("Login error:", error);
       

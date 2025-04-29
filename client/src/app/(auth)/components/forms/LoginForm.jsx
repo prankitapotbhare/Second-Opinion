@@ -74,7 +74,7 @@ const LoginForm = ({
         // Check if email needs verification
         if (result.needsVerification) {
           setNeedsVerification(true);
-          setVerificationEmail(email);
+          setVerificationEmail(result.email);
         } else if (result.wrongRole && result.actualRole) {
           // Handle wrong role error - redirect to correct login page
           setError(`This account is registered as a ${result.actualRole}. Redirecting to the correct login page...`);
