@@ -88,7 +88,7 @@ exports.completeProfile = async (req, res, next) => {
     const documents = fileService.processDocuments(req.files);
     
     // Validate required fields for profile completion
-    const requiredFields = ['specialization', 'experience', 'licenseNumber'];
+    const requiredFields = ['specialization', 'experience', 'licenseNumber', 'degree'];
     const missingFields = requiredFields.filter(field => !req.body[field]);
     
     if (missingFields.length > 0) {

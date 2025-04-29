@@ -135,7 +135,7 @@ export default function ResponsePage() {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
         <div className="text-red-500 text-xl mb-4">{error}</div>
-        <Link href="/user/doctors" className="text-teal-600 hover:underline">
+        <Link href="/patient/doctors" className="text-teal-600 hover:underline">
           Go back to doctors
         </Link>
       </div>
@@ -146,7 +146,7 @@ export default function ResponsePage() {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
         <div className="text-gray-700 text-xl mb-4">No response available yet. Please check back later.</div>
-        <Link href="/user/doctors" className="text-teal-600 hover:underline">
+        <Link href="/patient/doctors" className="text-teal-600 hover:underline">
           Go back to doctors
         </Link>
       </div>

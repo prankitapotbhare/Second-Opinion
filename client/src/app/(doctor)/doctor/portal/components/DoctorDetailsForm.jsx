@@ -27,6 +27,7 @@ export default function DoctorDetailsForm() {
     location: '',
     bio: '', // Added bio field
     gender: '', // Added gender field
+    degree: '', // Added degree field
   });
   
   // Files state
@@ -78,7 +79,7 @@ export default function DoctorDetailsForm() {
     const requiredFields = [
       'specialization', 'experience', 'hospitalAffiliation', 
       'licenseNumber', 'issuingMedicalCouncil', 'languages', 
-      'phone', 'emergencyContact', 'consultationFee', 'bio', 'gender' // Added gender
+      'phone', 'emergencyContact', 'consultationFee', 'bio', 'gender', 'degree' // Added degree
     ];
     
     requiredFields.forEach(field => {
@@ -202,6 +203,23 @@ export default function DoctorDetailsForm() {
             required
           />
           {formErrors.experience && <p className="text-red-500 text-xs mt-1">{formErrors.experience}</p>}
+        </div>
+
+        {/* Degree - New field */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Degree:<span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="degree"
+            value={formData.degree}
+            onChange={handleInputChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="Eg. MBBS, MD, MS"
+            required
+          />
+          {formErrors.degree && <p className="text-red-500 text-xs mt-1">{formErrors.degree}</p>}
         </div>
 
         {/* Hospital Affiliation */}

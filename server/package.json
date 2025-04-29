@@ -9,6 +9,7 @@
     "build": "npm prune --production",
     "test": "echo \"Error: no test specified\" && exit 1",
     "create-admin": "node src/scripts/create-admin.js",
+    "generate-doctors": "node src/scripts/generate-doctors.js",
     "generate-jwt": "node src/scripts/generate-jwt-secrets.js",
     "test-email": "node src/scripts/test-email.js"
   },
@@ -21,6 +22,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "faker": "^5.5.3",
     "google-auth-library": "^9.15.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.14.0",

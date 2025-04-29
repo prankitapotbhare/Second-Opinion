@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getDoctorResponse, submitFeedback, requestSecondOpinion, checkAppointmentStatus } from '@/api/patient.api';
+import { getDoctorResponse, submitFeedback, requestSecondOpinion, checkAppointmentStatus, getDoctors } from '@/api/patient.api';
 
 // Create the context
 const PatientContext = createContext();
@@ -30,6 +30,9 @@ export const PatientProvider = ({ children }) => {
   const [appointmentDetails, setAppointmentDetails] = useState(null);
   const [appointmentStatus, setAppointmentStatus] = useState(null); // 'pending', 'approved', 'rejected'
   const [statusCheckInterval, setStatusCheckInterval] = useState(null);
+  const [doctors, setDoctors] = useState([]);
+  const [doctorsLoading, setDoctorsLoading] = useState(false);
+  const [doctorsError, setDoctorsError] = useState(null);
 
   // Load persisted data on mount
   useEffect(() => {
@@ -142,6 +145,21 @@ export const PatientProvider = ({ children }) => {
     
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointmentRequested, appointmentStatus, doctorResponse?.id]); // Removed checkAppointmentStatusUpdate and statusCheckInterval from dependencies
+  
+  // Fetch doctors list
+  const fetchDoctors = useCallback(async (params = {}) => {
+    setDoctorsLoading(true);
+    setDoctorsError(null);
+    try {
+      const docs = await getDoctors(params);
+      setDoctors(docs);
+    } catch (err) {
+      setDoctorsError(err.message || "Failed to load doctors");
+      setDoctors([]);
+    } finally {
+      setDoctorsLoading(false);
+    }
+  }, []);
 
   // Fetch doctor's response
   const fetchDoctorResponse = async (submissionId) => {
@@ -291,7 +309,11 @@ export const PatientProvider = ({ children }) => {
     submitFeedbackToDoctor,
     requestAppointment,
     refreshResponse,
-    checkAppointmentStatusUpdate
+    checkAppointmentStatusUpdate,
+    doctors,
+    doctorsLoading,
+    doctorsError,
+    fetchDoctors,
   };
 
   return (

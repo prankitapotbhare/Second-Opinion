@@ -39,6 +39,12 @@ const doctorSchema = new mongoose.Schema({
     type: Number,
     required: false
   },
+  // Add degree field
+  degree: {
+    type: String,
+    required: false,
+    trim: true
+  },
   // New fields for doctor profile
   hospitalAffiliation: {
     type: String,

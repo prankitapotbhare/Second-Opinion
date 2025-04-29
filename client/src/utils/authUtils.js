@@ -114,7 +114,7 @@ export const getDashboardUrl = (role) => {
       return '/doctor/dashboard';
     case "patient":
     default:
-      return '/user/dashboard';
+      return '/';
   }
 };
 
@@ -131,7 +131,7 @@ export const getLoginUrl = (role) => {
       return '/login/doctor';
     case "patient":
     default:
-      return '/login/user';
+      return '/login/patient';
   }
 };
 

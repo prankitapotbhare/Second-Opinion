@@ -10,6 +10,7 @@ import {
   FaCheck,
   FaSpinner,
 } from "react-icons/fa";
+import { showSuccessToast, showErrorToast } from '@/utils/toast';
 
 const ProfileSection = () => {
   const { doctor, loading, error, updateProfile } = useDoctor();
@@ -30,6 +31,7 @@ const ProfileSection = () => {
         email: doctor.email || '',
         specialization: doctor.specialization || '',
         experience: doctor.experience || '',
+        degree: doctor.degree || '', // Added degree field
         hospitalAffiliation: doctor.hospitalAffiliation || '',
         hospitalAddress: doctor.hospitalAddress || '',
         licenseNumber: doctor.licenseNumber || '',
@@ -98,6 +100,7 @@ const ProfileSection = () => {
     try {
       await updateProfile(submitData, files);
       setUpdateSuccess(true);
+      showSuccessToast('Profile updated successfully!');
       // Reset file inputs after successful upload
       setFiles({});
       // Reset file input elements
@@ -112,6 +115,7 @@ const ProfileSection = () => {
       }, 3000);
     } catch (err) {
       setUpdateError(err.message || 'Failed to update profile');
+      showErrorToast(err.message || 'Failed to update profile');
       console.error('Error updating profile:', err);
     } finally {
       setIsSubmitting(false);
@@ -127,20 +131,6 @@ const ProfileSection = () => {
 
   return (
     <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-      {/* Status Messages */}
-      {updateSuccess && (
-        <div className="mb-4 p-4 bg-green-100 border border-green-200 text-green-700 rounded-md flex items-center">
-          <FaCheck className="mr-2" />
-          Profile updated successfully!
-        </div>
-      )}
-      
-      {(updateError || error) && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-200 text-red-700 rounded-md">
-          {updateError || error}
-        </div>
-      )}
-
       <form onSubmit={handleSubmit}>
         {/* Personal Information */}
         <section className="bg-white rounded-lg shadow-sm p-4 sm:p-6 border border-gray-100 mb-8">
@@ -273,6 +263,18 @@ const ProfileSection = () => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
                 placeholder="Eg. 5,8,10"
                 value={formData.experience || ""}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Degree </label>
+              <input
+                type="text"
+                name="degree"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+                placeholder="Eg. MBBS, MD, MS"
+                value={formData.degree || ""}
                 onChange={handleInputChange}
               />
             </div>

@@ -13,19 +13,19 @@ export default function UserLayout({ children }) {
 
   // List of dashboard-related routes where Navbar should be hidden
   const dashboardRoutes = [
-    "/user/dashboard",
-    "/user/appointments",
-    "/user/medical-records",
-    "/user/profile",
-    "/user/settings"
+    "/patient/dashboard",
+    "/patient/appointments",
+    "/patient/medical-records",
+    "/patient/profile",
+    "/patient/settings"
   ];
 
   // List of routes where Footer should be hidden
   const noFooterRoutes = [
-    "/user/response",
-    "/user/response/",
-    "/user/patient-details",
-    "/user/patient-details/",
+    "/patient/response",
+    "/patient/response/",
+    "/patient/patient-details",
+    "/patient/patient-details/",
   ];
 
   // Check if the current path starts with any of the routes in noFooterRoutes
@@ -37,7 +37,7 @@ export default function UserLayout({ children }) {
   const hideNavbar = dashboardRoutes.includes(pathname);
 
   return (
-    <ProtectedRoute allowedRoles={["patient"]} redirectTo="/login/user">
+    <ProtectedRoute allowedRoles={["patient"]} redirectTo="/login/patient">
       <div className="min-h-screen bg-gray-50">
         {/* Conditionally render Navbar */}
         {!hideNavbar && (

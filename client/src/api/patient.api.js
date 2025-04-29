@@ -26,6 +26,27 @@ const handleResponse = async (response) => {
   return data;
 };
 
+
+/**
+ * Get list of doctors (public)
+ * @param {Object} params - { location, department, limit, page }
+ * @returns {Promise<Array>} List of doctors
+ */
+export const getDoctors = async (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  const url = `${API_URL}/patient/doctors${query ? `?${query}` : ""}`;
+  const response = await fetch(url);
+  const data = await handleResponse(response);
+  // Map _id to id for frontend consistency
+  return (data.data || []).map(doc => ({
+    id: doc._id,
+    name: doc.name,
+    specialization: doc.specialization,
+    degree: doc.degree,
+    experience: doc.experience,
+  }));
+};
+
 /**
  * Helper function to create a mock delay
  * @param {number} ms - Milliseconds to delay
