@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import { doctors as doctorsData } from "@/data/doctorsData"; // Import the consolidated data
-import DoctorCard from "./DoctorCard"; // Import the DoctorCard component
+import { doctors as doctorsData } from "@/data/doctorsData";
+import DoctorCard from "./DoctorCard";
 
 export default function DoctorsSection() {
   const [mounted, setMounted] = useState(false);
