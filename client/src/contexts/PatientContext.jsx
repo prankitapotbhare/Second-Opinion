@@ -147,7 +147,7 @@ export const PatientProvider = ({ children }) => {
   }, [appointmentRequested, appointmentStatus, doctorResponse?.id]); // Removed checkAppointmentStatusUpdate and statusCheckInterval from dependencies
   
   // Fetch doctors list
-  const fetchDoctors = async (params = {}) => {
+  const fetchDoctors = useCallback(async (params = {}) => {
     setDoctorsLoading(true);
     setDoctorsError(null);
     try {
@@ -159,7 +159,7 @@ export const PatientProvider = ({ children }) => {
     } finally {
       setDoctorsLoading(false);
     }
-  };
+  }, []);
 
   // Fetch doctor's response
   const fetchDoctorResponse = async (submissionId) => {

@@ -34,7 +34,7 @@ const handleResponse = async (response) => {
  */
 export const getDoctors = async (params = {}) => {
   const query = new URLSearchParams(params).toString();
-  const url = `${API_URL}/doctors${query ? `?${query}` : ""}`;
+  const url = `${API_URL}/patient/doctors${query ? `?${query}` : ""}`;
   const response = await fetch(url);
   const data = await handleResponse(response);
   // Map _id to id for frontend consistency

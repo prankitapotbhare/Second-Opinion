@@ -5,12 +5,6 @@ const { authenticate } = require('../middleware/auth.middleware');
 const { checkRole } = require('../middleware/role.middleware');
 const { doctorFileUpload, handleUploadError } = require('../middleware/upload.middleware');
 
-// --- PUBLIC: Get doctors with filters ---
-router.get(
-  '/',
-  doctorController.getDoctorsPublic
-);
-
 // Apply authentication to all doctor routes
 router.use(authenticate);
 router.use(checkRole(['doctor']));

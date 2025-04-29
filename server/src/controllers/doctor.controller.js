@@ -275,33 +275,3 @@ exports.deleteAccount = async (req, res, next) => {
     next(error);
   }
 };
-
-// --- PUBLIC: Get doctors with filters ---
-exports.getDoctorsPublic = async (req, res, next) => {
-  try {
-    const { location, department, limit = 10, page = 1 } = req.query;
-    const query = {};
-
-    if (location) {
-      query.location = { $regex: new RegExp(location, 'i') };
-    }
-    if (department) {
-      query.specialization = { $regex: new RegExp(department, 'i') };
-    }
-
-    // Only show doctors with completed profiles
-    query.isProfileComplete = true;
-
-    const doctors = await Doctor.find(query)
-      .select('_id name specialization degree experience')
-      .limit(Number(limit))
-      .skip((Number(page) - 1) * Number(limit));
-
-    res.status(200).json({
-      success: true,
-      data: doctors
-    });
-  } catch (error) {
-    next(error);
-  }
-};
