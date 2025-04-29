@@ -10,6 +10,7 @@ import {
   FaCheck,
   FaSpinner,
 } from "react-icons/fa";
+import { showSuccessToast, showErrorToast } from '@/utils/toast';
 
 const ProfileSection = () => {
   const { doctor, loading, error, updateProfile } = useDoctor();
@@ -98,6 +99,7 @@ const ProfileSection = () => {
     try {
       await updateProfile(submitData, files);
       setUpdateSuccess(true);
+      showSuccessToast('Profile updated successfully!');
       // Reset file inputs after successful upload
       setFiles({});
       // Reset file input elements
@@ -112,6 +114,7 @@ const ProfileSection = () => {
       }, 3000);
     } catch (err) {
       setUpdateError(err.message || 'Failed to update profile');
+      showErrorToast(err.message || 'Failed to update profile');
       console.error('Error updating profile:', err);
     } finally {
       setIsSubmitting(false);
