@@ -31,6 +31,7 @@ const ProfileSection = () => {
         email: doctor.email || '',
         specialization: doctor.specialization || '',
         experience: doctor.experience || '',
+        degree: doctor.degree || '', // Added degree field
         hospitalAffiliation: doctor.hospitalAffiliation || '',
         hospitalAddress: doctor.hospitalAddress || '',
         licenseNumber: doctor.licenseNumber || '',
@@ -262,6 +263,18 @@ const ProfileSection = () => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
                 placeholder="Eg. 5,8,10"
                 value={formData.experience || ""}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Degree </label>
+              <input
+                type="text"
+                name="degree"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+                placeholder="Eg. MBBS, MD, MS"
+                value={formData.degree || ""}
                 onChange={handleInputChange}
               />
             </div>
