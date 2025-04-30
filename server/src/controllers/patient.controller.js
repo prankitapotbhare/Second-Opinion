@@ -21,6 +21,9 @@ exports.getDoctorsPublic = async (req, res, next) => {
     // Only show doctors with completed profiles
     query.isProfileComplete = true;
 
+    // Get total count for pagination
+    const total = await Doctor.countDocuments(query);
+
     const doctors = await Doctor.find(query)
       .select('name photoURL specialization degree experience')
       .limit(Number(limit))
@@ -28,7 +31,10 @@ exports.getDoctorsPublic = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: doctors
+      data: doctors,
+      total,
+      page: Number(page),
+      limit: Number(limit)
     });
   } catch (error) {
     next(error);

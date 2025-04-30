@@ -6,7 +6,8 @@ import { FaSearch, FaMapMarkerAlt, FaClinicMedical } from "react-icons/fa";
 // Mock API functions
 const fetchLocations = () =>
   new Promise((resolve) =>
-    setTimeout(() => resolve(["Delhi", "Mumbai", "Bangalore", "Chennai", "Kolkata"]), 500)
+    setTimeout(() => resolve([
+      'Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata', 'Nagpur', 'Pune', 'Hyderabad', 'Ahmedabad', 'Jaipur']), 500)
   );
 const fetchDepartments = () =>
   new Promise((resolve) =>

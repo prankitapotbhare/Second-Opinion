@@ -34,22 +34,31 @@ const handleResponse = async (response) => {
 /**
  * Get list of doctors (public)
  * @param {Object} params - { location, department, limit, page }
- * @returns {Promise<Array>} List of doctors
+ * @returns {Promise<Object>} Object containing doctors list and pagination info
  */
 export const getDoctors = async (params = {}) => {
   const query = new URLSearchParams(params).toString();
   const url = `${API_URL}/patient/doctors${query ? `?${query}` : ""}`;
   const response = await fetch(url);
   const data = await handleResponse(response);
+  
   // Map _id to id for frontend consistency
-  return (data.data || []).map(doc => ({
-    id: doc.id,
+  const doctors = (data.data || []).map(doc => ({
+    id: doc._id,
     name: doc.name,
     photoURL: doc.photoURL,
     specialization: doc.specialization,
     degree: doc.degree,
     experience: doc.experience,
   }));
+  
+  // Return both doctors and pagination info
+  return {
+    doctors,
+    total: data.total || doctors.length,
+    page: data.page || 1,
+    limit: data.limit || 8
+  };
 };
 
 /**
