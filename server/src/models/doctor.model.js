@@ -137,6 +137,11 @@ const doctorSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  // Add reference to availability
+  availability: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Availability'
+  },
   role: {
     type: String,
     default: 'doctor',
@@ -151,7 +156,15 @@ const doctorSchema = new mongoose.Schema({
     default: Date.now
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { 
+    virtuals: true,
+    transform: function(doc, ret) {
+      delete ret.id;
+      return ret;
+    }
+  },
+  toObject: { virtuals: true }
 });
 
 // Add a virtual property to ensure backward compatibility

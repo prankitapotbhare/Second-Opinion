@@ -11,6 +11,12 @@ router.get(
   patientController.getDoctorsPublic
 );
 
+// --- PUBLIC: Get doctor by ID ---
+router.get(
+  '/doctors/:doctorId',
+  patientController.getDoctorByIdPublic
+);
+
 // Apply authentication to all patient routes
 router.use(authenticate);
 router.use(checkRole(['patient']));

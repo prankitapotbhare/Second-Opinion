@@ -1,7 +1,14 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getDoctorResponse, submitFeedback, requestSecondOpinion, checkAppointmentStatus, getDoctors } from '@/api/patient.api';
+import { 
+  getDoctorResponse, 
+  submitFeedback, 
+  requestSecondOpinion, 
+  checkAppointmentStatus, 
+  getDoctors,
+  getDoctorById 
+} from '@/api/patient.api';
 
 // Create the context
 const PatientContext = createContext();
@@ -22,6 +29,22 @@ export const PatientProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
+  // Doctor state
+  const [doctors, setDoctors] = useState([]);
+  const [doctorsLoading, setDoctorsLoading] = useState(false);
+  const [doctorsError, setDoctorsError] = useState(null);
+  const [currentDoctor, setCurrentDoctor] = useState(null);
+  const [doctorLoading, setDoctorLoading] = useState(false);
+  const [doctorError, setDoctorError] = useState(null);
+  
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalDoctors: 0,
+    limit: 8
+  });
+  
   // Feedback state
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   
@@ -30,9 +53,6 @@ export const PatientProvider = ({ children }) => {
   const [appointmentDetails, setAppointmentDetails] = useState(null);
   const [appointmentStatus, setAppointmentStatus] = useState(null); // 'pending', 'approved', 'rejected'
   const [statusCheckInterval, setStatusCheckInterval] = useState(null);
-  const [doctors, setDoctors] = useState([]);
-  const [doctorsLoading, setDoctorsLoading] = useState(false);
-  const [doctorsError, setDoctorsError] = useState(null);
 
   // Load persisted data on mount
   useEffect(() => {
@@ -110,7 +130,7 @@ export const PatientProvider = ({ children }) => {
     } catch (err) {
       console.error('Error checking appointment status:', err);
     }
-  }, [doctorResponse?.id, appointmentRequested, appointmentDetails]);  // Removed statusCheckInterval from dependencies
+  }, [doctorResponse?.id, appointmentRequested, appointmentDetails, statusCheckInterval]);
 
   // Set up status checking interval when appointment is requested
   useEffect(() => {
@@ -143,21 +163,66 @@ export const PatientProvider = ({ children }) => {
       setStatusCheckInterval(null);
     }
     
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appointmentRequested, appointmentStatus, doctorResponse?.id]); // Removed checkAppointmentStatusUpdate and statusCheckInterval from dependencies
+  }, [appointmentRequested, appointmentStatus, doctorResponse?.id, statusCheckInterval, checkAppointmentStatusUpdate]);
   
   // Fetch doctors list
+  // Only showing the fetchDoctors function update - the rest of the file remains unchanged
+  
+  // Inside the PatientProvider component:
+  
+  // Update the fetchDoctors function to handle pagination better
   const fetchDoctors = useCallback(async (params = {}) => {
+  // Don't set loading to true if we're just changing pages
+  // This prevents the entire list from disappearing during page changes
+  const isPageChange = params.page && pagination.currentPage !== params.page;
+  
+  if (!isPageChange) {
     setDoctorsLoading(true);
-    setDoctorsError(null);
+  }
+  
+  setDoctorsError(null);
+  
+  try {
+    const result = await getDoctors(params);
+    
+    setDoctors(result.doctors);
+    setPagination({
+      currentPage: parseInt(result.page),
+      totalPages: Math.ceil(result.total / result.limit),
+      totalDoctors: result.total,
+      limit: result.limit
+    });
+    
+    return result;
+  } catch (err) {
+    console.error('Error fetching doctors:', err);
+    setDoctorsError(err.message || 'Failed to fetch doctors');
+    return null;
+  } finally {
+    setDoctorsLoading(false);
+  }
+  }, [pagination.currentPage]);
+
+  // Fetch doctor by ID with cache control
+  const fetchDoctorById = useCallback(async (doctorId, bypassCache = false) => {
+    if (!doctorId) {
+      setDoctorError("Doctor ID is required");
+      return null;
+    }
+    
+    setDoctorLoading(true);
+    setDoctorError(null);
+    setCurrentDoctor(null);
+    
     try {
-      const docs = await getDoctors(params);
-      setDoctors(docs);
+      const doctor = await getDoctorById(doctorId, bypassCache);
+      setCurrentDoctor(doctor);
+      return doctor;
     } catch (err) {
-      setDoctorsError(err.message || "Failed to load doctors");
-      setDoctors([]);
+      setDoctorError(err.message || "Failed to load doctor details");
+      return null;
     } finally {
-      setDoctorsLoading(false);
+      setDoctorLoading(false);
     }
   }, []);
 
@@ -286,38 +351,46 @@ export const PatientProvider = ({ children }) => {
     }
   };
 
-  // Context value
-  const contextValue = {
-    // Core data
-    currentSubmission,
-    doctorResponse,
-    loading,
-    error,
-    
-    // Feedback data
-    feedbackSubmitted,
-    setFeedbackSubmitted,
-    
-    // Appointment data
-    appointmentRequested,
-    appointmentDetails,
-    appointmentStatus,
-    
-    // Actions
-    setSubmission,
-    clearSubmission,
-    submitFeedbackToDoctor,
-    requestAppointment,
-    refreshResponse,
-    checkAppointmentStatusUpdate,
-    doctors,
-    doctorsLoading,
-    doctorsError,
-    fetchDoctors,
-  };
-
   return (
-    <PatientContext.Provider value={contextValue}>
+    <PatientContext.Provider
+      value={{
+        // Core data
+        currentSubmission,
+        doctorResponse,
+        loading,
+        error,
+        
+        // Doctor data
+        doctors,
+        doctorsLoading,
+        doctorsError,
+        fetchDoctors,
+        pagination,
+        setPagination,
+        currentDoctor,
+        doctorLoading,
+        doctorError,
+        
+        // Feedback data
+        feedbackSubmitted,
+        setFeedbackSubmitted,
+        
+        // Appointment data
+        appointmentRequested,
+        appointmentDetails,
+        appointmentStatus,
+        
+        // Actions
+        setSubmission,
+        clearSubmission,
+        submitFeedbackToDoctor,
+        requestAppointment,
+        refreshResponse,
+        checkAppointmentStatusUpdate,
+        fetchDoctorById,
+        refreshDoctorDetails: (doctorId) => fetchDoctorById(doctorId, true), // Method to force refresh
+      }}
+    >
       {children}
     </PatientContext.Provider>
   );

@@ -6,14 +6,12 @@ import {
   FaLanguage,
   FaCalendarAlt,
   FaComments,
-  FaMapMarkerAlt,
   FaCheckCircle
 } from 'react-icons/fa';
 
 import { MdLocalHospital, MdAttachMoney } from 'react-icons/md';
 import { BiMoney } from 'react-icons/bi';
 import { GoLocation } from 'react-icons/go';
-
 
 // Helper for Detail Items
 const DetailItem = ({ icon, label, value, verified, children }) => (
@@ -40,25 +38,46 @@ const ProfessionalDetails = ({ doctor }) => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
       {/* Left Column */}
       <div>
-        <DetailItem icon={<FaGraduationCap />} label="Qualification" value={doctor.qualification} />
-        <DetailItem icon={<FaIdBadge />} label="License" value={doctor.license} verified={doctor.licenseVerified} />
-        {/* <DetailItem icon={<FaAward />} label="Award" value={doctor.awards?.join(', ')} /> */}
-        <DetailItem icon={<FaLanguage />} label="Languages" value={doctor.languages?.join(', ')} />
-        <DetailItem icon={<BiMoney />} label="Consultation Fee" value={`₹${doctor.fee}`} />
+        <DetailItem icon={<FaGraduationCap />} label="Qualification" value={doctor.degree} />
+        <DetailItem 
+          icon={<FaIdBadge />} 
+          label="License" 
+          value={doctor.licenseNumber ? `${doctor.issuingMedicalCouncil || ''} No: ${doctor.licenseNumber}` : '-'} 
+          verified={doctor.licenseNumber ? true : false} 
+        />
+        <DetailItem 
+          icon={<FaLanguage />} 
+          label="Languages" 
+          value={doctor.languages && doctor.languages.length > 0 ? doctor.languages.join(', ') : '-'} 
+        />
+        <DetailItem 
+          icon={<BiMoney />} 
+          label="Consultation Fee" 
+          value={doctor.consultationFee ? `₹${doctor.consultationFee}` : '-'} 
+        />
       </div>
       {/* Right Column */}
       <div>
-        <DetailItem icon={<FaCalendarAlt />} label="Availability" value={doctor.availability} />
-        <DetailItem icon={<FaComments />} label="Consult Options" value={doctor.consultOptions?.join(', ')} />
-        {/* <DetailItem icon={<FaStar className="text-yellow-400"/>} label="Reviews">
-            <div className="flex items-center">
-                <span className="text-yellow-500 font-semibold mr-1">{doctor.rating?.toFixed(1)}/5</span>
-                <span className="text-gray-500">({doctor.reviewCount}+ Patient Reviews)</span>
-            </div>
-        </DetailItem> */}
-        <DetailItem icon={<MdLocalHospital />} label="Hospital Address" value={doctor.address} />
-        <DetailItem icon={<GoLocation />} label="Location" value={doctor.location} />
-
+        <DetailItem 
+          icon={<FaCalendarAlt />} 
+          label="Availability" 
+          value={doctor.availabilityText || '-'} 
+        />
+        <DetailItem 
+          icon={<FaComments />} 
+          label="Consult Options" 
+          value="Response, In-Person Visit" 
+        />
+        <DetailItem 
+          icon={<MdLocalHospital />} 
+          label="Hospital Address" 
+          value={doctor.hospitalAddress || '-'} 
+        />
+        <DetailItem 
+          icon={<GoLocation />} 
+          label="Location" 
+          value={doctor.location || '-'} 
+        />
       </div>
     </div>
   </div>

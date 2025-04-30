@@ -7,6 +7,10 @@ import { getResponseBySubmissionId } from '@/data/patientData';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
+// Cache for doctor details
+const doctorCache = new Map();
+const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes in milliseconds
+
 /**
  * Helper function to handle API responses
  * @param {Response} response - Fetch API response
@@ -30,21 +34,191 @@ const handleResponse = async (response) => {
 /**
  * Get list of doctors (public)
  * @param {Object} params - { location, department, limit, page }
- * @returns {Promise<Array>} List of doctors
+ * @returns {Promise<Object>} Object containing doctors list and pagination info
  */
 export const getDoctors = async (params = {}) => {
   const query = new URLSearchParams(params).toString();
   const url = `${API_URL}/patient/doctors${query ? `?${query}` : ""}`;
   const response = await fetch(url);
   const data = await handleResponse(response);
+  
   // Map _id to id for frontend consistency
-  return (data.data || []).map(doc => ({
+  const doctors = (data.data || []).map(doc => ({
     id: doc._id,
     name: doc.name,
+    photoURL: doc.photoURL,
     specialization: doc.specialization,
     degree: doc.degree,
     experience: doc.experience,
   }));
+  
+  // Return both doctors and pagination info
+  return {
+    doctors,
+    total: data.total || doctors.length,
+    page: data.page || 1,
+    limit: data.limit || 8
+  };
+};
+
+/**
+ * Get doctor details by ID (public)
+ * @param {string} doctorId - Doctor's ID
+ * @param {boolean} bypassCache - Whether to bypass cache and fetch fresh data
+ * @returns {Promise<Object>} Doctor details
+ */
+export const getDoctorById = async (doctorId, bypassCache = false) => {
+  if (!doctorId) {
+    throw new Error('Doctor ID is required');
+  }
+  
+  // Check cache first if not bypassing
+  if (!bypassCache && doctorCache.has(doctorId)) {
+    const cachedData = doctorCache.get(doctorId);
+    if (Date.now() < cachedData.expiry) {
+      console.log('Using cached doctor data');
+      return cachedData.data;
+    } else {
+      // Cache expired, remove it
+      doctorCache.delete(doctorId);
+    }
+  }
+  
+  try {
+    const url = `${API_URL}/patient/doctors/${doctorId}`;
+    const response = await fetch(url);
+    const data = await handleResponse(response);
+    
+    // Map _id to id for frontend consistency
+    if (data.data) {
+      // Format availability into a readable string if it exists
+      let availabilityText = null;
+      let availabilityByDay = {};
+      
+      if (data.data.availability) {
+        const { workingDays, startTime, endTime, timeSlots } = data.data.availability;
+        
+        // If doctor has specific time slots for different days
+        if (timeSlots && timeSlots.length > 0) {
+          // Process time slots by day
+          timeSlots.forEach(daySlot => {
+            const day = daySlot.day.charAt(0).toUpperCase() + daySlot.day.slice(1);
+            const daySlots = daySlot.slots.map(slot => 
+              `${formatTime(slot.startTime)} – ${formatTime(slot.endTime)}`
+            ).join(', ');
+            availabilityByDay[day] = daySlots;
+          });
+        } else {
+          // Convert working days to abbreviated format (e.g., "Mon-Sat")
+          const days = [];
+          if (workingDays.monday) days.push('Mon');
+          if (workingDays.tuesday) days.push('Tue');
+          if (workingDays.wednesday) days.push('Wed');
+          if (workingDays.thursday) days.push('Thu');
+          if (workingDays.friday) days.push('Fri');
+          if (workingDays.saturday) days.push('Sat');
+          if (workingDays.sunday) days.push('Sun');
+          
+          // Format time (convert 24h to 12h format)
+          const formatTime = (time) => {
+            if (!time) return '';
+            const [hours, minutes] = time.split(':');
+            const hour = parseInt(hours);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const formattedHour = hour % 12 || 12;
+            return `${formattedHour}:${minutes} ${ampm}`;
+          };
+          
+          // Create availability string
+          if (days.length > 0) {
+            // Group consecutive days
+            let dayRanges = [];
+            let currentRange = [days[0]];
+            
+            for (let i = 1; i < days.length; i++) {
+              const dayOrder = { 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6, 'Sun': 7 };
+              if (dayOrder[days[i]] - dayOrder[days[i-1]] === 1) {
+                currentRange.push(days[i]);
+              } else {
+                dayRanges.push(currentRange);
+                currentRange = [days[i]];
+              }
+            }
+            dayRanges.push(currentRange);
+            
+            // Format day ranges
+            const formattedDays = dayRanges.map(range => {
+              if (range.length === 1) return range[0];
+              return `${range[0]} – ${range[range.length - 1]}`;
+            }).join(', ');
+            
+            availabilityText = `${formattedDays}, ${formatTime(startTime)} – ${formatTime(endTime)}`;
+          }
+        }
+      }
+      
+      const doctorData = {
+        id: data.data._id,
+        name: data.data.name,
+        email: data.data.email,
+        specialization: data.data.specialization,
+        experience: data.data.experience,
+        degree: data.data.degree,
+        hospitalAffiliation: data.data.hospitalAffiliation,
+        hospitalAddress: data.data.hospitalAddress,
+        licenseNumber: data.data.licenseNumber,
+        issuingMedicalCouncil: data.data.issuingMedicalCouncil,
+        languages: data.data.languages,
+        location: data.data.location,
+        consultationFee: data.data.consultationFee,
+        photoURL: data.data.photoURL,
+        gender: data.data.gender,
+        bio: data.data.bio,
+        availability: data.data.availability,
+        availabilityText: availabilityText,
+        availabilityByDay: Object.keys(availabilityByDay).length > 0 ? availabilityByDay : null,
+        timezone: data.data.timezone || 'Asia/Kolkata' // Default timezone for India
+      };
+      
+      // Store in cache with expiry
+      doctorCache.set(doctorId, {
+        data: doctorData,
+        expiry: Date.now() + CACHE_EXPIRY
+      });
+      
+      return doctorData;
+    }
+    
+    return null;
+  } catch (error) {
+    // Provide more specific error messages based on error type
+    if (error.status === 404) {
+      console.error('Doctor not found or profile not complete');
+      throw new Error('Doctor not found or profile not complete');
+    } else if (error.status === 400) {
+      console.error('Invalid doctor ID format');
+      throw new Error('Invalid doctor ID format');
+    } else if (error.status >= 500) {
+      console.error('Server error, please try again later');
+      throw new Error('Server error, please try again later');
+    }
+    
+    console.error('Error getting doctor details:', error);
+    throw error;
+  }
+};
+
+/* Format time from 24h to 12h format
+* @param {string} time - Time in 24h format (HH:MM)
+* @returns {string} Time in 12h format
+*/
+const formatTime = (time) => {
+ if (!time) return '';
+ const [hours, minutes] = time.split(':');
+ const hour = parseInt(hours);
+ const ampm = hour >= 12 ? 'PM' : 'AM';
+ const formattedHour = hour % 12 || 12;
+ return `${formattedHour}:${minutes} ${ampm}`;
 };
 
 /**

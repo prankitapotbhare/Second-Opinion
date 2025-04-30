@@ -1,51 +1,82 @@
 "use client";
 
-import React, { useState } from 'react';
-import { doctors as doctorsData } from '@/data/doctorsData';
+import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { usePatient } from '@/contexts/PatientContext';
 import SearchBar from './components/SearchBar';
 import DoctorGrid from './components/DoctorGrid';
-import { useSearchParams } from 'next/navigation';
+import DoctorCardSkeleton from './components/DoctorCardSkeleton';
 
 export default function DoctorsSearchPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showAll, setShowAll] = useState(false);
+  const [isChangingPage, setIsChangingPage] = useState(false);
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const gridRef = useRef(null);
+
+  // Get context data and functions
+  const {
+    doctors,
+    doctorsLoading,
+    doctorsError,
+    fetchDoctors,
+    pagination,
+  } = usePatient();
 
   // Get filters from query params
   const locationFilter = searchParams.get('location') || '';
-  const specializationFilter = searchParams.get('department') || searchParams.get('specialization') || ''; // Accept both for compatibility
+  const specializationFilter = searchParams.get('department') || searchParams.get('specialization') || '';
+  const pageParam = searchParams.get('page') ? parseInt(searchParams.get('page')) : 1;
 
-  // Filter doctors based on search term, location, and specialization
-  const filteredDoctors = doctorsData.filter(doctor => { // Use consolidated data
+  // Fetch doctors on initial load and when filters or page changes
+  useEffect(() => {
+    const params = {};
+
+    if (locationFilter) {
+      params.location = locationFilter;
+    }
+
+    if (specializationFilter) {
+      params.department = specializationFilter;
+    }
+
+    // Add pagination params
+    params.page = pageParam;
+    params.limit = pagination.limit || 8; // Ensure we have a default limit
+
+    setIsChangingPage(true);
+
+    fetchDoctors(params).finally(() => {
+      setIsChangingPage(false);
+    });
+    // Only depend on filters and pageParam, not pagination.currentPage
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchDoctors, locationFilter, specializationFilter, pageParam, pagination.limit]);
+
+  // Filter doctors based on search term
+  const filteredDoctors = doctors.filter(doctor => {
+    if (!searchTerm.trim()) return true;
+
     const matchesSearch =
-      (doctor.name && doctor.name.toLowerCase().includes(searchTerm.toLowerCase())) || // Use name
-      (doctor.specialization && doctor.specialization.toLowerCase().includes(searchTerm.toLowerCase())); // Use specialization
-    const matchesLocation = locationFilter
-      ? (doctor.location && doctor.location.toLowerCase().includes(locationFilter.toLowerCase())) // Use location, use includes for partial match
-      : true;
-    const matchesSpecialization = specializationFilter
-      ? (doctor.specialization && doctor.specialization.toLowerCase() === specializationFilter.toLowerCase()) // Use specialization
-      : true;
-    return matchesSearch && matchesLocation && matchesSpecialization;
+      (doctor.name && doctor.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (doctor.specialization && doctor.specialization.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    return matchesSearch;
   });
 
-  // Determine which doctors to display based on filters only (search is handled by filteredDoctors)
-  const displayedDoctors = doctorsData.filter(doctor => { // Use consolidated data
-    const matchesLocation = locationFilter
-      ? (doctor.location && doctor.location.toLowerCase().includes(locationFilter.toLowerCase())) // Use location, use includes
-      : true;
-    const matchesSpecialization = specializationFilter
-      ? (doctor.specialization && doctor.specialization.toLowerCase() === specializationFilter.toLowerCase()) // Use specialization
-      : true;
-    return matchesLocation && matchesSpecialization;
-  });
+  // Handle page change
+  const handlePageChange = (newPage) => {
+    // Scroll to top of grid when changing pages
+    if (gridRef.current) {
+      gridRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
-  // If there's a search term, use the filtered list, otherwise use the list filtered by params
-  const doctorsToDisplay = searchTerm ? filteredDoctors : displayedDoctors;
+    // Update URL with new page parameter
+    const params = new URLSearchParams(searchParams);
+    params.set('page', newPage);
 
-
-  const toggleShowAll = () => {
-    setShowAll(!showAll);
+    // Update the URL without refreshing the page
+    router.push(`/patient/doctors?${params.toString()}`);
   };
 
   return (
@@ -53,22 +84,30 @@ export default function DoctorsSearchPage() {
       {/* Search Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-6">Find a Doctor</h1>
-        {/* Pass location and specialization filters to SearchBar if it uses them */}
         <SearchBar
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            initialLocation={locationFilter}
-            initialSpecialization={specializationFilter}
-         />
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          initialLocation={locationFilter}
+          initialSpecialization={specializationFilter}
+        />
       </div>
 
       {/* Doctors Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 my-8">
-        <DoctorGrid
-          doctors={doctorsToDisplay} // Pass the correctly filtered list
-          showAll={showAll}
-          toggleShowAll={toggleShowAll}
-        />
+      <div ref={gridRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 my-8">
+        {doctorsError ? (
+          <div className="text-center py-12">
+            <h3 className="text-xl font-medium text-red-600 mb-2">Error loading doctors</h3>
+            <p className="text-gray-500">{doctorsError}</p>
+          </div>
+        ) : (
+          <DoctorGrid
+            doctors={filteredDoctors}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            loading={doctorsLoading}
+            isChangingPage={isChangingPage}
+          />
+        )}
       </div>
     </div>
   );

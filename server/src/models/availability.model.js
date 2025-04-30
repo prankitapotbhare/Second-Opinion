@@ -4,7 +4,8 @@ const availabilitySchema = new mongoose.Schema({
   doctorId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Doctor',
-    required: true
+    required: true,
+    index: true // Add index for better query performance
   },
   workingDays: {
     monday: { type: Boolean, default: false },
@@ -51,7 +52,23 @@ const availabilitySchema = new mongoose.Schema({
     default: Date.now
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Add a pre-save hook to update the doctor's availability reference
+availabilitySchema.pre('save', async function(next) {
+  try {
+    // Update the doctor's availability reference
+    await mongoose.model('Doctor').findByIdAndUpdate(
+      this.doctorId,
+      { availability: this._id }
+    );
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 const Availability = mongoose.model('Availability', availabilitySchema);
