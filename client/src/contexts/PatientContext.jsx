@@ -1,7 +1,14 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getDoctorResponse, submitFeedback, requestSecondOpinion, checkAppointmentStatus, getDoctors } from '@/api/patient.api';
+import { 
+  getDoctorResponse, 
+  submitFeedback, 
+  requestSecondOpinion, 
+  checkAppointmentStatus, 
+  getDoctors,
+  getDoctorById 
+} from '@/api/patient.api';
 
 // Create the context
 const PatientContext = createContext();
@@ -22,6 +29,14 @@ export const PatientProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
+  // Doctor state
+  const [doctors, setDoctors] = useState([]);
+  const [doctorsLoading, setDoctorsLoading] = useState(false);
+  const [doctorsError, setDoctorsError] = useState(null);
+  const [currentDoctor, setCurrentDoctor] = useState(null);
+  const [doctorLoading, setDoctorLoading] = useState(false);
+  const [doctorError, setDoctorError] = useState(null);
+  
   // Feedback state
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   
@@ -30,9 +45,6 @@ export const PatientProvider = ({ children }) => {
   const [appointmentDetails, setAppointmentDetails] = useState(null);
   const [appointmentStatus, setAppointmentStatus] = useState(null); // 'pending', 'approved', 'rejected'
   const [statusCheckInterval, setStatusCheckInterval] = useState(null);
-  const [doctors, setDoctors] = useState([]);
-  const [doctorsLoading, setDoctorsLoading] = useState(false);
-  const [doctorsError, setDoctorsError] = useState(null);
 
   // Load persisted data on mount
   useEffect(() => {
@@ -158,6 +170,29 @@ export const PatientProvider = ({ children }) => {
       setDoctors([]);
     } finally {
       setDoctorsLoading(false);
+    }
+  }, []);
+
+  // Fetch doctor by ID with cache control
+  const fetchDoctorById = useCallback(async (doctorId, bypassCache = false) => {
+    if (!doctorId) {
+      setDoctorError("Doctor ID is required");
+      return null;
+    }
+    
+    setDoctorLoading(true);
+    setDoctorError(null);
+    setCurrentDoctor(null);
+    
+    try {
+      const doctor = await getDoctorById(doctorId, bypassCache);
+      setCurrentDoctor(doctor);
+      return doctor;
+    } catch (err) {
+      setDoctorError(err.message || "Failed to load doctor details");
+      return null;
+    } finally {
+      setDoctorLoading(false);
     }
   }, []);
 
@@ -294,6 +329,14 @@ export const PatientProvider = ({ children }) => {
     loading,
     error,
     
+    // Doctor data
+    doctors,
+    doctorsLoading,
+    doctorsError,
+    currentDoctor,
+    doctorLoading,
+    doctorError,
+    
     // Feedback data
     feedbackSubmitted,
     setFeedbackSubmitted,
@@ -310,10 +353,9 @@ export const PatientProvider = ({ children }) => {
     requestAppointment,
     refreshResponse,
     checkAppointmentStatusUpdate,
-    doctors,
-    doctorsLoading,
-    doctorsError,
     fetchDoctors,
+    fetchDoctorById,
+    refreshDoctorDetails: (doctorId) => fetchDoctorById(doctorId, true), // Add method to force refresh
   };
 
   return (

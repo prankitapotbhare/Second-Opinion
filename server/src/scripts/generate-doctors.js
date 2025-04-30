@@ -8,8 +8,8 @@ require('dotenv').config();
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/second-opinion';
 
 const SPECIALIZATIONS = [
-  'Cardiology', 'Neurology', 'Orthopedics', 'Dermatology', 'Pediatrics',
-  'Oncology', 'Psychiatry', 'Gastroenterology', 'Urology', 'Ophthalmology'
+  "Cardiology", "Dermatology", "Endocrinology", "Gastroenterology", "Neurology",
+  "Oncology", "Orthopedics", "Pediatrics", "Psychiatry", "Radiology", "Surgery", "Urology"
 ];
 const LOCATIONS = [
   'Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata', 'Nagpur', 'Pune', 'Hyderabad', 'Ahmedabad', 'Jaipur'

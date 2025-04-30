@@ -1,5 +1,6 @@
 const Patient = require('../models/patient.model');
 const Doctor = require('../models/doctor.model');
+const Availability = require('../models/availability.model');
 const fileService = require('../services/file.service');
 const formService = require('../services/form.service');
 const validationService = require('../services/validation.service');
@@ -21,13 +22,69 @@ exports.getDoctorsPublic = async (req, res, next) => {
     query.isProfileComplete = true;
 
     const doctors = await Doctor.find(query)
-      .select('_id name specialization degree experience')
+      .select('name photoURL specialization degree experience')
       .limit(Number(limit))
       .skip((Number(page) - 1) * Number(limit));
 
     res.status(200).json({
       success: true,
       data: doctors
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// --- PUBLIC: Get doctor by ID ---
+exports.getDoctorByIdPublic = async (req, res, next) => {
+  try {
+    const { doctorId } = req.params;
+    
+    // Validate doctor ID
+    validationService.validateObjectId(doctorId, 'doctor');
+    
+    // Find doctor with completed profile and populate availability in a single query
+    const doctor = await Doctor.findOne({ 
+      _id: doctorId,
+      isProfileComplete: true 
+    })
+    .select(
+      '_id name email specialization experience degree hospitalAffiliation ' +
+      'hospitalAddress licenseNumber issuingMedicalCouncil consultationFee ' + 
+      'languages location photoURL gender bio timezone'
+    )
+    .populate({
+      path: 'availability',
+      select: 'workingDays startTime endTime weeklyHoliday timeSlots'
+    })
+    .lean();
+    
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor not found or profile not complete'
+      });
+    }
+    
+    // If availability isn't found through populate, try to find it directly
+    // This is a fallback for doctors created before the schema update
+    if (!doctor.availability) {
+      const availability = await Availability.findOne({ doctorId: doctor._id }).lean();
+      
+      if (availability) {
+        doctor.availability = {
+          workingDays: availability.workingDays,
+          startTime: availability.startTime,
+          endTime: availability.endTime,
+          weeklyHoliday: availability.weeklyHoliday,
+          timeSlots: availability.timeSlots
+        };
+      }
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: doctor
     });
   } catch (error) {
     next(error);
