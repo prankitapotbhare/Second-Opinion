@@ -258,24 +258,20 @@ export const DoctorProvider = ({ children }) => {
     }
   };
 
-  // Get doctor reviews
-  const fetchDoctorReviews = async () => {
+  // Get doctor reviews (paginated)
+  const fetchDoctorReviews = async (params = {}) => {
     setLoading(true);
     setError(null);
     try {
-      // Check if user is authenticated before proceeding
       if (!currentUser || !authToken) {
         throw new Error('You must be logged in to view reviews');
       }
-      
-      const response = await getDoctorReviews();
+      const response = await getDoctorReviews(params);
       setReviews(response.data);
-      return response.data;
+      return response;
     } catch (err) {
-      // Handle authentication errors specifically
       if (err.message === 'No authentication token found') {
         setError('Your session has expired. Please log in again.');
-        // Optionally redirect to login
         setTimeout(() => {
           if (logout) logout();
           router.push('/login/doctor');

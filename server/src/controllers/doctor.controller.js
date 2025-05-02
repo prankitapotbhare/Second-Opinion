@@ -348,19 +348,21 @@ exports.getDashboardStats = async (req, res, next) => {
 exports.getDoctorReviews = async (req, res, next) => {
   try {
     const doctorId = req.user.id;
-    
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 4;
+    const skip = (page - 1) * limit;
+
     const doctor = await Doctor.findById(doctorId)
       .select('reviews averageRating')
       .populate({
         path: 'reviews.patientId',
         select: 'name photoURL'
       });
-    
+
     if (!doctor) {
       return next(createError('Doctor not found', 404));
     }
-    
-    // Helper to format "dayAgo"
+
     function getDayAgo(date) {
       const now = new Date();
       const diffMs = now - date;
@@ -370,23 +372,25 @@ exports.getDoctorReviews = async (req, res, next) => {
       return `${diffDays} days ago`;
     }
 
-    // Sort reviews by date (newest first) and format as requested
+    // Sort reviews by date (newest first)
     const sortedReviews = doctor.reviews
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .map(review => ({
-        patientId: review.patientId._id,
-        patientName: review.patientId.name,
-        patientPhotoURL: review.patientId.photoURL,
-        rating: review.rating,
-        comment: review.comment,
-        dayAgo: getDayAgo(review.createdAt)
-      }));
-    
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // Paginate reviews
+    const paginatedReviews = sortedReviews.slice(skip, skip + limit).map(review => ({
+      patientId: review.patientId._id,
+      patientName: review.patientId.name,
+      patientPhotoURL: review.patientId.photoURL,
+      rating: review.rating,
+      comment: review.comment,
+      dayAgo: getDayAgo(review.createdAt)
+    }));
+
     res.status(200).json({
       success: true,
       message: 'Doctor reviews retrieved successfully',
       data: {
-        reviews: sortedReviews,
+        reviews: paginatedReviews,
         averageRating: doctor.averageRating,
         totalReviews: doctor.reviews.length
       }

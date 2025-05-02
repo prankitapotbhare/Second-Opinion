@@ -295,21 +295,27 @@ export const getDashboardStats = async () => {
 };
 
 /**
- * Get doctor reviews
- * @returns {Promise<Object>} Doctor reviews data
+ * Get doctor reviews (paginated)
+ * @param {Object} params - Query parameters (page, limit)
+ * @returns {Promise<Object>} Doctor reviews data with pagination
  */
-export const getDoctorReviews = async () => {
+export const getDoctorReviews = async (params = {}) => {
   try {
     const token = getAuthToken();
-    
-    const response = await fetch(`${API_URL}/doctor/reviews`, {
+    const queryParams = new URLSearchParams();
+    Object.keys(params).forEach(key => {
+      if (params[key] !== undefined && params[key] !== null) {
+        queryParams.append(key, params[key]);
+      }
+    });
+    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    const response = await fetch(`${API_URL}/doctor/reviews${queryString}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     });
-    
     return handleResponse(response);
   } catch (error) {
     console.error('Error getting doctor reviews:', error);
