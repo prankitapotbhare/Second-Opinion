@@ -138,7 +138,7 @@ export const DoctorProvider = ({ children }) => {
       
       const response = await setAvailability(availabilityData);
       setAvailabilityState(response.data);
-      return response;
+      return response.data;
     } catch (err) {
       // Handle authentication errors specifically
       if (err.message === 'No authentication token found') {

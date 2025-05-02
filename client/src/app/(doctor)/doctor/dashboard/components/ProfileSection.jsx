@@ -15,6 +15,7 @@ import {
   FaFile,
 } from "react-icons/fa";
 import { showSuccessToast, showErrorToast } from '@/utils/toast';
+import AvailabilitySection from './AvailabilitySection';
 
 const ProfileSection = () => {
   const { doctor, loading, error, updateProfile } = useDoctor();
@@ -567,49 +568,8 @@ const ProfileSection = () => {
           </div>
         </section>
 
-        {/* Consultation Settings */}
-        <section className="bg-white rounded-lg shadow-sm p-4 sm:p-6 border border-gray-100 mb-8">
-          <h2 className="text-xl font-medium text-gray-800 mb-6">Consultation Settings</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Available Consultation Modes</label>
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked
-                  className="h-4 w-4 text-blue-600 border-gray-300"
-                  onChange={() => {}}
-                />
-                <span className="ml-2 text-sm text-gray-700">Report Review</span>
-              </label>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Availability / Working Hours
-              </label>
-              <div className="space-y-2">
-                {[
-                  ["Monday - Friday", "9:00 AM - 5:00 PM"],
-                  ["Saturday", "10:00 AM - 2:00 PM"],
-                  ["Sunday", "Closed"],
-                ].map(([day, time], i) => (
-                  <div key={i} className="flex justify-between text-sm text-gray-700">
-                    <span>{day}</span>
-                    <span>{time}</span>
-                  </div>
-                ))}
-                <button 
-                  type="button"
-                  className="mt-2 text-sm text-blue-600 hover:text-blue-800"
-                >
-                  <FaEdit className="inline mr-1" />
-                  Edit Schedule
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* AvailabilitySection */}
+        <AvailabilitySection />
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row justify-end gap-4">
@@ -636,7 +596,7 @@ const ProfileSection = () => {
           </button>
         </div>
       </form>
-      
+
       {/* Document Preview Modal */}
       {showDocumentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
