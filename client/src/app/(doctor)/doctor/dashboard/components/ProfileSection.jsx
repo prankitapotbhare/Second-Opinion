@@ -9,6 +9,10 @@ import {
   FaEdit,
   FaCheck,
   FaSpinner,
+  FaEye,
+  FaFilePdf,
+  FaFileImage,
+  FaFile,
 } from "react-icons/fa";
 import { showSuccessToast, showErrorToast } from '@/utils/toast';
 
@@ -16,10 +20,21 @@ const ProfileSection = () => {
   const { doctor, loading, error, updateProfile } = useDoctor();
   const [formData, setFormData] = useState({});
   const [files, setFiles] = useState({});
+  const [filePreview, setFilePreview] = useState({
+    profilePhoto: null,
+    registrationCertificate: null,
+    governmentId: null
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState(false);
   const [updateError, setUpdateError] = useState(null);
   const [languagesInput, setLanguagesInput] = useState('');
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [currentDocument, setCurrentDocument] = useState({
+    url: '',
+    type: '',
+    name: ''
+  });
   
   // Initialize form data when doctor data is loaded
   useEffect(() => {
@@ -47,6 +62,37 @@ const ProfileSection = () => {
       // Set languages input as a comma-separated string
       if (doctor.languages && Array.isArray(doctor.languages)) {
         setLanguagesInput(doctor.languages.join(', '));
+      }
+      
+      // Set file previews for existing documents
+      if (doctor.photoURL) {
+        setFilePreview(prev => ({
+          ...prev,
+          profilePhoto: doctor.photoURL
+        }));
+      }
+      
+      // Set document URLs if available
+      if (doctor.registrationCertificate) {
+        setFilePreview(prev => ({
+          ...prev,
+          registrationCertificate: {
+            url: doctor.registrationCertificate.filePath,
+            name: doctor.registrationCertificate.fileName,
+            type: doctor.registrationCertificate.fileType
+          }
+        }));
+      }
+      
+      if (doctor.governmentId) {
+        setFilePreview(prev => ({
+          ...prev,
+          governmentId: {
+            url: doctor.governmentId.filePath,
+            name: doctor.governmentId.fileName,
+            type: doctor.governmentId.fileType
+          }
+        }));
       }
     }
   }, [doctor]);
@@ -77,10 +123,56 @@ const ProfileSection = () => {
   const handleFileChange = (e) => {
     const { name, files: fileList } = e.target;
     if (fileList && fileList.length > 0) {
+      const file = fileList[0];
+      
+      // Update files state
       setFiles(prev => ({
         ...prev,
-        [name]: fileList[0]
+        [name]: file
       }));
+      
+      // Create and set preview for the file
+      if (name === 'profilePhoto') {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setFilePreview(prev => ({
+            ...prev,
+            profilePhoto: reader.result
+          }));
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // For documents, store file info for preview
+        setFilePreview(prev => ({
+          ...prev,
+          [name]: {
+            name: file.name,
+            type: file.type.includes('pdf') ? 'pdf' : 
+                  file.type.includes('image') ? 'image' : 'unknown',
+            file: file // Store the file object for potential preview
+          }
+        }));
+      }
+    }
+  };
+
+  // Open document modal
+  const handleViewDocument = (documentType) => {
+    let documentInfo = null;
+    
+    if (documentType === 'registrationCertificate') {
+      documentInfo = filePreview.registrationCertificate;
+    } else if (documentType === 'governmentId') {
+      documentInfo = filePreview.governmentId;
+    }
+    
+    if (documentInfo) {
+      setCurrentDocument({
+        url: documentInfo.url || (documentInfo.file ? URL.createObjectURL(documentInfo.file) : ''),
+        type: documentInfo.type,
+        name: documentInfo.name
+      });
+      setShowDocumentModal(true);
     }
   };
 
@@ -139,7 +231,7 @@ const ProfileSection = () => {
             <div className="col-span-1 lg:col-span-2 flex flex-col sm:flex-row items-start gap-6 mb-4">
               <div className="relative">
                 <img
-                  src={doctor?.photoURL || "https://public.readdy.ai/ai/img_res/fc4e928c7d3a4337c7173c0e07f786b5.jpg"}
+                  src={filePreview.profilePhoto || doctor?.photoURL || "https://public.readdy.ai/ai/img_res/fc4e928c7d3a4337c7173c0e07f786b5.jpg"}
                   alt="Doctor profile"
                   className="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover object-top"
                 />
@@ -368,13 +460,24 @@ const ProfileSection = () => {
                   className="flex items-center justify-between w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700 cursor-pointer hover:bg-gray-50"
                 >
                   <span className="text-gray-500">
-                    {files.registrationCertificate ? files.registrationCertificate.name : "Upload PDF/JPG"}
+                    {files.registrationCertificate ? files.registrationCertificate.name : 
+                     filePreview.registrationCertificate ? filePreview.registrationCertificate.name : 
+                     "Upload PDF/JPG"}
                   </span>
                   <FaUpload className="text-blue-500" />
                 </label>
                 <div className="mt-2 text-xs text-gray-500">
                   Supported formats: PDF, JPG, JPEG, PNG (Max size: 100MB)
                 </div>
+                {(filePreview.registrationCertificate || files.registrationCertificate) && (
+                  <button
+                    type="button"
+                    onClick={() => handleViewDocument('registrationCertificate')}
+                    className="mt-2 flex items-center text-blue-600 hover:text-blue-800"
+                  >
+                    <FaEye className="mr-1" /> View Document
+                  </button>
+                )}
               </div>
             </div>
 
@@ -394,13 +497,24 @@ const ProfileSection = () => {
                   className="flex items-center justify-between w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-700 cursor-pointer hover:bg-gray-50"
                 >
                   <span className="text-gray-500">
-                    {files.governmentId ? files.governmentId.name : "Upload PDF/JPG"}
+                    {files.governmentId ? files.governmentId.name : 
+                     filePreview.governmentId ? filePreview.governmentId.name : 
+                     "Upload PDF/JPG"}
                   </span>
                   <FaUpload className="text-blue-500" />
                 </label>
                 <div className="mt-2 text-xs text-gray-500">
                   Supported formats: PDF, JPG, JPEG, PNG (Max size: 100MB)
                 </div>
+                {(filePreview.governmentId || files.governmentId) && (
+                  <button
+                    type="button"
+                    onClick={() => handleViewDocument('governmentId')}
+                    className="mt-2 flex items-center text-blue-600 hover:text-blue-800"
+                  >
+                    <FaEye className="mr-1" /> View Document
+                  </button>
+                )}
               </div>
             </div>
 
@@ -522,6 +636,70 @@ const ProfileSection = () => {
           </button>
         </div>
       </form>
+      
+      {/* Document Preview Modal */}
+      {showDocumentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-lg shadow-xl p-6 sm:p-8 w-full max-w-3xl border border-gray-200">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-gray-800">
+                {currentDocument.name}
+              </h3>
+              <button
+                onClick={() => setShowDocumentModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="overflow-auto max-h-[70vh]">
+              {currentDocument.type === 'application/pdf' ? (
+                <div className="flex flex-col items-center justify-center p-4 bg-gray-100 rounded-lg">
+                  <FaFilePdf className="text-red-500 text-5xl mb-2" />
+                  <p className="text-gray-700 mb-4">PDF Document</p>
+                  <a 
+                    href={currentDocument.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Open PDF
+                  </a>
+                </div>
+              ) : currentDocument.type === 'image/jpg' || 'image/jpeg' || 'image/png' ? (
+                <img 
+                  src={currentDocument.url} 
+                  alt={currentDocument.name}
+                  className="max-w-full h-auto rounded-lg"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center p-4 bg-gray-100 rounded-lg">
+                  <FaFile className="text-gray-500 text-5xl mb-2" />
+                  <p className="text-gray-700 mb-4">Unknown Document Type</p>
+                  <a 
+                    href={currentDocument.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Open Document
+                  </a>
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setShowDocumentModal(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 };
