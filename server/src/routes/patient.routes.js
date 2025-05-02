@@ -3,7 +3,7 @@ const router = express.Router();
 const patientController = require('../controllers/patient.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { checkRole } = require('../middleware/role.middleware');
-const { patientFileUpload, handleUploadError } = require('../middleware/upload.middleware');
+const { patientFileUpload, handleUploadError, processFilePaths } = require('../middleware/upload.middleware');
 
 // --- PUBLIC: Get doctors with filters ---
 router.get(
@@ -11,19 +11,27 @@ router.get(
   patientController.getDoctorsPublic
 );
 
+// --- PUBLIC: Get doctor by ID ---
+router.get(
+  '/doctors/:doctorId',
+  patientController.getDoctorByIdPublic
+);
+
 // Apply authentication to all patient routes
 router.use(authenticate);
 router.use(checkRole(['patient']));
 
-// Form submission routes (using authenticated user)
-router.post('/forms', 
-  patientFileUpload.array('medicalFiles', 5), // Allow up to 5 files in a single submission
+// Patient details routes
+router.post('/patient-details', 
+  patientFileUpload.array('medicalFiles', 5),
   handleUploadError,
-  patientController.submitForm
+  processFilePaths, // Add this middleware
+  patientController.createPatientDetails
 );
+// Check appointment status
+router.get('/reponse/:submissionId/status', patientController.checkAppointmentStatus);
 
-router.get('/forms/:formId/files/:fileId', 
-  patientController.downloadMedicalFile
-);
+// Request appointment
+router.post('/submissions/:submissionId/appointment', patientController.requestAppointment);
 
 module.exports = router;

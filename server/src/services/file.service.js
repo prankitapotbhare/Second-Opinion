@@ -142,7 +142,7 @@ exports.processDocuments = (files) => {
     const file = files.registrationCertificate[0];
     documents.registrationCertificate = {
       fileName: file.originalname,
-      filePath: file.path,
+      filePath: file.urlPath || this.getUrlPath(file.path), // Use URL path instead of file system path
       fileType: file.mimetype,
       fileSize: file.size,
       uploadDate: new Date()
@@ -154,7 +154,7 @@ exports.processDocuments = (files) => {
     const file = files.governmentId[0];
     documents.governmentId = {
       fileName: file.originalname,
-      filePath: file.path,
+      filePath: file.urlPath || this.getUrlPath(file.path), // Use URL path instead of file system path
       fileType: file.mimetype,
       fileSize: file.size,
       uploadDate: new Date()
@@ -164,7 +164,7 @@ exports.processDocuments = (files) => {
   // Handle profile photo
   if (files.profilePhoto && files.profilePhoto.length > 0) {
     const file = files.profilePhoto[0];
-    documents.profilePhoto = file.path;
+    documents.profilePhoto = file.urlPath || this.getUrlPath(file.path); // Use URL path instead of file system path
   }
   
   return documents;
@@ -188,7 +188,7 @@ exports.processUploadedFiles = (files) => {
       fileType: file.mimetype,
       fileSize: file.size,
       uploadDate: new Date(),
-      filePath: file.path
+      filePath: file.urlPath || this.getUrlPath(file.path) // Use URL path instead of file system path
     });
   });
   
@@ -281,4 +281,24 @@ exports.readFileContents = (filePath, encoding = 'utf8') => {
   } catch (error) {
     throw createError(`Failed to read file: ${error.message}`, 500);
   }
+};
+
+/**
+ * Converts a file system path to a URL path for client access
+ * @param {string} filePath - The full file system path
+ * @returns {string} URL path for client access
+ */
+exports.getUrlPath = function(filePath) {
+  // Get the base URL from environment variables or use default
+  const BASE_URL = process.env.SERVER_URL || 'http://localhost:5000';
+  
+  // Extract the part of the path after 'uploads'
+  const uploadsDirIndex = filePath.indexOf('uploads');
+  if (uploadsDirIndex === -1) return filePath;
+  
+  // Get the relative path from the uploads directory
+  const relativePath = filePath.substring(uploadsDirIndex);
+  
+  // Convert backslashes to forward slashes for URL compatibility
+  return `${BASE_URL}/${relativePath.replace(/\\/g, '/')}`;
 };

@@ -3,7 +3,7 @@ const router = express.Router();
 const doctorController = require('../controllers/doctor.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { checkRole } = require('../middleware/role.middleware');
-const { doctorFileUpload, handleUploadError } = require('../middleware/upload.middleware');
+const { doctorFileUpload, handleUploadError, processFilePaths } = require('../middleware/upload.middleware');
 
 // Apply authentication to all doctor routes
 router.use(authenticate);
@@ -17,6 +17,7 @@ router.post('/profile/complete',
     { name: 'profilePhoto', maxCount: 1 }
   ]),
   handleUploadError,
+  processFilePaths,
   doctorController.completeProfile
 );
 
@@ -29,11 +30,9 @@ router.put('/profile',
     { name: 'profilePhoto', maxCount: 1 }
   ]),
   handleUploadError,
+  processFilePaths,
   doctorController.updateDoctorProfile
 );
-
-// Document download route
-router.get('/profile/documents/:documentType', doctorController.downloadDocument);
 
 // Availability management (using authenticated user)
 router.post('/profile/availability', doctorController.setAvailability);
@@ -41,5 +40,19 @@ router.get('/profile/availability', doctorController.getDoctorAvailability);
 
 // Delete account route
 router.delete('/account', doctorController.deleteAccount);
+
+// Dashboard routes
+router.get('/stats', doctorController.getDashboardStats);
+router.get('/reviews', doctorController.getDoctorReviews);
+
+// Appointment management routes
+router.get('/appointments', doctorController.getAppointments);
+router.get('/appointments/:appointmentId', doctorController.getAppointmentDetails);
+router.post('/appointments/:appointmentId/response', doctorController.submitAppointmentResponse);
+
+// Patient request management routes
+router.get('/requests', doctorController.getPatientRequests);
+router.put('/requests/:requestId/accept', doctorController.acceptPatientRequest);
+router.put('/requests/:requestId/reject', doctorController.rejectPatientRequest);
 
 module.exports = router;

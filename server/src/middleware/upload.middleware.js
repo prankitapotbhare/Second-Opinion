@@ -18,7 +18,9 @@ const fileService = require('../services/file.service');
 const patientStorage = multer.diskStorage({
   destination: function (req, file, cb) {
     // Create patient-specific directory using authenticated user ID
-    const patientDir = path.join(MEDICAL_FILES_DIR, req.user.id);
+    // Convert ObjectId to string before using it in path.join
+    const patientId = req.user.id.toString();
+    const patientDir = path.join(MEDICAL_FILES_DIR, patientId);
     fileService.ensureDirectoryExists(patientDir);
     cb(null, patientDir);
   },
@@ -116,6 +118,36 @@ exports.handleUploadError = (err, req, res, next) => {
       success: false,
       message: err.message
     });
+  }
+  
+  next();
+};
+
+// Add file path processing middleware
+exports.processFilePaths = (req, res, next) => {
+  if (!req.files && !req.file) return next();
+  
+  // Process single file
+  if (req.file) {
+    req.file.urlPath = fileService.getUrlPath(req.file.path);
+  }
+  
+  // Process multiple files
+  if (req.files) {
+    // Handle array of files
+    if (Array.isArray(req.files)) {
+      req.files.forEach(file => {
+        file.urlPath = fileService.getUrlPath(file.path);
+      });
+    } 
+    // Handle files object (for fields)
+    else {
+      Object.keys(req.files).forEach(fieldname => {
+        req.files[fieldname].forEach(file => {
+          file.urlPath = fileService.getUrlPath(file.path);
+        });
+      });
+    }
   }
   
   next();

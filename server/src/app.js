@@ -26,6 +26,9 @@ app.use('/uploads', express.static(UPLOADS_DIR, {
     
     // Set cache control for better performance
     res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
+    
+    // Set CORS headers to allow access from client
+    res.setHeader('Access-Control-Allow-Origin', '*');
   }
 }));
 

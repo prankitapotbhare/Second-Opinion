@@ -28,11 +28,15 @@ const FILE_SIZE_LIMITS = {
   DOCTOR_DOCUMENT: 5 * 1024 * 1024 // 5MB for doctor documents
 };
 
+// Define server URL for file access
+const SERVER_URL = process.env.SERVER_URL || 'http://localhost:5000';
+
 module.exports = {
   UPLOADS_DIR,
   MEDICAL_FILES_DIR,
   DOCTOR_FILES_DIR,
   ALLOWED_FILE_TYPES,
   ALLOWED_DOCUMENT_TYPES,
-  FILE_SIZE_LIMITS
+  FILE_SIZE_LIMITS,
+  SERVER_URL
 };
