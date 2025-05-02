@@ -4,6 +4,70 @@ const PatientDetails = require('../models/patientDetails.model');
 const { createError } = require('../utils/error.util');
 const fileService = require('../services/file.service');
 
+// Complete doctor profile with documents (using authenticated user)
+exports.completeProfile = async (req, res, next) => {
+  try {
+    // Process uploaded documents using file service
+    const documents = fileService.processDocuments(req.files);
+    
+    // Validate required fields for profile completion
+    const requiredFields = ['specialization', 'experience', 'licenseNumber', 'degree'];
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    
+    if (missingFields.length > 0) {
+      return next(createError(`Missing required fields: ${missingFields.join(', ')}`, 400));
+    }
+    
+    // Validate gender if provided
+    if (req.body.gender && !['Male', 'Female', 'Other'].includes(req.body.gender)) {
+      return next(createError('Invalid gender value. Must be Male, Female, or Other', 400));
+    }
+    
+    // Don't allow email updates through this function
+    if (req.body.email) {
+      delete req.body.email;
+    }
+    
+    // Update doctor profile with documents and additional information
+    const updateData = {
+      ...req.body,
+      isProfileComplete: true,
+      profileCompletedAt: new Date()
+    };
+    
+    // Add document paths if they exist
+    if (documents.registrationCertificate) {
+      updateData.registrationCertificate = documents.registrationCertificate;
+    }
+    
+    if (documents.governmentId) {
+      updateData.governmentId = documents.governmentId;
+    }
+    
+    if (documents.profilePhoto) {
+      updateData.photoURL = documents.profilePhoto;
+    }
+    
+    const doctor = await Doctor.findByIdAndUpdate(
+      req.user.id,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    if (!doctor) {
+      return next(createError('Doctor not found', 404));
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: 'Profile completed successfully',
+      data: doctor
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Get doctor profile (using authenticated user)
 exports.getDoctorProfile = async (req, res, next) => {
   try {
@@ -75,70 +139,6 @@ exports.updateDoctorProfile = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: 'Doctor profile updated successfully',
-      data: doctor
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Complete doctor profile with documents (using authenticated user)
-exports.completeProfile = async (req, res, next) => {
-  try {
-    // Process uploaded documents using file service
-    const documents = fileService.processDocuments(req.files);
-    
-    // Validate required fields for profile completion
-    const requiredFields = ['specialization', 'experience', 'licenseNumber', 'degree'];
-    const missingFields = requiredFields.filter(field => !req.body[field]);
-    
-    if (missingFields.length > 0) {
-      return next(createError(`Missing required fields: ${missingFields.join(', ')}`, 400));
-    }
-    
-    // Validate gender if provided
-    if (req.body.gender && !['Male', 'Female', 'Other'].includes(req.body.gender)) {
-      return next(createError('Invalid gender value. Must be Male, Female, or Other', 400));
-    }
-    
-    // Don't allow email updates through this function
-    if (req.body.email) {
-      delete req.body.email;
-    }
-    
-    // Update doctor profile with documents and additional information
-    const updateData = {
-      ...req.body,
-      isProfileComplete: true,
-      profileCompletedAt: new Date()
-    };
-    
-    // Add document paths if they exist
-    if (documents.registrationCertificate) {
-      updateData.registrationCertificate = documents.registrationCertificate;
-    }
-    
-    if (documents.governmentId) {
-      updateData.governmentId = documents.governmentId;
-    }
-    
-    if (documents.profilePhoto) {
-      updateData.photoURL = documents.profilePhoto;
-    }
-    
-    const doctor = await Doctor.findByIdAndUpdate(
-      req.user.id,
-      updateData,
-      { new: true, runValidators: true }
-    ).select('-password');
-    
-    if (!doctor) {
-      return next(createError('Doctor not found', 404));
-    }
-    
-    res.status(200).json({
-      success: true,
-      message: 'Profile completed successfully',
       data: doctor
     });
   } catch (error) {
@@ -289,21 +289,65 @@ exports.getDashboardStats = async (req, res, next) => {
       PatientDetails.distinct('patientId', { doctorId }).then(ids => ids.length)
     ]);
     
-    // Get recent activity (last 5 status changes)
-    const recentActivity = await PatientDetails.find({ doctorId })
-      .sort({ updatedAt: -1 })
-      .limit(5)
-      .select('fullName status updatedAt')
-      .populate('patientId', 'name');
-    
     res.status(200).json({
       success: true,
       data: {
         todayAppointments,
         pendingAppointments,
         completedAppointments,
-        totalPatients,
-        recentActivity
+        totalPatients
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get doctor reviews
+exports.getDoctorReviews = async (req, res, next) => {
+  try {
+    const doctorId = req.user.id;
+    
+    const doctor = await Doctor.findById(doctorId)
+      .select('reviews averageRating')
+      .populate({
+        path: 'reviews.patientId',
+        select: 'name photoURL'
+      });
+    
+    if (!doctor) {
+      return next(createError('Doctor not found', 404));
+    }
+    
+    // Helper to format "dayAgo"
+    function getDayAgo(date) {
+      const now = new Date();
+      const diffMs = now - date;
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      if (diffDays === 0) return 'Today';
+      if (diffDays === 1) return '1 day ago';
+      return `${diffDays} days ago`;
+    }
+
+    // Sort reviews by date (newest first) and format as requested
+    const sortedReviews = doctor.reviews
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .map(review => ({
+        patientId: review.patientId._id,
+        patientName: review.patientId.name,
+        patientPhotoURL: review.patientId.photoURL,
+        rating: review.rating,
+        comment: review.comment,
+        dayAgo: getDayAgo(review.createdAt)
+      }));
+    
+    res.status(200).json({
+      success: true,
+      message: 'Doctor reviews retrieved successfully',
+      data: {
+        reviews: sortedReviews,
+        averageRating: doctor.averageRating,
+        totalReviews: doctor.reviews.length
       }
     });
   } catch (error) {
@@ -475,7 +519,7 @@ exports.getPatientRequests = async (req, res, next) => {
     // Get requests with opinion-needed status
     const query = { 
       doctorId,
-      status: 'opinion-needed'
+      status: 'under-review'
     };
     
     // Get total count for pagination
@@ -483,17 +527,42 @@ exports.getPatientRequests = async (req, res, next) => {
     
     // Get requests with pagination
     const requests = await PatientDetails.find(query)
-      .select('fullName appointmentDetails.date')
+      .select('fullName patientId doctorId appointmentDetails.date appointmentDetails.time')
       .sort({ submittedAt: -1 })
       .limit(Number(limit))
       .skip((Number(page) - 1) * Number(limit));
 
     // Format response to include required fields only
-    const formattedRequests = requests.map(req => ({
-      requestId: req._id,
-      fullName: req.fullName,
-      appointmentDate: req.formattedAppointmentDate // e.g., "12 Jan 2023 at 10:00 AM"
-    }));
+    const formattedRequests = requests.map(req => {
+      let appointmentDate = '';
+      let appointmentTime = '';
+      if (req.appointmentDetails && req.appointmentDetails.date) {
+        const dateObj = req.appointmentDetails.date;
+        appointmentDate = dateObj.toLocaleDateString('en-US', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        });
+        // Format time as "hh:mm AM/PM"
+        if (req.appointmentDetails.time) {
+          appointmentTime = req.appointmentDetails.time;
+        } else {
+          appointmentTime = dateObj.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          });
+        }
+      }
+      return {
+        requestId: req._id,
+        patientId: req.patientId,
+        fullName: req.fullName,
+        doctorId: req.doctorId,
+        appointmentDate, // e.g., "12 Jan 2024"
+        appointmentTime  // e.g., "10:30 AM"
+      };
+    });
     
     res.status(200).json({
       success: true,
@@ -558,41 +627,6 @@ exports.rejectPatientRequest = async (req, res, next) => {
       success: true,
       message: 'Request rejected successfully',
       data: request
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Get doctor reviews
-exports.getDoctorReviews = async (req, res, next) => {
-  try {
-    const doctorId = req.user.id;
-    
-    const doctor = await Doctor.findById(doctorId)
-      .select('reviews averageRating')
-      .populate({
-        path: 'reviews.patientId',
-        select: 'name photoURL'
-      });
-    
-    if (!doctor) {
-      return next(createError('Doctor not found', 404));
-    }
-    
-    // Sort reviews by date (newest first)
-    const sortedReviews = doctor.reviews.sort((a, b) => 
-      new Date(b.createdAt) - new Date(a.createdAt)
-    );
-    
-    res.status(200).json({
-      success: true,
-      message: 'Doctor reviews retrieved successfully',
-      data: {
-        reviews: sortedReviews,
-        averageRating: doctor.averageRating,
-        totalReviews: doctor.reviews.length
-      }
     });
   } catch (error) {
     next(error);

@@ -4,6 +4,7 @@ const faker = require('faker');
 const Doctor = require('../models/doctor.model');
 const Availability = require('../models/availability.model');
 const PatientDetails = require('../models/patientDetails.model');
+const Patient = require('../models/patient.model'); // Add this import
 require('dotenv').config();
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/second-opinion';
@@ -41,20 +42,6 @@ function randomFileObj(type, doctorId) {
   };
 }
 
-function generateReviews(count) {
-  const reviews = [];
-  for (let i = 0; i < count; i++) {
-    reviews.push({
-      patientId: new mongoose.Types.ObjectId(),
-      patientName: faker.name.findName(),
-      rating: faker.datatype.number({ min: 3, max: 5 }),
-      comment: faker.lorem.paragraph(),
-      createdAt: faker.date.past(1)
-    });
-  }
-  return reviews;
-}
-
 function calculateAverageRating(reviews) {
   if (!reviews.length) return 0;
   const sum = reviews.reduce((total, review) => total + review.rating, 0);
@@ -70,10 +57,29 @@ async function main() {
   await Availability.deleteMany({});
   await PatientDetails.deleteMany({ doctorId: { $exists: true } });
 
+  // Fetch all patients from the database
+  const patients = await Patient.find({}, '_id name photoURL').lean();
+
   const passwordHash = await bcrypt.hash('Test@1234', 10);
 
   const doctors = [];
   const availabilities = [];
+
+  // Update generateReviews to use real patients
+  function generateReviews(count) {
+    const reviews = [];
+    for (let i = 0; i < count; i++) {
+      if (patients.length === 0) break;
+      const patient = patients[Math.floor(Math.random() * patients.length)];
+      reviews.push({
+        patientId: patient._id,
+        rating: faker.datatype.number({ min: 3, max: 5 }),
+        comment: faker.lorem.paragraph(),
+        createdAt: faker.date.past(1)
+      });
+    }
+    return reviews;
+  }
 
   for (let i = 0; i < 500; i++) {
     const name = faker.name.firstName() + ' ' + faker.name.lastName();

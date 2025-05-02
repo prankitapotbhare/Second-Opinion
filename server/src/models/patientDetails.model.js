@@ -100,24 +100,9 @@ patientDetailsSchema.virtual('patientAge').get(function() {
   return this.age;
 });
 
-// Virtual for formatted appointment date and time
-patientDetailsSchema.virtual('formattedAppointmentDate').get(function() {
-  if (!this.appointmentDetails || !this.appointmentDetails.date) return '';
-  
-  const date = this.appointmentDetails.date.toLocaleDateString('en-US', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  });
-  
-  const time = this.appointmentDetails.time || '';
-  return `${date} at ${time}`;
-});
-
 // Index for faster queries
 patientDetailsSchema.index({ doctorId: 1, status: 1 });
 patientDetailsSchema.index({ patientId: 1, submittedAt: -1 });
-patientDetailsSchema.index({ 'appointmentDetails.date': 1 });
 patientDetailsSchema.index({ updatedAt: -1 });
 
 const PatientDetails = mongoose.model('PatientDetails', patientDetailsSchema);
