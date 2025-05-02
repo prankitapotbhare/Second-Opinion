@@ -325,8 +325,8 @@ export const getDoctorReviews = async (params = {}) => {
 
 /**
  * Get doctor appointments
- * @param {Object} params - Query parameters (status, date, page, limit)
- * @returns {Promise<Object>} Appointments data with pagination
+ * @param {Object} params - Query parameters (page, limit, status, dateRange)
+ * @returns {Promise<Object>} Appointments data
  */
 export const getAppointments = async (params = {}) => {
   try {
@@ -334,15 +334,24 @@ export const getAppointments = async (params = {}) => {
     
     // Build query string from params
     const queryParams = new URLSearchParams();
-    Object.keys(params).forEach(key => {
-      if (params[key] !== undefined && params[key] !== null) {
-        queryParams.append(key, params[key]);
+    
+    // Handle special case for dateRange which needs to be stringified
+    const paramsToProcess = { ...params };
+    if (paramsToProcess.dateRange) {
+      paramsToProcess.dateRange = JSON.stringify(paramsToProcess.dateRange);
+    }
+    
+    // Add all params to query string
+    Object.keys(paramsToProcess).forEach(key => {
+      if (paramsToProcess[key] !== undefined && paramsToProcess[key] !== null) {
+        queryParams.append(key, paramsToProcess[key]);
       }
     });
     
-    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    const queryString = queryParams.toString();
+    const url = `${API_URL}/doctor/appointments${queryString ? `?${queryString}` : ''}`;
     
-    const response = await fetch(`${API_URL}/doctor/appointments${queryString}`, {
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -352,7 +361,7 @@ export const getAppointments = async (params = {}) => {
     
     return handleResponse(response);
   } catch (error) {
-    console.error('Error getting doctor appointments:', error);
+    console.error('Error fetching appointments:', error);
     throw error;
   }
 };

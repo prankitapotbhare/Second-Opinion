@@ -74,11 +74,35 @@ async function main() {
   console.log(`Found ${patients.length} patients and ${doctors.length} doctors.`);
 
   const patientDetailsList = [];
+  
+  // Create a map to track submissions per doctor
+  const doctorSubmissionCount = {};
+  doctors.forEach(doctor => {
+    doctorSubmissionCount[doctor._id.toString()] = 0;
+  });
 
+  // Calculate minimum total records needed to ensure each doctor has at least 50 submissions
+  const minTotalRecords = doctors.length * 50;
+  const totalRecordsToGenerate = Math.max(10000, minTotalRecords);
+  
   // Create patient details records
-  for (let i = 0; i < 10000; i++) {
+  for (let i = 0; i < totalRecordsToGenerate; i++) {
     const patient = randomFrom(patients);
-    const doctor = randomFrom(doctors);
+    
+    // Select doctor - prioritize doctors with fewer than 50 submissions
+    let doctor;
+    const doctorsWithLowSubmissions = doctors.filter(d => 
+      doctorSubmissionCount[d._id.toString()] < 50
+    );
+    
+    if (doctorsWithLowSubmissions.length > 0) {
+      doctor = randomFrom(doctorsWithLowSubmissions);
+    } else {
+      doctor = randomFrom(doctors);
+    }
+    
+    // Increment submission count for this doctor
+    doctorSubmissionCount[doctor._id.toString()]++;
     
     const fullName = faker.name.findName();
     const age = faker.datatype.number({ min: 1, max: 90 });
@@ -99,12 +123,12 @@ async function main() {
     
     const status = randomFrom(STATUS_OPTIONS);
     
-    // Create dates with proper chronology
+    // Create dates with proper chronology - limited to one month in the past
     const now = new Date();
-    const sixMonthsAgo = new Date(now);
-    sixMonthsAgo.setMonth(now.getMonth() - 6);
+    const oneMonthAgo = new Date(now);
+    oneMonthAgo.setMonth(now.getMonth() - 1);
     
-    const submittedAt = getRandomDateInRange(sixMonthsAgo, now);
+    const submittedAt = getRandomDateInRange(oneMonthAgo, now);
     const createdAt = submittedAt;
     const updatedAt = new Date(Math.max(submittedAt.getTime(), now.getTime() - 1000 * 60 * 60 * 24 * 30)); // Between submission and now
     

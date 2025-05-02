@@ -296,13 +296,29 @@ export const DoctorProvider = ({ children }) => {
         throw new Error('You must be logged in to view appointments');
       }
       
+      // Handle 'all' status filter
+      if (params.status === 'all') {
+        delete params.status;
+      }
+      
       const response = await getAppointments(params);
-      setAppointments(response.data);
-      setPagination({
-        total: response.total || 0,
-        page: response.page || 1,
-        limit: response.limit || 10
-      });
+      
+      if (response && response.data) {
+        setAppointments(response.data);
+        setPagination({
+          total: response.total || 0,
+          page: response.page || 1,
+          limit: response.limit || 10
+        });
+      } else {
+        setAppointments([]);
+        setPagination({
+          total: 0,
+          page: 1,
+          limit: 10
+        });
+      }
+      
       return response;
     } catch (err) {
       // Handle authentication errors specifically
@@ -317,6 +333,7 @@ export const DoctorProvider = ({ children }) => {
         setError(err.message || 'Failed to fetch appointments');
       }
       console.error('Error fetching appointments:', err);
+      setAppointments([]);
       return null;
     } finally {
       setLoading(false);

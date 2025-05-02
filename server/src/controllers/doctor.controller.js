@@ -403,29 +403,37 @@ exports.getDoctorReviews = async (req, res, next) => {
 // Get all appointments for the doctor
 exports.getAppointments = async (req, res, next) => {
   try {
-    const { status, date, page = 1, limit = 10 } = req.query;
+    const { status, dateRange, page = 1, limit = 10 } = req.query;
     const doctorId = req.user.id;
     
     // Build query
     const query = { doctorId };
     
     // Filter by status if provided
-    if (status) {
+    if (status && status !== 'all') {
       query.status = status;
-    } else {
-      // By default, show approved appointments
-      query.status = 'approved';
     }
     
-    // Filter by date if provided
-    if (date) {
-      const startDate = new Date(date);
-      startDate.setHours(0, 0, 0, 0);
-      
-      const endDate = new Date(date);
-      endDate.setHours(23, 59, 59, 999);
-      
-      query['appointmentDetails.date'] = { $gte: startDate, $lte: endDate };
+    // Filter by date range if provided
+    if (dateRange) {
+      try {
+        // Parse the dateRange object
+        const parsedDateRange = typeof dateRange === 'string' 
+          ? JSON.parse(dateRange) 
+          : dateRange;
+        
+        if (parsedDateRange.startDate && parsedDateRange.endDate) {
+          const startDate = new Date(parsedDateRange.startDate);
+          startDate.setHours(0, 0, 0, 0);
+          
+          const endDate = new Date(parsedDateRange.endDate);
+          endDate.setHours(23, 59, 59, 999);
+          
+          query.submittedAt = { $gte: startDate, $lte: endDate };
+        }
+      } catch (error) {
+        console.error('Error parsing date range:', error);
+      }
     }
     
     // Get total count for pagination
@@ -438,7 +446,7 @@ exports.getAppointments = async (req, res, next) => {
         path: 'patientId',
         select: 'photoURL'
       })
-      .sort({ 'appointmentDetails.date': 1 })
+      .sort({ submittedAt: -1 })
       .limit(Number(limit))
       .skip((Number(page) - 1) * Number(limit));
     
@@ -446,10 +454,15 @@ exports.getAppointments = async (req, res, next) => {
     const formattedAppointments = appointments.map(app => ({
       appointmentId: app._id,
       fullName: app.fullName,
-      email: app.patientId?.email || '',
+      email: app.email || '',
       photoURL: app.patientId?.photoURL || '',
       status: app.status,
-      submittedAt: app.submittedAt
+      submittedAt: app.submittedAt,
+      appointmentTime: app.submittedAt.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      })
     }));
 
     res.status(200).json({
