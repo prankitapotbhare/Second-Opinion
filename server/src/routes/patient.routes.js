@@ -28,10 +28,17 @@ router.post('/patient-details',
   processFilePaths, // Add this middleware
   patientController.createPatientDetails
 );
+
 // Check appointment status
 router.get('/reponse/:submissionId/status', patientController.checkAppointmentStatus);
 
 // Request appointment
 router.post('/submissions/:submissionId/appointment', patientController.requestAppointment);
+
+// Add review route
+router.post(
+  '/submissions/:submissionId/review',
+  patientController.submitReview
+);
 
 module.exports = router;

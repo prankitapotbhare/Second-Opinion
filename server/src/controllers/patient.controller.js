@@ -244,3 +244,61 @@ exports.requestAppointment = async (req, res, next) => {
     next(error);
   }
 };
+
+// --- Submit a review for a doctor ---
+exports.submitReview = async (req, res, next) => {
+  try {
+    const patientId = req.user.id;
+    const { submissionId } = req.params;
+    const { rating, comment } = req.body;
+
+    if (!rating || !comment) {
+      return next(createError('Rating and comment are required', 400));
+    }
+    if (rating < 1 || rating > 5) {
+      return next(createError('Rating must be between 1 and 5', 400));
+    }
+
+    // Find the submission and ensure status is NOT 'pending'
+    const submission = await PatientDetails.findOne({
+      _id: submissionId,
+      patientId
+    });
+
+    if (!submission) {
+      return next(createError('Submission not found', 404));
+    }
+    if (submission.status === 'pending') {
+      return next(createError('You cannot review until your submission is processed', 403));
+    }
+
+    const doctor = await Doctor.findById(submission.doctorId);
+    if (!doctor) {
+      return next(createError('Doctor not found', 404));
+    }
+    const alreadyReviewed = doctor.reviews.some(
+      (r) => r.patientId.toString() === patientId && r.comment && r.createdAt && r.comment === comment
+    );
+    if (alreadyReviewed) {
+      return next(createError('You have already reviewed this doctor for this submission', 409));
+    }
+
+    doctor.reviews.push({
+      patientId,
+      rating,
+      comment
+    });
+
+    const totalRatings = doctor.reviews.reduce((sum, r) => sum + r.rating, 0);
+    doctor.averageRating = totalRatings / doctor.reviews.length;
+
+    await doctor.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Review submitted successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
