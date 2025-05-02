@@ -244,33 +244,3 @@ export const deleteAccount = async () => {
     throw error;
   }
 };
-
-/**
- * Download doctor document
- * @param {string} documentType - Type of document to download (registrationCertificate, governmentId)
- * @returns {Promise<Blob>} Document blob
- */
-export const downloadDocument = async (documentType) => {
-  try {
-    const token = getAuthToken();
-    
-    const response = await fetch(`${API_URL}/doctor/profile/documents/${documentType}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      const error = new Error(errorData.message || 'Failed to download document');
-      error.status = response.status;
-      throw error;
-    }
-    
-    return await response.blob();
-  } catch (error) {
-    console.error(`Error downloading ${documentType}:`, error);
-    throw error;
-  }
-};

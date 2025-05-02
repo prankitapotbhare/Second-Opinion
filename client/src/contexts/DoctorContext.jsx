@@ -7,8 +7,7 @@ import {
   updateProfile, 
   setAvailability, 
   getAvailability,
-  deleteAccount,
-  downloadDocument
+  deleteAccount
 } from '@/api/doctor.api';
 import { useAuth } from './AuthContext';
 import { useRouter } from 'next/navigation';
@@ -172,55 +171,6 @@ export const DoctorProvider = ({ children }) => {
     }
   };
 
-  // Download doctor document
-  const handleDownloadDocument = async (documentType) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const blob = await downloadDocument(documentType);
-      
-      // Create a URL for the blob
-      const url = window.URL.createObjectURL(blob);
-      
-      // Create a temporary anchor element and trigger download
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      
-      // Set the file name based on document type
-      const fileName = documentType === 'registrationCertificate' 
-        ? 'registration_certificate' 
-        : 'government_id';
-      
-      // Get file extension from content type
-      const contentType = blob.type;
-      const extension = contentType.includes('pdf') 
-        ? '.pdf' 
-        : contentType.includes('jpeg') || contentType.includes('jpg') 
-          ? '.jpg' 
-          : contentType.includes('png') 
-            ? '.png' 
-            : '';
-      
-      a.download = `${fileName}${extension}`;
-      
-      document.body.appendChild(a);
-      a.click();
-      
-      // Clean up
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      return true;
-    } catch (err) {
-      setError(err.message || `Failed to download ${documentType}`);
-      console.error(`Error downloading ${documentType}:`, err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const value = {
     doctor,
     loading,
@@ -232,7 +182,6 @@ export const DoctorProvider = ({ children }) => {
     setAvailability: handleSetAvailability,
     fetchAvailability,
     deleteAccount: handleDeleteAccount,
-    downloadDocument: handleDownloadDocument,
     isProfileComplete: doctor?.isProfileComplete || false
   };
 
