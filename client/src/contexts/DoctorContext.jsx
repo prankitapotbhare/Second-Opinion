@@ -2,12 +2,21 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
+  completeProfile,
   getDoctorProfile, 
-  completeProfile, 
   updateProfile, 
   setAvailability, 
   getAvailability,
-  deleteAccount
+  changePassword,
+  deleteAccount,
+  getDashboardStats,
+  getDoctorReviews,
+  getAppointments,
+  getAppointmentDetails,
+  submitAppointmentResponse,
+  getPatientRequests,
+  acceptPatientRequest,
+  rejectPatientRequest
 } from '@/api/doctor.api';
 import { useAuth } from './AuthContext';
 import { useRouter } from 'next/navigation';
@@ -20,6 +29,21 @@ export const DoctorProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [availability, setAvailabilityState] = useState(null);
+  const [dashboardStats, setDashboardStats] = useState(null);
+  const [reviews, setReviews] = useState(null);
+  const [appointments, setAppointments] = useState([]);
+  const [appointmentDetails, setAppointmentDetails] = useState(null);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 10
+  });
+  const [patientRequests, setPatientRequests] = useState([]);
+  const [requestsPagination, setRequestsPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 10
+  });
   const router = useRouter();
 
   // Fetch doctor profile when authenticated
@@ -154,6 +178,37 @@ export const DoctorProvider = ({ children }) => {
     }
   };
 
+  // Change doctor password
+  const handleChangePassword = async (currentPassword, newPassword) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Check if user is authenticated before proceeding
+      if (!currentUser || !authToken) {
+        throw new Error('You must be logged in to change your password');
+      }
+      
+      const response = await changePassword(currentPassword, newPassword);
+      return response;
+    } catch (err) {
+      // Handle authentication errors specifically
+      if (err.message === 'No authentication token found') {
+        setError('Your session has expired. Please log in again.');
+        // Optionally redirect to login
+        setTimeout(() => {
+          if (logout) logout();
+          router.push('/login/doctor');
+        }, 3000);
+      } else {
+        setError(err.message || 'Failed to change password');
+      }
+      console.error('Error changing password:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Delete doctor account
   const handleDeleteAccount = async () => {
     setLoading(true);
@@ -171,17 +226,319 @@ export const DoctorProvider = ({ children }) => {
     }
   };
 
+  // Get dashboard statistics
+  const fetchDashboardStats = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Check if user is authenticated before proceeding
+      if (!currentUser || !authToken) {
+        throw new Error('You must be logged in to view dashboard statistics');
+      }
+      
+      const response = await getDashboardStats();
+      setDashboardStats(response.data);
+      return response.data;
+    } catch (err) {
+      // Handle authentication errors specifically
+      if (err.message === 'No authentication token found') {
+        setError('Your session has expired. Please log in again.');
+        // Optionally redirect to login
+        setTimeout(() => {
+          if (logout) logout();
+          router.push('/login/doctor');
+        }, 3000);
+      } else {
+        setError(err.message || 'Failed to fetch dashboard statistics');
+      }
+      console.error('Error fetching dashboard statistics:', err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get doctor reviews
+  const fetchDoctorReviews = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Check if user is authenticated before proceeding
+      if (!currentUser || !authToken) {
+        throw new Error('You must be logged in to view reviews');
+      }
+      
+      const response = await getDoctorReviews();
+      setReviews(response.data);
+      return response.data;
+    } catch (err) {
+      // Handle authentication errors specifically
+      if (err.message === 'No authentication token found') {
+        setError('Your session has expired. Please log in again.');
+        // Optionally redirect to login
+        setTimeout(() => {
+          if (logout) logout();
+          router.push('/login/doctor');
+        }, 3000);
+      } else {
+        setError(err.message || 'Failed to fetch reviews');
+      }
+      console.error('Error fetching reviews:', err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get doctor appointments
+  const fetchAppointments = async (params = {}) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Check if user is authenticated before proceeding
+      if (!currentUser || !authToken) {
+        throw new Error('You must be logged in to view appointments');
+      }
+      
+      const response = await getAppointments(params);
+      setAppointments(response.data);
+      setPagination({
+        total: response.total || 0,
+        page: response.page || 1,
+        limit: response.limit || 10
+      });
+      return response;
+    } catch (err) {
+      // Handle authentication errors specifically
+      if (err.message === 'No authentication token found') {
+        setError('Your session has expired. Please log in again.');
+        // Optionally redirect to login
+        setTimeout(() => {
+          if (logout) logout();
+          router.push('/login/doctor');
+        }, 3000);
+      } else {
+        setError(err.message || 'Failed to fetch appointments');
+      }
+      console.error('Error fetching appointments:', err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get appointment details
+  const fetchAppointmentDetails = async (appointmentId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Check if user is authenticated before proceeding
+      if (!currentUser || !authToken) {
+        throw new Error('You must be logged in to view appointment details');
+      }
+      
+      const response = await getAppointmentDetails(appointmentId);
+      setAppointmentDetails(response.data);
+      return response.data;
+    } catch (err) {
+      // Handle authentication errors specifically
+      if (err.message === 'No authentication token found') {
+        setError('Your session has expired. Please log in again.');
+        // Optionally redirect to login
+        setTimeout(() => {
+          if (logout) logout();
+          router.push('/login/doctor');
+        }, 3000);
+      } else {
+        setError(err.message || 'Failed to fetch appointment details');
+      }
+      console.error('Error fetching appointment details:', err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Submit response to patient appointment
+  const handleSubmitResponse = async (appointmentId, responseData, responseFiles = []) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Check if user is authenticated before proceeding
+      if (!currentUser || !authToken) {
+        throw new Error('You must be logged in to submit a response');
+      }
+      
+      const response = await submitAppointmentResponse(appointmentId, responseData, responseFiles);
+      
+      // Update the appointment details if we're viewing that appointment
+      if (appointmentDetails && appointmentDetails.appointmentId === appointmentId) {
+        setAppointmentDetails(response.data);
+      }
+      
+      // Refresh the appointments list to reflect the status change
+      await fetchAppointments({ page: pagination.page, limit: pagination.limit });
+      
+      return response;
+    } catch (err) {
+      // Handle authentication errors specifically
+      if (err.message === 'No authentication token found') {
+        setError('Your session has expired. Please log in again.');
+        // Optionally redirect to login
+        setTimeout(() => {
+          if (logout) logout();
+          router.push('/login/doctor');
+        }, 3000);
+      } else {
+        setError(err.message || 'Failed to submit response');
+      }
+      console.error('Error submitting response:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get patient requests
+  const fetchPatientRequests = async (params = {}) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Check if user is authenticated before proceeding
+      if (!currentUser || !authToken) {
+        throw new Error('You must be logged in to view patient requests');
+      }
+      
+      const response = await getPatientRequests(params);
+      setPatientRequests(response.data);
+      setRequestsPagination({
+        total: response.total || 0,
+        page: response.page || 1,
+        limit: response.limit || 10
+      });
+      return response;
+    } catch (err) {
+      // Handle authentication errors specifically
+      if (err.message === 'No authentication token found') {
+        setError('Your session has expired. Please log in again.');
+        // Optionally redirect to login
+        setTimeout(() => {
+          if (logout) logout();
+          router.push('/login/doctor');
+        }, 3000);
+      } else {
+        setError(err.message || 'Failed to fetch patient requests');
+      }
+      console.error('Error fetching patient requests:', err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Accept patient request
+  const handleAcceptRequest = async (requestId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Check if user is authenticated before proceeding
+      if (!currentUser || !authToken) {
+        throw new Error('You must be logged in to accept a request');
+      }
+      
+      const response = await acceptPatientRequest(requestId);
+      
+      // Update the requests list to reflect the status change
+      await fetchPatientRequests({ 
+        page: requestsPagination.page, 
+        limit: requestsPagination.limit 
+      });
+      
+      return response;
+    } catch (err) {
+      // Handle authentication errors specifically
+      if (err.message === 'No authentication token found') {
+        setError('Your session has expired. Please log in again.');
+        // Optionally redirect to login
+        setTimeout(() => {
+          if (logout) logout();
+          router.push('/login/doctor');
+        }, 3000);
+      } else {
+        setError(err.message || 'Failed to accept request');
+      }
+      console.error('Error accepting request:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Reject patient request
+  const handleRejectRequest = async (requestId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Check if user is authenticated before proceeding
+      if (!currentUser || !authToken) {
+        throw new Error('You must be logged in to reject a request');
+      }
+      
+      const response = await rejectPatientRequest(requestId);
+      
+      // Update the requests list to reflect the status change
+      await fetchPatientRequests({ 
+        page: requestsPagination.page, 
+        limit: requestsPagination.limit 
+      });
+      
+      return response;
+    } catch (err) {
+      // Handle authentication errors specifically
+      if (err.message === 'No authentication token found') {
+        setError('Your session has expired. Please log in again.');
+        // Optionally redirect to login
+        setTimeout(() => {
+          if (logout) logout();
+          router.push('/login/doctor');
+        }, 3000);
+      } else {
+        setError(err.message || 'Failed to reject request');
+      }
+      console.error('Error rejecting request:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const value = {
     doctor,
     loading,
     error,
     availability,
-    fetchDoctorProfile,
+    dashboardStats,
+    reviews,
+    appointments,
+    appointmentDetails,
+    pagination,
+    patientRequests,
+    requestsPagination,
     completeProfile: handleCompleteProfile,
+    fetchDoctorProfile,
     updateProfile: handleUpdateProfile,
     setAvailability: handleSetAvailability,
     fetchAvailability,
+    changePassword: handleChangePassword,
     deleteAccount: handleDeleteAccount,
+    fetchDashboardStats,
+    fetchDoctorReviews,
+    fetchAppointments,
+    fetchAppointmentDetails,
+    submitResponse: handleSubmitResponse,
+    fetchPatientRequests,
+    acceptRequest: handleAcceptRequest,
+    rejectRequest: handleRejectRequest,
     isProfileComplete: doctor?.isProfileComplete || false
   };
 
