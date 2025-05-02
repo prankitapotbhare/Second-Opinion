@@ -38,6 +38,9 @@ router.put('/profile',
 router.post('/profile/availability', doctorController.setAvailability);
 router.get('/profile/availability', doctorController.getDoctorAvailability);
 
+// Change password route (must be authenticated doctor)
+router.post('/change-password', doctorController.changePassword);
+
 // Delete account route
 router.delete('/account', doctorController.deleteAccount);
 

@@ -209,6 +209,47 @@ exports.getDoctorAvailability = async (req, res, next) => {
   }
 };
 
+// Change password for doctor
+exports.changePassword = async (req, res, next) => {
+  try {
+    const doctorId = req.user.id;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password and new password are required'
+      });
+    }
+
+    const doctor = await Doctor.findById(doctorId);
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor not found'
+      });
+    }
+
+    const isMatch = await doctor.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    doctor.password = newPassword;
+    await doctor.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Delete doctor account
 exports.deleteAccount = async (req, res, next) => {
   try {
