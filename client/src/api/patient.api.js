@@ -126,6 +126,47 @@ export const getDoctorById = async (doctorId, bypassCache = false) => {
             ).join(', ');
             availabilityByDay[day] = daySlots;
           });
+          
+          // Create a summary text for availability with time slots
+          const daysWithSlots = Object.keys(availabilityByDay);
+          if (daysWithSlots.length > 0) {
+            // Convert full day names to abbreviated format
+            const abbreviatedDays = daysWithSlots.map(day => {
+              const abbrevMap = {
+                'Monday': 'Mon',
+                'Tuesday': 'Tue',
+                'Wednesday': 'Wed',
+                'Thursday': 'Thu',
+                'Friday': 'Fri',
+                'Saturday': 'Sat',
+                'Sunday': 'Sun'
+              };
+              return abbrevMap[day] || day.substring(0, 3);
+            });
+            
+            // Group consecutive days
+            let dayRanges = [];
+            let currentRange = [abbreviatedDays[0]];
+            
+            for (let i = 1; i < abbreviatedDays.length; i++) {
+              const dayOrder = { 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6, 'Sun': 7 };
+              if (dayOrder[abbreviatedDays[i]] - dayOrder[abbreviatedDays[i-1]] === 1) {
+                currentRange.push(abbreviatedDays[i]);
+              } else {
+                dayRanges.push(currentRange);
+                currentRange = [abbreviatedDays[i]];
+              }
+            }
+            dayRanges.push(currentRange);
+            
+            // Format day ranges
+            const formattedDays = dayRanges.map(range => {
+              if (range.length === 1) return range[0];
+              return `${range[0]}-${range[range.length - 1]}`;
+            }).join(', ');
+            
+            availabilityText = `${formattedDays}, with specific time slots`;
+          }
         } else {
           // Convert working days to abbreviated format (e.g., "Mon-Sat")
           const days = [];
@@ -136,16 +177,6 @@ export const getDoctorById = async (doctorId, bypassCache = false) => {
           if (workingDays.friday) days.push('Fri');
           if (workingDays.saturday) days.push('Sat');
           if (workingDays.sunday) days.push('Sun');
-          
-          // Format time (convert 24h to 12h format)
-          const formatTime = (time) => {
-            if (!time) return '';
-            const [hours, minutes] = time.split(':');
-            const hour = parseInt(hours);
-            const ampm = hour >= 12 ? 'PM' : 'AM';
-            const formattedHour = hour % 12 || 12;
-            return `${formattedHour}:${minutes} ${ampm}`;
-          };
           
           // Create availability string
           if (days.length > 0) {
