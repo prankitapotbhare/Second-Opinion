@@ -97,6 +97,78 @@ exports.getDoctorByIdPublic = async (req, res, next) => {
   }
 };
 
+// --- PUBLIC: Get doctor reviews ---
+exports.getDoctorReviewsPublic = async (req, res, next) => {
+  try {
+    const { doctorId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+    
+    // Validate doctor ID
+    validationService.validateObjectId(doctorId, 'doctor');
+    
+    // Find doctor with completed profile
+    const doctor = await Doctor.findOne({ 
+      _id: doctorId,
+      isProfileComplete: true 
+    })
+    .select('reviews averageRating')
+    .populate({
+      path: 'reviews.patientId',
+      select: 'name photoURL'
+    });
+    
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor not found or profile not complete'
+      });
+    }
+    
+    // Helper to format "dayAgo"
+    function getDayAgo(date) {
+      const now = new Date();
+      const diffMs = now - date;
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      if (diffDays === 0) return 'Today';
+      if (diffDays === 1) return '1 day ago';
+      return `${diffDays} days ago`;
+    }
+
+    // Sort reviews by date (newest first)
+    const sortedReviews = doctor.reviews
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    // Apply pagination
+    const startIndex = (Number(page) - 1) * Number(limit);
+    const endIndex = startIndex + Number(limit);
+    const paginatedReviews = sortedReviews.slice(startIndex, endIndex);
+    
+    // Format reviews for response
+    const formattedReviews = paginatedReviews.map(review => ({
+      id: review._id,
+      patientName: review.patientId ? review.patientId.name : 'Anonymous',
+      patientPhoto: review.patientId ? review.patientId.photoURL : null,
+      rating: review.rating,
+      comment: review.comment,
+      dayAgo: getDayAgo(review.createdAt)
+    }));
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        reviews: formattedReviews,
+        averageRating: doctor.averageRating,
+        totalReviews: doctor.reviews.length,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(doctor.reviews.length / Number(limit))
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // --- Create patient details ---
 exports.createPatientDetails = async (req, res, next) => {
   try {
@@ -302,3 +374,5 @@ exports.submitReview = async (req, res, next) => {
     next(error);
   }
 };
+
+// Add this new function to the existing file

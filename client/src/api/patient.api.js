@@ -239,6 +239,48 @@ const formatTime = (time) => {
  return `${formattedHour}:${minutes} ${ampm}`;
 };
 
+/**
+ * Get doctor reviews by doctor ID (public)
+ * @param {string} doctorId - Doctor's ID
+ * @param {Object} params - { page, limit }
+ * @returns {Promise<Object>} Reviews and pagination info
+ */
+export const getDoctorReviews = async (doctorId, params = {}) => {
+  if (!doctorId) {
+    throw new Error('Doctor ID is required');
+  }
+  
+  try {
+    const query = new URLSearchParams(params).toString();
+    const url = `${API_URL}/patient/doctors/${doctorId}/reviews${query ? `?${query}` : ""}`;
+    const response = await fetch(url);
+    const data = await handleResponse(response);
+    
+    return {
+      reviews: data.data.reviews || [],
+      averageRating: data.data.averageRating || 0,
+      totalReviews: data.data.totalReviews || 0,
+      page: data.data.page || 1,
+      limit: data.data.limit || 10,
+      totalPages: data.data.totalPages || 1
+    };
+  } catch (error) {
+    // Provide more specific error messages based on error type
+    if (error.status === 404) {
+      console.error('Doctor not found or profile not complete');
+      throw new Error('Doctor not found or profile not complete');
+    } else if (error.status === 400) {
+      console.error('Invalid doctor ID format');
+      throw new Error('Invalid doctor ID format');
+    } else if (error.status >= 500) {
+      console.error('Server error, please try again later');
+      throw new Error('Server error, please try again later');
+    }
+    
+    console.error('Error getting doctor reviews:', error);
+    throw error;
+  }
+};
 
 /**
  * Submit patient details to a doctor
@@ -317,8 +359,39 @@ export const checkAppointmentStatus = async (submissionId) => {
       }
     });
     
-    return handleResponse(response);
+    const data = await handleResponse(response);
+    
+    // Format the response for easier consumption
+    return {
+      success: data.success,
+      status: data.data.status,
+      appointmentDetails: data.data.appointmentDetails ? {
+        date: data.data.appointmentDetails.date ? new Date(data.data.appointmentDetails.date) : null,
+        time: data.data.appointmentDetails.time || null,
+        notes: data.data.appointmentDetails.notes || '',
+        isCompleted: data.data.appointmentDetails.isCompleted || false,
+        completedAt: data.data.appointmentDetails.completedAt ? new Date(data.data.appointmentDetails.completedAt) : null
+      } : null,
+      doctorResponse: data.data.doctorResponse ? {
+        message: data.data.doctorResponse.message || '',
+        responseDate: data.data.doctorResponse.responseDate ? new Date(data.data.doctorResponse.responseDate) : null,
+        secondOpinionRequired: data.data.doctorResponse.secondOpinionRequired || false,
+        responseFiles: data.data.doctorResponse.responseFiles || []
+      } : null
+    };
   } catch (error) {
+    // Provide more specific error messages based on error type
+    if (error.status === 404) {
+      console.error('Submission not found');
+      throw new Error('Submission not found');
+    } else if (error.status === 400) {
+      console.error('Invalid submission ID format');
+      throw new Error('Invalid submission ID format');
+    } else if (error.status >= 500) {
+      console.error('Server error, please try again later');
+      throw new Error('Server error, please try again later');
+    }
+    
     console.error('Error checking appointment status:', error);
     throw error;
   }
@@ -357,6 +430,46 @@ export const requestAppointment = async (submissionId, appointmentDetails) => {
     return handleResponse(response);
   } catch (error) {
     console.error('Error requesting appointment:', error);
+    throw error;
+  }
+};
+
+/**
+ * Submit a review for a doctor
+ * @param {string} submissionId - ID of the submission
+ * @param {Object} reviewData - Review data
+ * @param {number} reviewData.rating - Rating (1-5)
+ * @param {string} reviewData.comment - Review comment
+ * @returns {Promise<Object>} Success response
+ */
+export const submitReview = async (submissionId, reviewData) => {
+  if (!submissionId) {
+    throw new Error('Submission ID is required');
+  }
+  
+  if (!reviewData.rating || !reviewData.comment) {
+    throw new Error('Rating and comment are required');
+  }
+  
+  if (reviewData.rating < 1 || reviewData.rating > 5) {
+    throw new Error('Rating must be between 1 and 5');
+  }
+  
+  const token = getAuthToken();
+  
+  try {
+    const response = await fetch(`${API_URL}/patient/submissions/${submissionId}/review`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(reviewData)
+    });
+    
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error submitting review:', error);
     throw error;
   }
 };

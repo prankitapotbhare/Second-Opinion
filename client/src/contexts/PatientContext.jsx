@@ -6,7 +6,9 @@ import {
   getDoctorById,
   submitPatientDetails,
   checkAppointmentStatus,
-  requestAppointment
+  requestAppointment,
+  getDoctorReviews,
+  submitReview // Add this import
 } from '@/api/patient.api';
 
 // Create the context
@@ -152,8 +154,20 @@ export const PatientProvider = ({ children }) => {
     
     try {
       const result = await checkAppointmentStatus(submissionId);
-      setAppointmentStatus(result.data);
-      return result.data;
+      
+      // Format status for UI display
+      const formattedStatus = {
+        ...result,
+        statusText: formatStatusText(result.status),
+        statusColor: getStatusColor(result.status),
+        formattedDate: result.appointmentDetails?.date ? 
+          formatDate(result.appointmentDetails.date) : null,
+        formattedTime: result.appointmentDetails?.time || null,
+        isActionable: ['opinion-needed', 'pending'].includes(result.status)
+      };
+      
+      setAppointmentStatus(formattedStatus);
+      return formattedStatus;
     } catch (err) {
       const errorMessage = err.data?.message || err.message || "Failed to check appointment status";
       setAppointmentError(errorMessage);
@@ -162,6 +176,62 @@ export const PatientProvider = ({ children }) => {
       setAppointmentLoading(false);
     }
   }, []);
+  
+  // Helper function to format status text for UI
+  const formatStatusText = (status) => {
+    switch (status) {
+      case 'pending':
+        return 'Pending Review';
+      case 'opinion-needed':
+        return 'Second Opinion Needed';
+      case 'opinion-not-needed':
+        return 'Second Opinion Not Needed';
+      case 'under-review':
+        return 'Appointment Under Review';
+      case 'approved':
+        return 'Appointment Approved';
+      case 'rejected':
+        return 'Appointment Rejected';
+      case 'completed':
+        return 'Appointment Completed';
+      default:
+        return 'Unknown Status';
+    }
+  };
+  
+  // Helper function to get status color for UI
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending':
+        return 'yellow';
+      case 'opinion-needed':
+        return 'blue';
+      case 'opinion-not-needed':
+        return 'gray';
+      case 'under-review':
+        return 'purple';
+      case 'approved':
+        return 'green';
+      case 'rejected':
+        return 'red';
+      case 'completed':
+        return 'green';
+      default:
+        return 'gray';
+    }
+  };
+  
+  // Helper function to format date
+  const formatDate = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
 
   // Request appointment
   const requestDoctorAppointment = useCallback(async (submissionId, appointmentDetails) => {
@@ -170,13 +240,32 @@ export const PatientProvider = ({ children }) => {
       return null;
     }
     
+    if (!appointmentDetails.date || !appointmentDetails.time) {
+      setAppointmentError("Date and time are required");
+      return null;
+    }
+    
     setAppointmentLoading(true);
     setAppointmentError(null);
     
     try {
       const result = await requestAppointment(submissionId, appointmentDetails);
-      setAppointmentStatus(result.data);
-      return result.data;
+      
+      // Update the appointment status with the new data
+      const formattedStatus = {
+        status: result.data.status,
+        appointmentDetails: result.data.appointmentDetails,
+        doctorResponse: result.data.doctorResponse,
+        statusText: formatStatusText(result.data.status),
+        statusColor: getStatusColor(result.data.status),
+        formattedDate: result.data.appointmentDetails?.date ? 
+          formatDate(new Date(result.data.appointmentDetails.date)) : null,
+        formattedTime: result.data.appointmentDetails?.time || null,
+        isActionable: false // Once appointment is requested, no further action needed until doctor responds
+      };
+      
+      setAppointmentStatus(formattedStatus);
+      return formattedStatus;
     } catch (err) {
       const errorMessage = err.data?.message || err.message || "Failed to request appointment";
       setAppointmentError(errorMessage);
@@ -185,6 +274,99 @@ export const PatientProvider = ({ children }) => {
       setAppointmentLoading(false);
     }
   }, []);
+
+  // Add reviews state
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsError, setReviewsError] = useState(null);
+  const [reviewsPagination, setReviewsPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalReviews: 0,
+    limit: 10
+  });
+  
+  // Fetch doctor reviews
+  const fetchDoctorReviews = useCallback(async (doctorId, params = {}) => {
+    if (!doctorId) {
+      setReviewsError("Doctor ID is required");
+      return null;
+    }
+    
+    // Don't set loading to true if we're just changing pages
+    const isPageChange = params.page && reviewsPagination.currentPage !== params.page;
+    
+    if (!isPageChange) {
+      setReviewsLoading(true);
+    }
+    
+    setReviewsError(null);
+    
+    try {
+      const result = await getDoctorReviews(doctorId, params);
+      
+      setReviews(result.reviews);
+      setReviewsPagination({
+        currentPage: parseInt(result.page),
+        totalPages: result.totalPages,
+        totalReviews: result.totalReviews,
+        limit: result.limit
+      });
+      
+      return result;
+    } catch (err) {
+      console.error('Error fetching doctor reviews:', err);
+      setReviewsError(err.message || 'Failed to fetch doctor reviews');
+      return null;
+    } finally {
+      setReviewsLoading(false);
+    }
+  }, [reviewsPagination.currentPage]);
+
+  // Add review submission state
+  const [reviewSubmitLoading, setReviewSubmitLoading] = useState(false);
+  const [reviewSubmitError, setReviewSubmitError] = useState(null);
+  const [reviewSubmitSuccess, setReviewSubmitSuccess] = useState(false);
+  
+  // Submit a review for a doctor
+  const submitDoctorReview = useCallback(async (submissionId, reviewData) => {
+    if (!submissionId) {
+      setReviewSubmitError("Submission ID is required");
+      return null;
+    }
+    
+    if (!reviewData.rating || !reviewData.comment) {
+      setReviewSubmitError("Rating and comment are required");
+      return null;
+    }
+    
+    if (reviewData.rating < 1 || reviewData.rating > 5) {
+      setReviewSubmitError("Rating must be between 1 and 5");
+      return null;
+    }
+    
+    setReviewSubmitLoading(true);
+    setReviewSubmitError(null);
+    setReviewSubmitSuccess(false);
+    
+    try {
+      const result = await submitReview(submissionId, reviewData);
+      setReviewSubmitSuccess(true);
+      
+      // If we have the current doctor loaded, refresh the reviews
+      if (currentDoctor) {
+        fetchDoctorReviews(currentDoctor.id);
+      }
+      
+      return result;
+    } catch (err) {
+      const errorMessage = err.data?.message || err.message || "Failed to submit review";
+      setReviewSubmitError(errorMessage);
+      return null;
+    } finally {
+      setReviewSubmitLoading(false);
+    }
+  }, [currentDoctor, fetchDoctorReviews]);
 
   return (
     <PatientContext.Provider
@@ -218,6 +400,19 @@ export const PatientProvider = ({ children }) => {
         appointmentStatus,
         checkStatus,
         requestDoctorAppointment,
+        
+        // Reviews data
+        reviews,
+        reviewsLoading,
+        reviewsError,
+        reviewsPagination,
+        fetchDoctorReviews,
+        
+        // Review submission data
+        reviewSubmitLoading,
+        reviewSubmitError,
+        reviewSubmitSuccess,
+        submitDoctorReview,
       }}
     >
       {children}
