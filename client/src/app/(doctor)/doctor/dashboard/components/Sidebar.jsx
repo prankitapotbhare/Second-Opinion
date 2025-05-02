@@ -72,7 +72,7 @@ const Sidebar = ({
       {/* Toggle Button */}
       <button 
         onClick={toggleSidebar}
-        className="hidden md:flex fixed bottom-20 z-50 items-center justify-center w-8 h-8 bg-gradient-to-r from-[#1dd3b0] to-green-200 text-white rounded-full shadow-lg hover:from-blue-500 hover:to-blue-400 transition-all duration-300 border border-blue-200"
+        className="hidden md:flex fixed bottom-20 z-50 items-center justify-center w-8 h-8 bg-gradient-to-r from-[#1dd3b0] to-green-200 text-white rounded-full shadow-lg hover:from-[#90f1ef] hover:to-[#1dd3b0] transition-all duration-300 border border-blue-200"
         style={{ 
           left: isCollapsed ? '4rem' : '17rem',
           transform: 'translateY(-50%)'
