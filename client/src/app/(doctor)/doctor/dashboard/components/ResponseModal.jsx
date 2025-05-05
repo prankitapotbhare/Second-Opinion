@@ -1,39 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FaUpload, FaArrowRight, FaFile, FaTrash, FaTimes } from 'react-icons/fa';
 import { showSuccessToast } from '@/utils/toast';
-import { useDoctor } from '@/contexts/DoctorContext';
 
-const ResponseModal = ({ isOpen, onClose, patientId, onSendResponse }) => {
+const ResponseModal = ({ isOpen, onClose, patientId, onSendResponse, appointmentStatus }) => {
   const [secondOpinionRequired, setSecondOpinionRequired] = useState(null); // null, 'yes', 'no'
   const [message, setMessage] = useState(
     "As a precaution, please avoid heavy activities and ensure proper rest. Let's do a detailed evaluation soon. In the meantime, maintain a healthy diet and stay hydrated. If symptoms worsen suddenly, don't hesitate to seek immediate medical attention. Keep a daily log of your symptoms to help us understand any patterns. Avoid screen time and loud environments if they trigger discomfort."
   );
   const [selectedFile, setSelectedFile] = useState(null);
-  const [appointmentStatus, setAppointmentStatus] = useState(null);
-  const { getAppointmentDetails } = useDoctor();
   
-  // Check appointment status when component mounts
-  useEffect(() => {
-    const checkAppointmentStatus = async () => {
-      try {
-        const response = await getAppointmentDetails(patientId);
-        if (response && response.data) {
-          setAppointmentStatus(response.data.status);
-          
-          // Close modal if status is not pending
-          if (response.data.status !== 'pending') {
-            onClose();
-          }
-        }
-      } catch (error) {
-        console.error("Error checking appointment status:", error);
-      }
-    };
-    
-    if (patientId) {
-      checkAppointmentStatus();
-    }
-  }, [patientId, getAppointmentDetails, onClose]);
+  // No need to fetch appointment status here, we'll use the prop passed from PatientDetailModal
 
   const handleFileUploadClick = () => {
     document.getElementById('fileUploadInput').click();
@@ -54,11 +30,16 @@ const ResponseModal = ({ isOpen, onClose, patientId, onSendResponse }) => {
     }
   };
 
-  // Modify handleSendResponse to check status before sending
   const handleSendResponse = () => {
     // Don't allow sending if not pending
     if (appointmentStatus !== 'pending') {
       onClose();
+      return;
+    }
+    
+    // Validate required fields
+    if (!secondOpinionRequired) {
+      // You could show an error message here
       return;
     }
     

@@ -55,10 +55,20 @@ const PatientDetailModal = ({
     setShowResponseModal(false);
   };
 
+  // Update the handleSendResponse function
   const handleSendResponse = (responseData) => {
+    // Only allow sending if status is pending
+    if (appointmentDetails?.status !== 'pending') {
+      onClose();
+      return;
+    }
+    
     // Pass the response data to the parent component
     if (onSendResponse) {
-      onSendResponse(responseData);
+      onSendResponse({
+        ...responseData,
+        patientId // Make sure patientId is included
+      });
     }
   };
   
@@ -282,6 +292,7 @@ const PatientDetailModal = ({
           onClose={handleCloseResponseModal}
           patientId={patientId}
           onSendResponse={handleSendResponse}
+          appointmentStatus={appointmentDetails?.status} // Pass the status here
         />
       )}
     </div>

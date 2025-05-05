@@ -371,7 +371,8 @@ export const DoctorProvider = ({ children }) => {
   };
 
   // Submit response to patient appointment
-  const handleSubmitResponse = async (appointmentId, responseData, responseFiles = []) => {
+  // Add this function to the DoctorContext
+  const handleSubmitAppointmentResponse = async (appointmentId, responseData) => {
     setLoading(true);
     setError(null);
     try {
@@ -380,22 +381,30 @@ export const DoctorProvider = ({ children }) => {
         throw new Error('You must be logged in to submit a response');
       }
       
-      const response = await submitAppointmentResponse(appointmentId, responseData, responseFiles);
-      
-      // Update the appointment details if we're viewing that appointment
-      if (appointmentDetails && appointmentDetails.appointmentId === appointmentId) {
-        setAppointmentDetails(response.data);
+      // First check if the appointment exists and has 'pending' status
+      const appointment = await getAppointmentDetails(appointmentId);
+      if (!appointment || !appointment.data || appointment.data.status !== 'pending') {
+        throw new Error('Appointment not found or not in pending status');
       }
       
-      // Refresh the appointments list to reflect the status change
+      const formData = new FormData();
+      formData.append('message', responseData.message);
+      formData.append('secondOpinionRequired', responseData.secondOpinionRequired);
+      
+      // Add file if provided
+      if (responseData.file) {
+        formData.append('responseFiles', responseData.file);
+      }
+      
+      const response = await submitAppointmentResponse(appointmentId, formData);
+      
+      // Refresh appointments after successful submission
       await fetchAppointments({ page: pagination.page, limit: pagination.limit });
       
       return response;
     } catch (err) {
-      // Handle authentication errors specifically
       if (err.message === 'No authentication token found') {
         setError('Your session has expired. Please log in again.');
-        // Optionally redirect to login
         setTimeout(() => {
           if (logout) logout();
           router.push('/login/doctor');
@@ -409,7 +418,7 @@ export const DoctorProvider = ({ children }) => {
       setLoading(false);
     }
   };
-
+  
   // Get patient requests
   const fetchPatientRequests = async (params = {}) => {
     setLoading(true);
@@ -546,7 +555,7 @@ export const DoctorProvider = ({ children }) => {
     fetchDoctorReviews,
     fetchAppointments,
     getAppointmentDetails: fetchAppointmentDetails, // Add this line
-    submitResponse: handleSubmitResponse,
+    submitResponse: handleSubmitAppointmentResponse,
     fetchPatientRequests,
     acceptRequest: handleAcceptRequest,
     rejectRequest: handleRejectRequest,

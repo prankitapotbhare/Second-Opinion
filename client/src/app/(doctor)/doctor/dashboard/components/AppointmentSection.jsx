@@ -29,7 +29,8 @@ const AppointmentSection = () => {
     patientRequests, 
     fetchPatientRequests,
     requestsPagination,
-    loading
+    loading,
+    submitResponse // Add this
   } = useDoctor();
 
   // Fetch appointments when component mounts or filter changes
@@ -119,8 +120,7 @@ const AppointmentSection = () => {
 
   const handleSendResponse = async (responseData) => {
     try {
-      // Here you would typically send the data to your API
-      console.log("Response data:", responseData);
+    await submitResponse(responseData.patientId, responseData);
       
       // Refresh appointments after sending response
       await fetchAppointments({

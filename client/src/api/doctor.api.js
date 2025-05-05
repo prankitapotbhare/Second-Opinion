@@ -394,10 +394,9 @@ export const getAppointmentDetails = async (appointmentId) => {
  * Submit response to patient appointment
  * @param {string} appointmentId - Appointment ID
  * @param {Object} responseData - Response data (message, secondOpinionRequired)
- * @param {Array} responseFiles - Response files to upload
  * @returns {Promise<Object>} Updated appointment data
  */
-export const submitAppointmentResponse = async (appointmentId, responseData, responseFiles = []) => {
+export const submitAppointmentResponse = async (appointmentId, responseData) => {
   try {
     const token = getAuthToken();
     const formData = new FormData();
@@ -408,13 +407,6 @@ export const submitAppointmentResponse = async (appointmentId, responseData, res
         formData.append(key, responseData[key]);
       }
     });
-    
-    // Add response files if any
-    if (responseFiles && responseFiles.length > 0) {
-      responseFiles.forEach(file => {
-        formData.append('responseFiles', file);
-      });
-    }
     
     const response = await fetch(`${API_URL}/doctor/appointments/${appointmentId}/response`, {
       method: 'POST',
