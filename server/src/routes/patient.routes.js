@@ -36,14 +36,14 @@ router.post('/patient-details',
 );
 
 // Check appointment status
-router.get('/reponse/:submissionId/status', patientController.checkAppointmentStatus);
+router.get('/response', patientController.getResponse);
 
 // Request appointment
-router.post('/submissions/:submissionId/appointment', patientController.requestAppointment);
+router.post('/response/:responseId/appointment', patientController.requestAppointment);
 
 // Add review route
 router.post(
-  '/submissions/:submissionId/review',
+  '/response/:submissionId/review',
   patientController.submitReview
 );
 

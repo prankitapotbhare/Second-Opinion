@@ -372,19 +372,14 @@ export const submitPatientDetails = async (patientDetails) => {
 };
 
 /**
- * Check appointment status by submission ID
- * @param {string} submissionId - ID of the submission
- * @returns {Promise<Object>} Appointment status details
+ * Get the latest response for the authenticated patient
+ * @returns {Promise<Object>} Response details
  */
-export const checkAppointmentStatus = async (submissionId) => {
-  if (!submissionId) {
-    throw new Error('Submission ID is required');
-  }
-  
+export const getPatientResponse = async () => {
   const token = getAuthToken();
   
   try {
-    const response = await fetch(`${API_URL}/patient/reponse/${submissionId}/status`, {
+    const response = await fetch(`${API_URL}/patient/response`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -395,35 +390,33 @@ export const checkAppointmentStatus = async (submissionId) => {
     // Format the response for easier consumption
     return {
       success: data.success,
+      id: data.data.id,
       status: data.data.status,
+      doctorResponse: data.data.doctorResponse ? {
+        message: data.data.doctorResponse.message || '',
+        responseDate: data.data.doctorResponse.responseDate ? new Date(data.data.doctorResponse.responseDate) : null,
+        secondOpinionRequired: data.data.doctorResponse.secondOpinionRequired || false,
+        responseFiles: data.data.doctorResponse.responseFiles || []
+      } : null,
       appointmentDetails: data.data.appointmentDetails ? {
         date: data.data.appointmentDetails.date ? new Date(data.data.appointmentDetails.date) : null,
         time: data.data.appointmentDetails.time || null,
         notes: data.data.appointmentDetails.notes || '',
         isCompleted: data.data.appointmentDetails.isCompleted || false,
         completedAt: data.data.appointmentDetails.completedAt ? new Date(data.data.appointmentDetails.completedAt) : null
-      } : null,
-      doctorResponse: data.data.doctorResponse ? {
-        message: data.data.doctorResponse.message || '',
-        responseDate: data.data.doctorResponse.responseDate ? new Date(data.data.doctorResponse.responseDate) : null,
-        secondOpinionRequired: data.data.doctorResponse.secondOpinionRequired || false,
-        responseFiles: data.data.doctorResponse.responseFiles || []
       } : null
     };
   } catch (error) {
     // Provide more specific error messages based on error type
     if (error.status === 404) {
-      console.error('Submission not found');
-      throw new Error('Submission not found');
-    } else if (error.status === 400) {
-      console.error('Invalid submission ID format');
-      throw new Error('Invalid submission ID format');
+      console.error('No submissions found');
+      throw new Error('No submissions found');
     } else if (error.status >= 500) {
       console.error('Server error, please try again later');
       throw new Error('Server error, please try again later');
     }
     
-    console.error('Error checking appointment status:', error);
+    console.error('Error getting patient response:', error);
     throw error;
   }
 };
@@ -449,7 +442,7 @@ export const requestAppointment = async (submissionId, appointmentDetails) => {
   const token = getAuthToken();
   
   try {
-    const response = await fetch(`${API_URL}/patient/submissions/${submissionId}/appointment`, {
+    const response = await fetch(`${API_URL}/patient/response/${submissionId}/appointment`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -489,7 +482,7 @@ export const submitReview = async (submissionId, reviewData) => {
   const token = getAuthToken();
   
   try {
-    const response = await fetch(`${API_URL}/patient/submissions/${submissionId}/review`, {
+    const response = await fetch(`${API_URL}/patient/response/${submissionId}/review`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

@@ -229,20 +229,15 @@ exports.createPatientDetails = async (req, res, next) => {
   }
 };
 
-// --- Check appointment status ---
-exports.checkAppointmentStatus = async (req, res, next) => {
+// --- Get response status ---
+exports.getResponse = async (req, res, next) => {
   try {
     const patientId = req.user.id;
-    const { submissionId } = req.params;
     
-    // Validate submission ID
-    validationService.validateObjectId(submissionId, 'submission');
-    
-    const submission = await PatientDetails.findOne({
-      _id: submissionId,
-      patientId
-    });
-    
+    // Find the latest submission for this patient
+    const submission = await PatientDetails.findOne({ patientId })
+      .sort({ createdAt: -1 });
+
     if (!submission) {
       return res.status(404).json({
         success: false,
@@ -256,9 +251,10 @@ exports.checkAppointmentStatus = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: {
+        id: submission._id,
         status: submission.status,
-        appointmentDetails: submission.appointmentDetails || null,
-        doctorResponse: submission.doctorResponse || null
+        doctorResponse: submission.doctorResponse || null,
+        appointmentDetails: submission.appointmentDetails || null
       }
     });
   } catch (error) {
@@ -270,11 +266,11 @@ exports.checkAppointmentStatus = async (req, res, next) => {
 exports.requestAppointment = async (req, res, next) => {
   try {
     const patientId = req.user.id;
-    const { submissionId } = req.params;
+    const { responseId } = req.params;
     const { date, time, notes } = req.body;
     
     // Validate submission ID
-    validationService.validateObjectId(submissionId, 'submission');
+    validationService.validateObjectId(responseId, 'submission');
     
     // Validate required fields
     if (!date || !time) {
@@ -282,7 +278,7 @@ exports.requestAppointment = async (req, res, next) => {
     }
     
     const submission = await PatientDetails.findOne({
-      _id: submissionId,
+      _id: responseId,
       patientId,
       status: 'opinion-needed'
     });
@@ -321,7 +317,7 @@ exports.requestAppointment = async (req, res, next) => {
 exports.submitReview = async (req, res, next) => {
   try {
     const patientId = req.user.id;
-    const { submissionId } = req.params;
+    const { responseId } = req.params;
     const { rating, comment } = req.body;
 
     if (!rating || !comment) {
@@ -333,7 +329,7 @@ exports.submitReview = async (req, res, next) => {
 
     // Find the submission and ensure status is NOT 'pending'
     const submission = await PatientDetails.findOne({
-      _id: submissionId,
+      _id: responseId,
       patientId
     });
 

@@ -1,14 +1,14 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import { 
   getDoctors,
   getDoctorById,
   submitPatientDetails,
-  checkAppointmentStatus,
   requestAppointment,
   getDoctorReviews,
-  submitReview // Add this import
+  submitReview,
+  getPatientResponse
 } from '@/api/patient.api';
 
 // Create the context
@@ -44,7 +44,6 @@ export const PatientProvider = ({ children }) => {
   // Appointment state
   const [appointmentLoading, setAppointmentLoading] = useState(false);
   const [appointmentError, setAppointmentError] = useState(null);
-  const [appointmentStatus, setAppointmentStatus] = useState(null);
   
   // Pagination state
   const [pagination, setPagination] = useState({
@@ -54,37 +53,57 @@ export const PatientProvider = ({ children }) => {
     limit: 8
   });
 
+  // Response state
+  const [patientResponse, setPatientResponse] = useState(null);
+  const [responseLoading, setResponseLoading] = useState(false);
+  const [responseError, setResponseError] = useState(null);
+  
+  // Reviews state
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsError, setReviewsError] = useState(null);
+  const [reviewsPagination, setReviewsPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalReviews: 0,
+    limit: 10
+  });
+  
+  // Review submission state
+  const [reviewSubmitLoading, setReviewSubmitLoading] = useState(false);
+  const [reviewSubmitError, setReviewSubmitError] = useState(null);
+  const [reviewSubmitSuccess, setReviewSubmitSuccess] = useState(false);
+
   // Fetch doctors list
   const fetchDoctors = useCallback(async (params = {}) => {
-  // Don't set loading to true if we're just changing pages
-  // This prevents the entire list from disappearing during page changes
-  const isPageChange = params.page && pagination.currentPage !== params.page;
-  
-  if (!isPageChange) {
-    setDoctorsLoading(true);
-  }
-  
-  setDoctorsError(null);
-  
-  try {
-    const result = await getDoctors(params);
+    // Don't set loading to true if we're just changing pages
+    const isPageChange = params.page && pagination.currentPage !== params.page;
     
-    setDoctors(result.doctors);
-    setPagination({
-      currentPage: parseInt(result.page),
-      totalPages: Math.ceil(result.total / result.limit),
-      totalDoctors: result.total,
-      limit: result.limit
-    });
+    if (!isPageChange) {
+      setDoctorsLoading(true);
+    }
     
-    return result;
-  } catch (err) {
-    console.error('Error fetching doctors:', err);
-    setDoctorsError(err.message || 'Failed to fetch doctors');
-    return null;
-  } finally {
-    setDoctorsLoading(false);
-  }
+    setDoctorsError(null);
+    
+    try {
+      const result = await getDoctors(params);
+      
+      setDoctors(result.doctors);
+      setPagination({
+        currentPage: parseInt(result.page),
+        totalPages: Math.ceil(result.total / result.limit),
+        totalDoctors: result.total,
+        limit: result.limit
+      });
+      
+      return result;
+    } catch (err) {
+      console.error('Error fetching doctors:', err);
+      setDoctorsError(err.message || 'Failed to fetch doctors');
+      return null;
+    } finally {
+      setDoctorsLoading(false);
+    }
   }, [pagination.currentPage]);
 
   // Fetch doctor by ID with cache control
@@ -139,41 +158,6 @@ export const PatientProvider = ({ children }) => {
       return null;
     } finally {
       setPatientDetailsLoading(false);
-    }
-  }, []);
-
-  // Check appointment status
-  const checkStatus = useCallback(async (submissionId) => {
-    if (!submissionId) {
-      setAppointmentError("Submission ID is required");
-      return null;
-    }
-    
-    setAppointmentLoading(true);
-    setAppointmentError(null);
-    
-    try {
-      const result = await checkAppointmentStatus(submissionId);
-      
-      // Format status for UI display
-      const formattedStatus = {
-        ...result,
-        statusText: formatStatusText(result.status),
-        statusColor: getStatusColor(result.status),
-        formattedDate: result.appointmentDetails?.date ? 
-          formatDate(result.appointmentDetails.date) : null,
-        formattedTime: result.appointmentDetails?.time || null,
-        isActionable: ['opinion-needed', 'pending'].includes(result.status)
-      };
-      
-      setAppointmentStatus(formattedStatus);
-      return formattedStatus;
-    } catch (err) {
-      const errorMessage = err.data?.message || err.message || "Failed to check appointment status";
-      setAppointmentError(errorMessage);
-      return null;
-    } finally {
-      setAppointmentLoading(false);
     }
   }, []);
   
@@ -233,6 +217,36 @@ export const PatientProvider = ({ children }) => {
     });
   };
 
+  // Get patient response
+  const fetchPatientResponse = useCallback(async () => {
+    setResponseLoading(true);
+    setResponseError(null);
+    
+    try {
+      const result = await getPatientResponse();
+      
+      // Format status for UI display
+      const formattedResponse = {
+        ...result,
+        statusText: formatStatusText(result.status),
+        statusColor: getStatusColor(result.status),
+        formattedDate: result.appointmentDetails?.date ? 
+          formatDate(result.appointmentDetails.date) : null,
+        formattedTime: result.appointmentDetails?.time || null,
+        isActionable: ['opinion-needed', 'pending'].includes(result.status)
+      };
+      
+      setPatientResponse(formattedResponse);
+      return formattedResponse;
+    } catch (err) {
+      const errorMessage = err.message || "Failed to get patient response";
+      setResponseError(errorMessage);
+      return null;
+    } finally {
+      setResponseLoading(false);
+    }
+  }, []);
+
   // Request appointment
   const requestDoctorAppointment = useCallback(async (submissionId, appointmentDetails) => {
     if (!submissionId || !appointmentDetails) {
@@ -251,21 +265,10 @@ export const PatientProvider = ({ children }) => {
     try {
       const result = await requestAppointment(submissionId, appointmentDetails);
       
-      // Update the appointment status with the new data
-      const formattedStatus = {
-        status: result.data.status,
-        appointmentDetails: result.data.appointmentDetails,
-        doctorResponse: result.data.doctorResponse,
-        statusText: formatStatusText(result.data.status),
-        statusColor: getStatusColor(result.data.status),
-        formattedDate: result.data.appointmentDetails?.date ? 
-          formatDate(new Date(result.data.appointmentDetails.date)) : null,
-        formattedTime: result.data.appointmentDetails?.time || null,
-        isActionable: false // Once appointment is requested, no further action needed until doctor responds
-      };
+      // Update the patient response with the new data
+      await fetchPatientResponse();
       
-      setAppointmentStatus(formattedStatus);
-      return formattedStatus;
+      return result.data;
     } catch (err) {
       const errorMessage = err.data?.message || err.message || "Failed to request appointment";
       setAppointmentError(errorMessage);
@@ -273,18 +276,7 @@ export const PatientProvider = ({ children }) => {
     } finally {
       setAppointmentLoading(false);
     }
-  }, []);
-
-  // Add reviews state
-  const [reviews, setReviews] = useState([]);
-  const [reviewsLoading, setReviewsLoading] = useState(false);
-  const [reviewsError, setReviewsError] = useState(null);
-  const [reviewsPagination, setReviewsPagination] = useState({
-    currentPage: 1,
-    totalPages: 1,
-    totalReviews: 0,
-    limit: 10
-  });
+  }, [fetchPatientResponse]);
   
   // Fetch doctor reviews
   const fetchDoctorReviews = useCallback(async (doctorId, params = {}) => {
@@ -323,11 +315,6 @@ export const PatientProvider = ({ children }) => {
     }
   }, [reviewsPagination.currentPage]);
 
-  // Add review submission state
-  const [reviewSubmitLoading, setReviewSubmitLoading] = useState(false);
-  const [reviewSubmitError, setReviewSubmitError] = useState(null);
-  const [reviewSubmitSuccess, setReviewSubmitSuccess] = useState(false);
-  
   // Submit a review for a doctor
   const submitDoctorReview = useCallback(async (submissionId, reviewData) => {
     if (!submissionId) {
@@ -386,19 +373,23 @@ export const PatientProvider = ({ children }) => {
         doctorLoading,
         doctorError,
         fetchDoctorById,
-        refreshDoctorDetails: (doctorId) => fetchDoctorById(doctorId, true), // Method to force refresh
+        refreshDoctorDetails: (doctorId) => fetchDoctorById(doctorId, true),
         
         // Patient details data
         patientDetailsLoading,
         patientDetailsError,
         currentSubmission,
         submitDetails,
+
+        // Response data
+        patientResponse,
+        responseLoading,
+        responseError,
+        fetchPatientResponse,
         
         // Appointment data
         appointmentLoading,
         appointmentError,
-        appointmentStatus,
-        checkStatus,
         requestDoctorAppointment,
         
         // Reviews data
