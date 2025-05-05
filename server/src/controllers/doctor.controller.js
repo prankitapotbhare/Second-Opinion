@@ -595,7 +595,7 @@ exports.getPatientRequests = async (req, res, next) => {
     
     // Get requests with pagination
     const requests = await PatientDetails.find(query)
-      .select('fullName patientId doctorId appointmentDetails.date appointmentDetails.time')
+      .select('_id fullName patientId doctorId appointmentDetails.date appointmentDetails.time')
       .sort({ submittedAt: -1 })
       .limit(Number(limit))
       .skip((Number(page) - 1) * Number(limit));
@@ -650,9 +650,9 @@ exports.acceptPatientRequest = async (req, res, next) => {
     const { requestId } = req.params;
     const doctorId = req.user.id;
     
-    
+    // Find the request with status 'under-review' instead of 'opinion-needed'
     const request = await PatientDetails.findOneAndUpdate(
-      { _id: requestId, doctorId, status: 'opinion-needed' },
+      { _id: requestId, doctorId, status: 'under-review' },
       {
         status: 'approved'
       },
@@ -679,8 +679,9 @@ exports.rejectPatientRequest = async (req, res, next) => {
     const { requestId } = req.params;
     const doctorId = req.user.id;
     
+    // Find the request with status 'under-review' instead of 'opinion-needed'
     const request = await PatientDetails.findOneAndUpdate(
-      { _id: requestId, doctorId, status: 'opinion-needed' },
+      { _id: requestId, doctorId, status: 'under-review' },
       {
         status: 'rejected'
       },
