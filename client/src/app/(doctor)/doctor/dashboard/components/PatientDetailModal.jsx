@@ -6,7 +6,8 @@ import {
   FaPaperPlane,
   FaFileAlt,
   FaFileImage,
-  FaSpinner
+  FaSpinner,
+  FaExternalLinkAlt
 } from "react-icons/fa";
 import ResponseModal from "./ResponseModal";
 import { useDoctor } from "@/contexts/DoctorContext";
@@ -65,10 +66,38 @@ const PatientDetailModal = ({
     // Create a temporary anchor element to trigger download
     const link = document.createElement('a');
     link.href = fileUrl;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    link.download = fileName || 'download'; // Ensure there's always a filename
+    link.target = '_blank'; // Open in new tab
+    link.rel = 'noopener noreferrer'; // Security best practice
+    
+    // For files hosted on the same domain, we can use this approach
+    // For cross-origin files, this might not work due to CORS restrictions
+    fetch(fileUrl)
+      .then(response => response.blob())
+      .then(blob => {
+        // Create a blob URL for the file
+        const blobUrl = URL.createObjectURL(blob);
+        link.href = blobUrl;
+        document.body.appendChild(link);
+        link.click();
+        
+        // Clean up
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(blobUrl);
+        }, 100);
+      })
+      .catch(error => {
+        console.error("Error downloading file:", error);
+        // Fallback to direct download if fetch fails
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
+  };
+  
+  const handleOpenFileInNewTab = (fileUrl) => {
+    window.open(fileUrl, '_blank');
   };
   
   return (
@@ -179,6 +208,11 @@ const PatientDetailModal = ({
                         FileIcon = FaFileImage;
                       }
                       
+                      // Determine if file can be viewed in browser
+                      const canViewInBrowser = file.fileType?.includes('pdf') || 
+                                              file.fileType?.includes('image') ||
+                                              file.fileType?.includes('text');
+                      
                       return (
                         <div key={index} className="flex items-center justify-between">
                           <div className="flex items-center">
@@ -197,12 +231,24 @@ const PatientDetailModal = ({
                               </p>
                             </div>
                           </div>
-                          <button 
-                            className="text-blue-600 hover:text-blue-800 cursor-pointer whitespace-nowrap !rounded-button"
-                            onClick={() => handleDownloadFile(file.filePath, file.fileName)}
-                          >
-                            <FaDownload className="inline mr-1" /> Download
-                          </button>
+                          <div className="flex space-x-2">
+                            {canViewInBrowser && (
+                              <button 
+                                className="text-indigo-600 hover:text-indigo-800 cursor-pointer whitespace-nowrap !rounded-button"
+                                onClick={() => handleOpenFileInNewTab(file.filePath)}
+                                title="Open in new tab"
+                              >
+                                <FaExternalLinkAlt className="inline mr-1" /> View
+                              </button>
+                            )}
+                            <button 
+                              className="text-blue-600 hover:text-blue-800 cursor-pointer whitespace-nowrap !rounded-button"
+                              onClick={() => handleDownloadFile(file.filePath, file.fileName)}
+                              title="Download file"
+                            >
+                              <FaDownload className="inline mr-1" /> Download
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
