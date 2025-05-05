@@ -392,21 +392,13 @@ export const getAppointmentDetails = async (appointmentId) => {
 
 /**
  * Submit response to patient appointment
- * @param {string} appointmentId - Appointment ID
- * @param {Object} responseData - Response data (message, secondOpinionRequired)
- * @returns {Promise<Object>} Updated appointment data
+ * @param {string} appointmentId - ID of the appointment
+ * @param {FormData} formData - Form data containing response details
+ * @returns {Promise<Object>} Response data
  */
-export const submitAppointmentResponse = async (appointmentId, responseData) => {
+export const submitAppointmentResponse = async (appointmentId, formData) => {
   try {
     const token = getAuthToken();
-    const formData = new FormData();
-    
-    // Add response data to form
-    Object.keys(responseData).forEach(key => {
-      if (responseData[key] !== undefined && responseData[key] !== null) {
-        formData.append(key, responseData[key]);
-      }
-    });
     
     const response = await fetch(`${API_URL}/doctor/appointments/${appointmentId}/response`, {
       method: 'POST',

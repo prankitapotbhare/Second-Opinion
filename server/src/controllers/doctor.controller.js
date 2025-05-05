@@ -520,60 +520,58 @@ exports.getAppointmentDetails = async (req, res, next) => {
 exports.submitAppointmentResponse = async (req, res, next) => {
   try {
     const { appointmentId } = req.params;
-    const { message, secondOpinionRequired } = req.body;
     const doctorId = req.user.id;
-    
-    if (!message) {
-      return next(createError('Response message is required', 400));
-    }
-    
-    // First check if the appointment exists and has 'pending' status
-    const existingAppointment = await PatientDetails.findOne({
+       
+    // Check if the appointment exists and belongs to this doctor
+    const appointment = await PatientDetails.findOne({
       _id: appointmentId,
       doctorId,
-      status: 'pending'
+      status: 'pending' // Only allow responses to pending appointments
     });
     
-    if (!existingAppointment) {
+    if (!appointment) {
       return next(createError('Appointment not found or not in pending status', 404));
     }
     
-    // Process uploaded files if any
+    // Get message and secondOpinionRequired from form data
+    const { message, secondOpinionRequired } = req.body;
+    
+    if (!message) {
+      return next(createError('Message is required', 400));
+    }
+    
+    // Process response file if any
     let responseFiles = [];
-    if (req.files && req.files.length > 0) {
-      responseFiles = fileService.processUploadedFiles(req.files);
+    if (req.file) {
+      // Process the file
+      responseFiles.push({
+        fileName: req.file.originalname,
+        fileType: req.file.mimetype,
+        fileSize: req.file.size,
+        uploadDate: new Date(),
+        filePath: req.file.path
+      });
     }
     
-    const updateData = {
-      doctorResponse: {
-        message,
-        responseDate: new Date(),
-        responseFiles,
-        secondOpinionRequired: secondOpinionRequired === 'yes'
-      }
-    };
-    
-    // Update status based on second opinion requirement
-    if (secondOpinionRequired === 'yes') {
-      updateData.status = 'opinion-needed';
-    } else if (secondOpinionRequired === 'no') {
-      updateData.status = 'opinion-not-needed';
-    }
-    
-    const appointment = await PatientDetails.findOneAndUpdate(
-      { _id: appointmentId, doctorId },
-      updateData,
+    // Update appointment with doctor's response
+    const updatedAppointment = await PatientDetails.findByIdAndUpdate(
+      appointmentId,
+      {
+        status: secondOpinionRequired === 'true' ? 'opinion-needed' : 'opinion-not-needed',
+        doctorResponse: {
+          message,
+          responseDate: new Date(),
+          secondOpinionRequired: secondOpinionRequired === 'true',
+          responseFiles
+        }
+      },
       { new: true }
     );
-    
-    if (!appointment) {
-      return next(createError('Appointment not found', 404));
-    }
     
     res.status(200).json({
       success: true,
       message: 'Response submitted successfully',
-      data: appointment
+      data: updatedAppointment
     });
   } catch (error) {
     next(error);

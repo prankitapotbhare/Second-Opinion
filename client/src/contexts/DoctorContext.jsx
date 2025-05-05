@@ -371,7 +371,6 @@ export const DoctorProvider = ({ children }) => {
   };
 
   // Submit response to patient appointment
-  // Add this function to the DoctorContext
   const handleSubmitAppointmentResponse = async (appointmentId, responseData) => {
     setLoading(true);
     setError(null);
@@ -381,19 +380,18 @@ export const DoctorProvider = ({ children }) => {
         throw new Error('You must be logged in to submit a response');
       }
       
-      // First check if the appointment exists and has 'pending' status
-      const appointment = await getAppointmentDetails(appointmentId);
-      if (!appointment || !appointment.data || appointment.data.status !== 'pending') {
-        throw new Error('Appointment not found or not in pending status');
-      }
-      
+      // Create FormData object
       const formData = new FormData();
+      
+      // Add the secondOpinionRequired field (convert 'yes'/'no' to boolean)
+      formData.append('secondOpinionRequired', responseData.secondOpinionRequired === 'yes');
+      
+      // Add message
       formData.append('message', responseData.message);
-      formData.append('secondOpinionRequired', responseData.secondOpinionRequired);
       
       // Add file if provided
       if (responseData.file) {
-        formData.append('responseFiles', responseData.file);
+        formData.append('responseFile', responseData.file);
       }
       
       const response = await submitAppointmentResponse(appointmentId, formData);

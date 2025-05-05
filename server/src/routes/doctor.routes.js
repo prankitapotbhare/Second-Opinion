@@ -51,7 +51,12 @@ router.get('/reviews', doctorController.getDoctorReviews);
 // Appointment management routes
 router.get('/appointments', doctorController.getAppointments);
 router.get('/appointments/:appointmentId', doctorController.getAppointmentDetails);
-router.post('/appointments/:appointmentId/response', doctorController.submitAppointmentResponse);
+router.post('/appointments/:appointmentId/response', 
+  doctorFileUpload.single('responseFile'),
+  handleUploadError,
+  processFilePaths,
+  doctorController.submitAppointmentResponse
+);
 
 // Patient request management routes
 router.get('/requests', doctorController.getPatientRequests);
