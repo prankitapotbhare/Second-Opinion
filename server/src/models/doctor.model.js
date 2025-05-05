@@ -164,11 +164,6 @@ const doctorSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
-  // Add reference to availability
-  availability: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Availability'
-  },
   role: {
     type: String,
     default: 'doctor',
