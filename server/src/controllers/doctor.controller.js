@@ -487,7 +487,7 @@ exports.getAppointmentDetails = async (req, res, next) => {
       _id: appointmentId,
       doctorId
     })
-     .select('fullName age gender email contactNumber emergencyContact patientId problem medicalFiles')
+     .select('fullName age gender email status contactNumber emergencyContact patientId problem medicalFiles')
     
     if (!appointment) {
       return next(createError('Appointment not found', 404));
@@ -499,6 +499,7 @@ exports.getAppointmentDetails = async (req, res, next) => {
       age: appointment.age,
       gender: appointment.gender,
       email: appointment.email,
+      status: appointment.status,
       contactNumber: appointment.contactNumber,
       emergencyContact: appointment.emergencyContact,
       problem: appointment.problem,
@@ -524,6 +525,17 @@ exports.submitAppointmentResponse = async (req, res, next) => {
     
     if (!message) {
       return next(createError('Response message is required', 400));
+    }
+    
+    // First check if the appointment exists and has 'pending' status
+    const existingAppointment = await PatientDetails.findOne({
+      _id: appointmentId,
+      doctorId,
+      status: 'pending'
+    });
+    
+    if (!existingAppointment) {
+      return next(createError('Appointment not found or not in pending status', 404));
     }
     
     // Process uploaded files if any

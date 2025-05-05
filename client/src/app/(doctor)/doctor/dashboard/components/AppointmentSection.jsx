@@ -357,13 +357,8 @@ const AppointmentSection = () => {
                         </td>
                         <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <button
-                            className={`px-3 py-1 ${
-                              appointment.status === 'pending' 
-                                ? 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100' 
-                                : 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                            } rounded-md transition-colors`}
-                            onClick={() => appointment.status === 'pending' && setShowPatientDetail(appointment._id || appointment.appointmentId)}
-                            disabled={appointment.status !== 'pending'}
+                            className="px-3 py-1 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-md transition-colors"
+                            onClick={() => setShowPatientDetail(appointment._id || appointment.appointmentId)}
                           >
                             <FaClipboardCheck className="inline-block mr-1" />
                             Review

@@ -260,18 +260,23 @@ const PatientDetailModal = ({
             <div className="flex justify-end mt-6 pt-6 border-t border-gray-200">
               <button
                 onClick={handleOpenResponseModal}
-                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer flex items-center"
+                className={`px-6 py-2 ${
+                  appointmentDetails?.status === "pending" 
+                    ? "bg-blue-600 text-white hover:bg-blue-700" 
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                } rounded-md flex items-center`}
+                disabled={appointmentDetails?.status !== "pending"}
               >
                 <FaPaperPlane className="inline mr-2 transform rotate-12" />
-                Send Response
+                {appointmentDetails?.status === "pending" ? "Send Response" : "Already Responded"}
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Response Modal */}
-      {showResponseModal && (
+      {/* Response Modal - Only show if status is pending */}
+      {showResponseModal && appointmentDetails?.status === "pending" && (
         <ResponseModal
           isOpen={showResponseModal}
           onClose={handleCloseResponseModal}

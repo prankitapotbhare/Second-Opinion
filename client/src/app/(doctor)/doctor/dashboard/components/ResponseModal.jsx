@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaUpload, FaArrowRight, FaFile, FaTrash, FaTimes } from 'react-icons/fa';
 import { showSuccessToast } from '@/utils/toast';
+import { useDoctor } from '@/contexts/DoctorContext';
 
 const ResponseModal = ({ isOpen, onClose, patientId, onSendResponse }) => {
   const [secondOpinionRequired, setSecondOpinionRequired] = useState(null); // null, 'yes', 'no'
@@ -8,23 +9,31 @@ const ResponseModal = ({ isOpen, onClose, patientId, onSendResponse }) => {
     "As a precaution, please avoid heavy activities and ensure proper rest. Let's do a detailed evaluation soon. In the meantime, maintain a healthy diet and stay hydrated. If symptoms worsen suddenly, don't hesitate to seek immediate medical attention. Keep a daily log of your symptoms to help us understand any patterns. Avoid screen time and loud environments if they trigger discomfort."
   );
   const [selectedFile, setSelectedFile] = useState(null);
-
-  const handleSendResponse = () => {
-    // Prepare response data
-    const responseData = {
-      patientId,
-      secondOpinionRequired,
-      message,
-      file: selectedFile
+  const [appointmentStatus, setAppointmentStatus] = useState(null);
+  const { getAppointmentDetails } = useDoctor();
+  
+  // Check appointment status when component mounts
+  useEffect(() => {
+    const checkAppointmentStatus = async () => {
+      try {
+        const response = await getAppointmentDetails(patientId);
+        if (response && response.data) {
+          setAppointmentStatus(response.data.status);
+          
+          // Close modal if status is not pending
+          if (response.data.status !== 'pending') {
+            onClose();
+          }
+        }
+      } catch (error) {
+        console.error("Error checking appointment status:", error);
+      }
     };
     
-    // Show success toast
-    showSuccessToast("Response sent successfully!");
-    
-    // Call the parent handler
-    onSendResponse(responseData);
-    onClose();
-  };
+    if (patientId) {
+      checkAppointmentStatus();
+    }
+  }, [patientId, getAppointmentDetails, onClose]);
 
   const handleFileUploadClick = () => {
     document.getElementById('fileUploadInput').click();
@@ -45,7 +54,31 @@ const ResponseModal = ({ isOpen, onClose, patientId, onSendResponse }) => {
     }
   };
 
-  if (!isOpen) return null;
+  // Modify handleSendResponse to check status before sending
+  const handleSendResponse = () => {
+    // Don't allow sending if not pending
+    if (appointmentStatus !== 'pending') {
+      onClose();
+      return;
+    }
+    
+    // Prepare response data
+    const responseData = {
+      patientId,
+      secondOpinionRequired,
+      message,
+      file: selectedFile
+    };
+    
+    // Show success toast
+    showSuccessToast("Response sent successfully!");
+    
+    // Call the parent handler
+    onSendResponse(responseData);
+    onClose();
+  };
+
+  if (!isOpen || appointmentStatus !== 'pending') return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
