@@ -60,6 +60,7 @@ export default function DoctorProfilePage() {
 
         {/* 4. Patient Reviews Section - Keep for now but will update later */}
         <PatientReviewsCarousel doctor={currentDoctor} />
+
       </div>
     </div>
   );
