@@ -30,7 +30,9 @@ const AppointmentSection = () => {
     fetchPatientRequests,
     requestsPagination,
     loading,
-    submitResponse // Add this
+    submitResponse,
+    acceptRequest,  // Add this to use the function from context
+    rejectRequest   // Add this to use the function from context
   } = useDoctor();
 
   // Fetch appointments when component mounts or filter changes
@@ -136,12 +138,12 @@ const AppointmentSection = () => {
     }
   };
 
-  // Handle accept request with proper API call
+  // Update these functions to use the context functions
   const handleAcceptRequest = async (requestId) => {
     try {
-      // Call the API to accept the request
-      // This would typically be a function from your DoctorContext
-      console.log("Accepting request:", requestId);
+      setIsLoading(true);
+      // Call the acceptRequest function from context
+      await acceptRequest(requestId);
       
       // Refresh requests after accepting
       await fetchPatientRequests({ 
@@ -150,15 +152,17 @@ const AppointmentSection = () => {
       });
     } catch (error) {
       console.error("Error accepting request:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Handle reject request with proper API call
+  // Update to use the context function
   const handleRejectRequest = async (requestId) => {
     try {
-      // Call the API to reject the request
-      // This would typically be a function from your DoctorContext
-      console.log("Rejecting request:", requestId);
+      setIsLoading(true);
+      // Call the rejectRequest function from context
+      await rejectRequest(requestId);
       
       // Refresh requests after rejecting
       await fetchPatientRequests({ 
@@ -167,6 +171,8 @@ const AppointmentSection = () => {
       });
     } catch (error) {
       console.error("Error rejecting request:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 

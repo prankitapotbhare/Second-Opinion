@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useDoctor } from '@/contexts/DoctorContext';
 import FileUpload from './FileUpload';
 import DropdownSelect from './DropdownSelect';
+import { FaCamera } from "react-icons/fa"; // Added import for camera icon
 
 export default function DoctorDetailsForm() {
   const router = useRouter();
@@ -34,7 +35,12 @@ export default function DoctorDetailsForm() {
   const [files, setFiles] = useState({
     registrationCertificate: null,
     governmentId: null,
-    // profilePhoto removed
+    profilePhoto: null, // Added profilePhoto
+  });
+  
+  // File preview state
+  const [filePreview, setFilePreview] = useState({
+    profilePhoto: null, // Added profilePhoto preview
   });
   
   // UI state
@@ -65,6 +71,18 @@ export default function DoctorDetailsForm() {
         ...prev,
         [name]: uploadedFiles[0]
       }));
+      
+      // Create preview for profile photo
+      if (name === 'profilePhoto') {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setFilePreview(prev => ({
+            ...prev,
+            profilePhoto: reader.result
+          }));
+        };
+        reader.readAsDataURL(uploadedFiles[0]);
+      }
     }
   };
 
@@ -79,7 +97,7 @@ export default function DoctorDetailsForm() {
     const requiredFields = [
       'specialization', 'experience', 'hospitalAffiliation', 
       'licenseNumber', 'issuingMedicalCouncil', 'languages', 
-      'phone', 'emergencyContact', 'consultationFee', 'bio', 'gender', 'degree' // Added degree
+      'phone', 'emergencyContact', 'consultationFee', 'bio', 'gender', 'degree'
     ];
     
     requiredFields.forEach(field => {
@@ -158,6 +176,29 @@ export default function DoctorDetailsForm() {
       <h2 className="text-3xl font-semibold mb-6">Doctor's Details</h2>
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Profile Photo - New section */}
+        <div className="md:col-span-2 flex flex-col items-center mb-4">
+          <div className="relative">
+            <img
+              src={filePreview.profilePhoto || "https://public.readdy.ai/ai/img_res/fc4e928c7d3a4337c7173c0e07f786b5.jpg"}
+              alt="Doctor profile"
+              className="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover object-top"
+            />
+            <label htmlFor="profilePhoto" className="absolute bottom-0 right-0 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer">
+              <FaCamera />
+              <input 
+                type="file" 
+                id="profilePhoto" 
+                name="profilePhoto" 
+                className="hidden" 
+                accept="image/*"
+                onChange={handleFileChange}
+              />
+            </label>
+          </div>
+          <p className="text-sm text-gray-500 mt-2">Upload your profile photo</p>
+        </div>
+
         {/* Specialization */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
