@@ -253,6 +253,7 @@ exports.getResponse = async (req, res, next) => {
       data: {
         id: submission._id,
         status: submission.status,
+        doctorId: submission.doctorId,
         doctorResponse: submission.doctorResponse || null,
         appointmentDetails: submission.appointmentDetails || null
       }
@@ -262,7 +263,55 @@ exports.getResponse = async (req, res, next) => {
   }
 };
 
-// --- Request appointment ---
+// --- Get available slots for a doctor on a specific date ---
+exports.getAvailableSlots = async (req, res, next) => {
+  try {
+    const { doctorId } = req.params;
+    const { date } = req.query;
+    
+    // Validate required parameters
+    if (!doctorId || !date) {
+      return next(createError('Doctor ID and date are required', 400));
+    }
+    
+    // Validate doctor ID
+    validationService.validateObjectId(doctorId, 'doctor');
+    
+    // Validate date format
+    const selectedDate = new Date(date);
+    if (isNaN(selectedDate.getTime())) {
+      return next(createError('Invalid date format', 400));
+    }
+    
+    // Check if date is in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (selectedDate < today) {
+      return next(createError('Cannot check availability for past dates', 400));
+    }
+    
+    // Find doctor's availability
+    const availability = await Availability.findOne({ doctorId });
+    if (!availability) {
+      return next(createError('Doctor availability not found', 404));
+    }
+    
+    // Get available slots
+    const availableSlots = await availability.getAvailableSlots(selectedDate);
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        date: selectedDate,
+        availableSlots
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// --- Update the requestAppointment method to check availability ---
 exports.requestAppointment = async (req, res, next) => {
   try {
     const patientId = req.user.id;
@@ -280,11 +329,22 @@ exports.requestAppointment = async (req, res, next) => {
     const submission = await PatientDetails.findOne({
       _id: responseId,
       patientId,
-      status: 'opinion-needed'
+      status: { $in: ['opinion-needed', 'rejected'] }
     });
     
     if (!submission) {
       return next(createError('Submission not found or not eligible for appointment', 404));
+    }
+    
+    // Check if the selected slot is available
+    const availability = await Availability.findOne({ doctorId: submission.doctorId });
+    if (!availability) {
+      return next(createError('Doctor availability not found', 404));
+    }
+    
+    const isAvailable = await availability.isAvailable(new Date(date), time);
+    if (!isAvailable) {
+      return next(createError('The selected time slot is no longer available', 409));
     }
     
     // Update submission with appointment details

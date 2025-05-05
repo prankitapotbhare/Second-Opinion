@@ -74,7 +74,8 @@ const availabilitySchema = new mongoose.Schema({
 
 // Method to get available time slots for a specific date
 availabilitySchema.methods.getAvailableSlots = async function(date) {
-  const dayOfWeek = new Date(date).toLocaleDateString('en-US', { weekday: 'lowercase' });
+  // Fix the error with weekday format - change 'lowercase' to 'long' and convert to lowercase manually
+  const dayOfWeek = new Date(date).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
   
   // Check if doctor works on this day
   if (!this.workingDays[dayOfWeek] || dayOfWeek === this.weeklyHoliday) {

@@ -38,6 +38,9 @@ router.post('/patient-details',
 // Check appointment status
 router.get('/response', patientController.getResponse);
 
+// Get available slots for a doctor on a specific date
+router.get('/doctors/:doctorId/available-slots', patientController.getAvailableSlots);
+
 // Request appointment
 router.post('/response/:responseId/appointment', patientController.requestAppointment);
 

@@ -8,7 +8,8 @@ import {
   requestAppointment,
   getDoctorReviews,
   submitReview,
-  getPatientResponse
+  getPatientResponse,
+  getAvailableTimeSlots // Add this import
 } from '@/api/patient.api';
 
 // Create the context
@@ -247,6 +248,33 @@ export const PatientProvider = ({ children }) => {
     }
   }, []);
 
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState(null);
+
+  // Add this new function
+  const fetchAvailableSlots = useCallback(async (doctorId, date) => {
+    if (!doctorId || !date) {
+      setSlotsError("Doctor ID and date are required");
+      return [];
+    }
+    
+    setSlotsLoading(true);
+    setSlotsError(null);
+    
+    try {
+      const result = await getAvailableTimeSlots(doctorId, date);
+      setAvailableSlots(result.availableSlots || []);
+      return result.availableSlots || [];
+    } catch (err) {
+      const errorMessage = err.message || "Failed to fetch available time slots";
+      setSlotsError(errorMessage);
+      return [];
+    } finally {
+      setSlotsLoading(false);
+    }
+  }, []);
+
   // Request appointment
   const requestDoctorAppointment = useCallback(async (submissionId, appointmentDetails) => {
     if (!submissionId || !appointmentDetails) {
@@ -386,6 +414,12 @@ export const PatientProvider = ({ children }) => {
         responseLoading,
         responseError,
         fetchPatientResponse,
+
+        // Time slots data
+        availableSlots,
+        slotsLoading,
+        slotsError,
+        fetchAvailableSlots,
         
         // Appointment data
         appointmentLoading,
