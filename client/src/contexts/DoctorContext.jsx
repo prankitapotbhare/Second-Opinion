@@ -340,7 +340,7 @@ export const DoctorProvider = ({ children }) => {
     }
   };
 
-  // Get appointment details
+  // Add this function to fetch appointment details
   const fetchAppointmentDetails = async (appointmentId) => {
     setLoading(true);
     setError(null);
@@ -352,12 +352,10 @@ export const DoctorProvider = ({ children }) => {
       
       const response = await getAppointmentDetails(appointmentId);
       setAppointmentDetails(response.data);
-      return response.data;
+      return response;
     } catch (err) {
-      // Handle authentication errors specifically
       if (err.message === 'No authentication token found') {
         setError('Your session has expired. Please log in again.');
-        // Optionally redirect to login
         setTimeout(() => {
           if (logout) logout();
           router.push('/login/doctor');
@@ -366,7 +364,7 @@ export const DoctorProvider = ({ children }) => {
         setError(err.message || 'Failed to fetch appointment details');
       }
       console.error('Error fetching appointment details:', err);
-      return null;
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -547,7 +545,7 @@ export const DoctorProvider = ({ children }) => {
     fetchDashboardStats,
     fetchDoctorReviews,
     fetchAppointments,
-    fetchAppointmentDetails,
+    getAppointmentDetails: fetchAppointmentDetails, // Add this line
     submitResponse: handleSubmitResponse,
     fetchPatientRequests,
     acceptRequest: handleAcceptRequest,

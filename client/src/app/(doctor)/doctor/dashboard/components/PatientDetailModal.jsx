@@ -19,25 +19,32 @@ const PatientDetailModal = ({
   const [showResponseModal, setShowResponseModal] = useState(false);
   const [appointmentDetails, setAppointmentDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
   const { getAppointmentDetails } = useDoctor();
   
   useEffect(() => {
-    const fetchDetails = async () => {
-      try {
-        setLoading(true);
-        const response = await getAppointmentDetails(patientId);
-        if (response && response.data) {
-          setAppointmentDetails(response.data);
+    // Only fetch if we have a patientId and haven't already attempted to fetch
+    if (patientId && !hasAttemptedFetch) {
+      const fetchDetails = async () => {
+        try {
+          setLoading(true);
+          const response = await getAppointmentDetails(patientId);
+          if (response && response.data) {
+            setAppointmentDetails(response.data);
+          }
+        } catch (error) {
+          console.error("Error fetching appointment details:", error);
+          setError(error.message || "Failed to load appointment details");
+        } finally {
+          setLoading(false);
+          setHasAttemptedFetch(true);
         }
-      } catch (error) {
-        console.error("Error fetching appointment details:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchDetails();
-  }, [patientId, getAppointmentDetails]);
+      };
+      
+      fetchDetails();
+    }
+  }, [patientId, getAppointmentDetails, hasAttemptedFetch]);
   
   const handleOpenResponseModal = () => {
     setShowResponseModal(true);
@@ -54,7 +61,15 @@ const PatientDetailModal = ({
     }
   };
   
-  const isPending = appointmentDetails?.status === 'pending';
+  const handleDownloadFile = (fileUrl, fileName) => {
+    // Create a temporary anchor element to trigger download
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
   
   return (
     <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
@@ -91,20 +106,24 @@ const PatientDetailModal = ({
                 {/* Name */}
                 <div className="flex flex-col sm:flex-row sm:items-center">
                   <span className="sm:w-32 text-sm font-medium text-gray-500">Name:</span>
-                  <span className="text-sm text-gray-800">Patient Name {patientId}</span>
+                  <span className="text-sm text-gray-800">
+                    {appointmentDetails?.fullName || "Not provided"}
+                  </span>
                 </div>
 
                 {/* Age */}
                 <div className="flex flex-col sm:flex-row sm:items-center">
                   <span className="sm:w-32 text-sm font-medium text-gray-500">Age:</span>
-                  <span className="text-sm text-gray-800">{20 + patientId} years</span>
+                  <span className="text-sm text-gray-800">
+                    {appointmentDetails?.age ? `${appointmentDetails.age} years` : "Not provided"}
+                  </span>
                 </div>
 
                 {/* Gender */}
                 <div className="flex flex-col sm:flex-row sm:items-center">
                   <span className="sm:w-32 text-sm font-medium text-gray-500">Gender:</span>
                   <span className="text-sm text-gray-800">
-                    {patientId % 2 === 0 ? "Male" : "Female"}
+                    {appointmentDetails?.gender || "Not provided"}
                   </span>
                 </div>
 
@@ -112,7 +131,7 @@ const PatientDetailModal = ({
                 <div className="flex flex-col sm:flex-row sm:items-center">
                   <span className="sm:w-32 text-sm font-medium text-gray-500">Email:</span>
                   <span className="text-sm text-gray-800 break-words">
-                    patient{patientId}@example.com
+                    {appointmentDetails?.email || "Not provided"}
                   </span>
                 </div>
 
@@ -120,7 +139,7 @@ const PatientDetailModal = ({
                 <div className="flex flex-col sm:flex-row sm:items-center">
                   <span className="sm:w-32 text-sm font-medium text-gray-500">Phone:</span>
                   <span className="text-sm text-gray-800">
-                    +1 (555) 123-{4000 + patientId}
+                    {appointmentDetails?.contactNumber || "Not provided"}
                   </span>
                 </div>
 
@@ -128,7 +147,7 @@ const PatientDetailModal = ({
                 <div className="flex flex-col sm:flex-row sm:items-center">
                   <span className="sm:w-32 text-sm font-medium text-gray-500">Emergency Contact:</span>
                   <span className="text-sm text-gray-800">
-                    +1 (555) 987-{6000 + patientId}
+                    {appointmentDetails?.emergencyContact || "Not provided"}
                   </span>
                 </div>
               </div>
@@ -138,83 +157,59 @@ const PatientDetailModal = ({
                   Patient Problem:
                 </label>
                 <div className="text-gray-600 placeholder-gray-400 border border-gray-300 rounded-md p-2">
-                  Cancer patients face a wide array of challenges, including
-                  physical problems like pain and fatigue, emotional and
-                  psychological distress, and social and financial difficulties,
-                  all of which can significantly impact their quality of life.
-                  Here's a brief overview of some common problems faced by cancer
-                  patients:
+                  {appointmentDetails?.problem || "No problem description provided"}
                 </div>
               </div>
             </div>
 
             {/* Uploaded Medical Files */}
-            <div className="mb-6">
-              <h3 className="text-lg font-medium text-gray-800 mb-4">
-                Uploaded Medical Files
-              </h3>
-              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                <div className="space-y-3">
-                  {/* PDF */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <FaFilePdf className="text-red-500 text-xl mr-3" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-800">
-                          Medical_History_{patientId}.pdf
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          1.8 MB - Uploaded on April 1, 2025
-                        </p>
-                      </div>
-                    </div>
-                    <button className="text-blue-600 hover:text-blue-800 cursor-pointer whitespace-nowrap !rounded-button">
-                      <FaDownload className="inline mr-1" /> Download
-                    </button>
+            {appointmentDetails?.medicalFiles && appointmentDetails.medicalFiles.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-medium text-gray-800 mb-4">
+                  Uploaded Medical Files
+                </h3>
+                <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <div className="space-y-3">
+                    {appointmentDetails.medicalFiles.map((file, index) => {
+                      // Determine file icon based on file type
+                      let FileIcon = FaFileAlt;
+                      if (file.fileType?.includes('pdf')) {
+                        FileIcon = FaFilePdf;
+                      } else if (file.fileType?.includes('image')) {
+                        FileIcon = FaFileImage;
+                      }
+                      
+                      return (
+                        <div key={index} className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <FileIcon className={`${
+                              file.fileType?.includes('pdf') ? 'text-red-500' : 
+                              file.fileType?.includes('image') ? 'text-blue-500' : 
+                              'text-green-500'
+                            } text-xl mr-3`} />
+                            <div>
+                              <p className="text-sm font-medium text-gray-800">
+                                {file.fileName || `File ${index + 1}`}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {file.fileSize ? `${(file.fileSize / (1024 * 1024)).toFixed(1)} MB` : ''} 
+                                {file.uploadDate ? ` - Uploaded on ${new Date(file.uploadDate).toLocaleDateString()}` : ''}
+                              </p>
+                            </div>
+                          </div>
+                          <button 
+                            className="text-blue-600 hover:text-blue-800 cursor-pointer whitespace-nowrap !rounded-button"
+                            onClick={() => handleDownloadFile(file.filePath, file.fileName)}
+                          >
+                            <FaDownload className="inline mr-1" /> Download
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
-
-                  {/* Image */}
-                  {patientId % 2 === 0 && (
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <FaFileImage className="text-blue-500 text-xl mr-3" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-800">
-                            X-Ray_Results_{patientId}.jpg
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            3.2 MB - Uploaded on April 3, 2025
-                          </p>
-                        </div>
-                      </div>
-                      <button className="text-blue-600 hover:text-blue-800 cursor-pointer whitespace-nowrap !rounded-button">
-                        <FaDownload className="inline mr-1" /> Download
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Doc */}
-                  {patientId % 3 === 0 && (
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <FaFileAlt className="text-green-500 text-xl mr-3" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-800">
-                            Lab_Results_{patientId}.docx
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            0.9 MB - Uploaded on April 4, 2025
-                          </p>
-                        </div>
-                      </div>
-                      <button className="text-blue-600 hover:text-blue-800 cursor-pointer whitespace-nowrap !rounded-button">
-                        <FaDownload className="inline mr-1" /> Download
-                      </button>
-                    </div>
-                  )}
                 </div>
               </div>
-            </div>
+            )}
 
             <div className="flex justify-end mt-6 pt-6 border-t border-gray-200">
               <button
