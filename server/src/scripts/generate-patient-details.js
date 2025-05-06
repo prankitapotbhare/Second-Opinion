@@ -135,11 +135,11 @@ async function main() {
     const patientDetails = {
       patientId: patient._id,
       doctorId: doctor._id,
-      fullName,
+      fullName: patient.name,
       age,
       relation,
       contactNumber,
-      email,
+      email: patient.email,
       gender,
       phone,
       emergencyContact,
