@@ -177,6 +177,9 @@ exports.setAvailability = async (req, res, next) => {
       });
     }
     
+    // Generate time slots based on the availability settings
+    await availability.generateTimeSlots();
+    
     res.status(200).json({
       success: true,
       message: 'Availability set successfully',

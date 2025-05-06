@@ -339,6 +339,74 @@ availabilitySchema.methods.releaseSlot = async function(date, time) {
   return true;
 };
 
+// Add this function after the schema definition but before creating the model
+availabilitySchema.methods.generateTimeSlots = async function() {
+  // Clear existing time slots
+  this.timeSlots = [];
+  
+  // Get working days
+  const workingDays = Object.entries(this.workingDays)
+    .filter(([day, isWorking]) => isWorking && day !== this.weeklyHoliday)
+    .map(([day]) => day);
+  
+  // Parse start and end times
+  const [startHour, startMinute] = this.startTime.split(':').map(Number);
+  const [endHour, endMinute] = this.endTime.split(':').map(Number);
+  
+  // For each working day, generate slots
+  for (const day of workingDays) {
+    const daySlots = {
+      day,
+      slots: []
+    };
+    
+    let currentHour = startHour;
+    let currentMinute = startMinute;
+    
+    while (
+      currentHour < endHour || 
+      (currentHour === endHour && currentMinute < endMinute)
+    ) {
+      // Format current time as HH:MM
+      const startTime = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+      
+      // Calculate end time for this slot
+      let endSlotHour = currentHour;
+      let endSlotMinute = currentMinute + this.appointmentDuration;
+      
+      if (endSlotMinute >= 60) {
+        endSlotHour += Math.floor(endSlotMinute / 60);
+        endSlotMinute = endSlotMinute % 60;
+      }
+      
+      const endTime = `${endSlotHour.toString().padStart(2, '0')}:${endSlotMinute.toString().padStart(2, '0')}`;
+      
+      // Add slot to day's slots
+      daySlots.slots.push({
+        startTime,
+        endTime,
+        isAvailable: true
+      });
+      
+      // Move to next slot (add appointment duration + buffer time)
+      currentMinute += this.appointmentDuration + this.bufferTime;
+      if (currentMinute >= 60) {
+        currentHour += Math.floor(currentMinute / 60);
+        currentMinute = currentMinute % 60;
+      }
+    }
+    
+    // Add day slots to timeSlots array
+    this.timeSlots.push(daySlots);
+  }
+  
+  // Save the updated availability
+  await this.save();
+  
+  return this.timeSlots;
+};
+
+// Add this to the setAvailability controller in doctor.controller.js to call the function
 const Availability = mongoose.model('Availability', availabilitySchema);
 
 module.exports = Availability;
