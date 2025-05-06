@@ -3,19 +3,19 @@
 import React from 'react';
 import { FaBars, FaBell } from 'react-icons/fa';
 
-const Header = ({ user, setIsSidebarOpen, title = "Dashboard" }) => {
+const Header = ({ setIsSidebarOpen, title = "Dashboard" }) => {
   const currentDate = new Date();
-    const formattedDate = currentDate.toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-    const formattedTime = currentDate.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
+  const formattedDate = currentDate.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const formattedTime = currentDate.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
     
   return (
     <div className="bg-white shadow-sm sticky top-0 z-30">
@@ -27,7 +27,7 @@ const Header = ({ user, setIsSidebarOpen, title = "Dashboard" }) => {
           >
             <FaBars />
           </button>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-800 bg-gray-600 bg-clip-text text-transparent">{title}</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800 bg-gray-600 bg-clip-text">{title}</h1>
         </div>
         
         <div className="flex items-center">

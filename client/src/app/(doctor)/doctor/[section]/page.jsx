@@ -3,6 +3,7 @@
 import React from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from "@/contexts/AuthContext";
+import { useDoctor } from "@/contexts/DoctorContext";
 import Header from "../dashboard/components/Header";
 import Sidebar from "../dashboard/components/Sidebar";
 import DashboardSection from "../dashboard/components/DashboardSection";
@@ -13,6 +14,7 @@ import { FaUserMd, FaUsers, FaCalendarCheck, FaClock } from 'react-icons/fa';
 
 export default function DoctorSectionPage() {
   const { currentUser } = useAuth();
+  const { doctor } = useDoctor();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const params = useParams();
   const section = params?.section || 'dashboard';
@@ -53,9 +55,9 @@ export default function DoctorSectionPage() {
       case 'appointments':
         return <AppointmentSection />;
       case 'profile':
-        return <ProfileSection user={currentUser} />;
+        return <ProfileSection />;
       case 'settings':
-        return <SettingSection user={currentUser} />;
+        return <SettingSection user={currentUser} doctor={doctor} />;
       default:
         return <DashboardSection />;
     }
@@ -74,7 +76,6 @@ export default function DoctorSectionPage() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header 
-          user={currentUser} 
           setIsSidebarOpen={setIsSidebarOpen}
           title={section.charAt(0).toUpperCase() + section.slice(1)}
         />

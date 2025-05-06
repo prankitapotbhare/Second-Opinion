@@ -7,13 +7,13 @@ import {
   FaUserMd, 
   FaCog, 
   FaSignOutAlt,
-  FaChartBar,
   FaChevronLeft,
   FaChevronRight
 } from "react-icons/fa";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import LogoutConfirmationModal from "@/components/modals/LogoutConfirmationModal"; // Adjust path if needed
+import LogoutConfirmationModal from "@/components/modals/LogoutConfirmationModal";
+import { useDoctor } from "@/contexts/DoctorContext";
 
 const Sidebar = ({ 
   activeTab, 
@@ -23,8 +23,9 @@ const Sidebar = ({
   user
 }) => {
   const { logout } = useAuth();
+  const { doctor } = useDoctor();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false); // State for modal visibility
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const sidebarItems = [
     {
@@ -49,23 +50,14 @@ const Sidebar = ({
     },
   ];
 
-  const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed);
-  };
+  const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
-  const handleLogoutClick = () => {
-    setShowLogoutConfirm(true); // Show the modal instead of logging out directly
-  };
-
+  const handleLogoutClick = () => setShowLogoutConfirm(true);
   const handleConfirmLogout = () => {
-    logout(); // Call the actual logout function
-    setShowLogoutConfirm(false); // Close the modal
+    logout();
+    setShowLogoutConfirm(false);
   };
-
-  const handleCancelLogout = () => {
-    setShowLogoutConfirm(false); // Close the modal
-  };
-
+  const handleCancelLogout = () => setShowLogoutConfirm(false);
 
   return (
     <>
@@ -80,7 +72,7 @@ const Sidebar = ({
       {/* Toggle Button */}
       <button 
         onClick={toggleSidebar}
-        className="hidden md:flex fixed bottom-20 z-50 items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-400 to-blue-300 text-white rounded-full shadow-lg hover:from-blue-500 hover:to-blue-400 transition-all duration-300 border border-blue-200"
+        className="hidden md:flex fixed bottom-20 z-50 items-center justify-center w-8 h-8 bg-gradient-to-r from-[#1dd3b0] to-green-200 text-white rounded-full shadow-lg hover:from-[#90f1ef] hover:to-[#1dd3b0] transition-all duration-300 border border-blue-200"
         style={{ 
           left: isCollapsed ? '4rem' : '17rem',
           transform: 'translateY(-50%)'
@@ -96,41 +88,42 @@ const Sidebar = ({
           isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
-        <div className={`flex flex-col h-screen ${isCollapsed ? 'w-20' : 'w-72'} bg-white text-blue-800 shadow-xl overflow-y-auto transition-all duration-300`}>
-          {/* Sidebar Header with Enhanced Logo */}
+        <div className={`flex flex-col h-screen ${isCollapsed ? 'w-20' : 'w-72'} bg-white text-[#0F172A] shadow-xl overflow-y-auto transition-all duration-300`}>
+          
+          {/* Sidebar Header */}
           <div className={`mt-2 p-4 flex flex-col ${isCollapsed ? 'items-center' : ''}`}>
             <div className="flex items-center justify-between w-full">
               {!isCollapsed ? (
                 <Link href="/doctor/dashboard" className="group">
                   <div className="flex items-center">
-                    <div className="h-10 w-10 bg-blue-500 rounded-md flex items-center justify-center mr-2 shadow-md border-2 border-blue-200">
+                    <div className="h-10 w-10 bg-[#1dd3b0] rounded-md flex items-center justify-center mr-2 shadow-md border-2 border-blue-200">
                       <span className="text-white font-bold text-2xl">S</span>
                     </div>
                     <div>
-                      <span className="text-blue-700 font-bold text-xl">Second</span>
-                      <span className="text-blue-500 font-bold text-xl ml-1">Opinion</span>
+                      <span className="text-[#1dd3b0] font-bold text-xl">Second</span>
+                      <span className="text-[#1dd3b0] font-bold text-xl ml-1">Opinion</span>
                       <div className="h-0.5 w-0 group-hover:w-full bg-blue-400 transition-all duration-300 ease-in-out"></div>
                     </div>
                   </div>
                 </Link>
               ) : (
                 <Link href="/doctor/dashboard" className="mx-auto">
-                  <div className="h-12 w-12 bg-blue-500 rounded-md flex items-center justify-center shadow-md border-2 border-blue-200">
+                  <div className="h-12 w-12 bg-[#1dd3b0] rounded-md flex items-center justify-center shadow-md border-2 border-blue-200">
                     <span className="text-white font-bold text-2xl">S</span>
                   </div>
                 </Link>
               )}
               <button
-                className="md:hidden text-blue-700 border border-blue-200 p-1 rounded-md hover:bg-blue-100"
+                className="md:hidden text-[#1dd3b0] border border-blue-200 p-1 rounded-md hover:bg-[#90f1ef]"
                 onClick={() => setIsSidebarOpen(false)}
               >
                 <FaTimes size={20} />
               </button>
             </div>
             <div className={`mt-6 flex ${isCollapsed ? 'flex-col items-center' : 'items-center'} border-y border-blue-200 py-6`}>
-              <div className="flex-shrink-0 w-12 h-12 rounded-full overflow-hidden bg-blue-400 border-2 border-blue-200">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full overflow-hidden bg-[#1dd3b0] border-2 border-blue-200">
                 <img
-                  src={user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.displayName || 'Doctor')}&background=60a5fa&color=fff`}
+                  src={doctor?.profilePhoto || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(doctor?.name || user?.displayName || 'Doctor')}&background=60a5fa&color=fff`}
                   alt="Doctor"
                   className="w-full h-full object-cover"
                   width={48}
@@ -139,10 +132,10 @@ const Sidebar = ({
               </div>
               {!isCollapsed && (
                 <div className="ml-3 overflow-hidden">
-                  <p className="font-medium text-blue-800 truncate max-w-[180px]">
-                    {user?.displayName || 'Dr. John Doe'}
+                  <p className="font-medium text-[#0F172A] truncate max-w-[180px]">
+                    {doctor?.name || user?.displayName || 'Dr. John Doe'}
                   </p>
-                  <p className="text-xs text-blue-500">{user?.specialization || 'Physician'}</p>
+                  <p className="text-xs text-[#0F172A]">{doctor?.specialization || user?.specialization || 'Physician'}</p>
                 </div>
               )}
             </div>
@@ -157,8 +150,8 @@ const Sidebar = ({
                     href={`/doctor/${item.name}`}
                     className={`flex items-center w-full px-4 py-3 rounded-lg text-left transition-all duration-200 ${
                       activeTab === item.name
-                        ? "bg-blue-400 text-white font-medium shadow-md"
-                        : "text-blue-700 hover:bg-blue-200 hover:text-blue-800"
+                        ? "bg-[#1dd3b0] text-[#0F172A] font-medium shadow-md"
+                        : "text-[#0F172A] hover:bg-[#90f1ef] hover:text-[#0F172A]"
                     } ${isCollapsed ? 'justify-center' : ''}`}
                     onClick={() => setIsSidebarOpen(false)}
                   >
@@ -172,14 +165,14 @@ const Sidebar = ({
             </ul>
           </nav>
 
-          {/* Redesigned Logout Button */}
-          <div className="p-4 mt-auto border-t border-blue-200">
+          {/* Logout Button */}
+          <div className="p-4 mt-auto border-t border-gray-200">
             <button 
-              onClick={handleLogoutClick} // Use the new handler
-              className={`group flex items-center w-full px-4 py-3 text-blue-700 bg-white hover:bg-red-50 rounded-lg transition-all duration-300 shadow-sm border border-blue-200 hover:border-red-200 ${isCollapsed ? 'justify-center' : ''}`}
+              onClick={handleLogoutClick}
+              className={`group flex items-center w-full px-4 py-3 text-[#0F172A] bg-white hover:bg-[#f39292] rounded-lg transition-all duration-300 shadow-sm border border-blue-200 hover:border-red-200 ${isCollapsed ? 'justify-center' : ''}`}
             >
               <span className="inline-flex items-center justify-center bg-red-100 p-1.5 rounded-full">
-                <FaSignOutAlt className={`${isCollapsed ? '' : 'mr-3'} transition-all duration-300 group-hover:text-red-600 text-red-500`} size={16} />
+                <FaSignOutAlt className={`${isCollapsed ? '' : 'mr-3'} transition-all duration-300 group-hover:text-black text-red-500`} size={16} />
               </span>
               {!isCollapsed && <span className="font-medium ml-2 group-hover:text-red-600">Sign Out</span>}
             </button>
@@ -187,7 +180,7 @@ const Sidebar = ({
         </div>
       </div>
 
-      {/* Render the Confirmation Modal */}
+      {/* Logout Modal */}
       <LogoutConfirmationModal
         isOpen={showLogoutConfirm}
         onClose={handleCancelLogout}

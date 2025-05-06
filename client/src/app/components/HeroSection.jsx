@@ -1,11 +1,13 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { FaSearch, FaMapMarkerAlt, FaClinicMedical } from "react-icons/fa";
 
 // Mock API functions
 const fetchLocations = () =>
   new Promise((resolve) =>
-    setTimeout(() => resolve(["Delhi", "Mumbai", "Bangalore", "Chennai", "Kolkata"]), 500)
+    setTimeout(() => resolve([
+      'Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata', 'Nagpur', 'Pune', 'Hyderabad', 'Ahmedabad', 'Jaipur']), 500)
   );
 const fetchDepartments = () =>
   new Promise((resolve) =>
@@ -97,7 +99,7 @@ export default function HeroSection() {
     if (location) params.push(`location=${encodeURIComponent(location)}`);
     if (department) params.push(`department=${encodeURIComponent(department)}`);
     const query = params.length ? `?${params.join("&")}` : "";
-    router.push(`/user/doctors${query}`);
+    router.push(`/patient/doctors${query}`);
   };
 
   if (!mounted) {
@@ -131,7 +133,7 @@ export default function HeroSection() {
 
   return (
     <section className="relative overflow-hidden py-6 sm:py-10 md:py-14 lg:py-20 px-4">
-      <div className="container mx-auto">
+      <div className="container w-full xl:min-h-[50vh] lg:min-h-[30vh] md:min-h-[30vh] sm:mx-auto">
         {/* Background decorative elements */}
         <div className="absolute top-0 right-0 -mt-10 -mr-10 xs:-mt-12 xs:-mr-12 sm:-mt-16 sm:-mr-16 hidden lg:block">
           <div className="w-32 h-32 xs:w-40 xs:h-40 sm:w-48 sm:h-48 xl:w-64 xl:h-64 rounded-full bg-teal-50 opacity-70"></div>
@@ -150,15 +152,19 @@ export default function HeroSection() {
             </h2>
             {/* Search Form */}
             <form
-              className="flex flex-col sm:flex-row gap-2 xs:gap-2.5 sm:gap-3 md:gap-4 mb-3 xs:mb-4 sm:mb-6"
+              className="flex flex-col gap-2 xs:gap-2.5 sm:gap-3 md:gap-4 mb-3 xs:mb-4 sm:mb-6
+              sm:flex-row md:flex-col lg:flex-row"
               onSubmit={handleSubmit}
             >
               {/* Location Search */}
               <div className="relative flex-grow min-w-0" ref={locationRef}>
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaMapMarkerAlt className="text-gray-400" />
+                </div>
                 <input
                   type="text"
                   placeholder="Search location"
-                  className="w-full pl-3 pr-8 py-2 text-sm xs:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full pl-9 pr-8 py-2 text-sm xs:text-base border border-gray-300 bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                   value={location}
                   onChange={handleLocationChange}
                   onFocus={() => setShowLocations(true)}
@@ -169,12 +175,13 @@ export default function HeroSection() {
                     {filteredLocations.map((loc) => (
                       <li
                         key={loc}
-                        className="px-3 xs:px-4 py-2 hover:bg-teal-50 cursor-pointer"
+                        className="px-3 xs:px-4 py-2 hover:bg-teal-50 cursor-pointer flex items-center"
                         onClick={() => {
                           setLocation(loc);
                           setShowLocations(false);
                         }}
                       >
+                        <FaMapMarkerAlt className="text-teal-500 mr-2 text-xs" />
                         {loc}
                       </li>
                     ))}
@@ -183,10 +190,13 @@ export default function HeroSection() {
               </div>
               {/* Department Search */}
               <div className="relative flex-grow min-w-0" ref={departmentRef}>
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaClinicMedical className="text-gray-400" />
+                </div>
                 <input
                   type="text"
                   placeholder="Search department"
-                  className="w-full pl-3 pr-8 py-2 text-sm xs:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full pl-9 pr-8 py-2 text-sm xs:text-base border border-gray-300 bg-white rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                   value={department}
                   onChange={handleDepartmentChange}
                   onFocus={() => setShowDepartments(true)}
@@ -197,12 +207,13 @@ export default function HeroSection() {
                     {filteredDepartments.map((dept) => (
                       <li
                         key={dept}
-                        className="px-3 xs:px-4 py-2 hover:bg-teal-50 cursor-pointer"
+                        className="px-3 xs:px-4 py-2 hover:bg-teal-50 cursor-pointer flex items-center"
                         onClick={() => {
                           setDepartment(dept);
                           setShowDepartments(false);
                         }}
                       >
+                        <FaClinicMedical className="text-teal-500 mr-2 text-xs" />
                         {dept}
                       </li>
                     ))}
@@ -211,8 +222,9 @@ export default function HeroSection() {
               </div>
               <button
                 type="submit"
-                className="bg-teal-600 text-white px-3 xs:px-3.5 sm:px-4 md:px-6 py-2 rounded-md hover:bg-teal-700 transition-colors whitespace-nowrap text-sm xs:text-base"
+                className="bg-teal-600 text-white mt-3 sm:mt-0 px-3 xs:px-3.5 sm:px-4 md:px-6 py-2 rounded-md hover:bg-teal-700 transition-colors whitespace-nowrap text-sm xs:text-base flex items-center justify-center"
               >
+                <FaSearch className="mr-2" />
                 Find Doctors
               </button>
             </form>

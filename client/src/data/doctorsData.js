@@ -92,7 +92,7 @@ export const doctors = [
     rating: 4.8,
     reviewCount: 132,
     specialties: ['Ophthalmology', 'Cataract Surgery', 'Glaucoma Treatment'],
-    imageUrl: 'https://readdy.ai/api/search-image?query=professional%20asian%20male%20doctor%20portrait%20with%20glasses%2C%20ophthalmologist%20in%20clinical%20setting%2C%20confident%20pose%2C%20high%20quality%20professional%20headshot&width=200&height=200&seq=6&orientation=squarish',
+    imageUrl: 'https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg',
     status: 'Active',
     patients: 45,
     email: 'dr.michael.chen@example.com',

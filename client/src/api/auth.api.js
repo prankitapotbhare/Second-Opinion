@@ -53,6 +53,51 @@ export const register = async (userData) => {
 };
 
 /**
+ * Verify email with OTP
+ * @param {string} email - User email
+ * @param {string} otp - Verification OTP
+ * @returns {Promise<Object>} Verification response
+ */
+export const verifyEmail = async (email, otp) => {
+  try {
+    const response = await fetch(`${API_URL}/auth/verify-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email, otp })
+    });
+    
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Email verification error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Resend verification email
+ * @param {string} email - User email
+ * @returns {Promise<Object>} Resend verification response
+ */
+export const resendVerification = async (email) => {
+  try {
+    const response = await fetch(`${API_URL}/auth/resend-verification`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email })
+    });
+    
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    throw error;
+  }
+};
+
+/**
  * Login user
  * @param {string} email - User email
  * @param {string} password - User password
@@ -74,31 +119,14 @@ export const login = async (email, password, expectedRole = null) => {
       body: JSON.stringify(body)
     });
     
-    return handleResponse(response);
+    // Return the full response, not just data
+    return await handleResponse(response);
   } catch (error) {
+    // Pass through error fields if present
+    if (error.data) {
+      return error.data;
+    }
     console.error('Login error:', error);
-    throw error;
-  }
-};
-
-/**
- * Logout user
- * @param {string} refreshToken - User's refresh token
- * @returns {Promise<Object>} Logout response
- */
-export const logout = async (refreshToken) => {
-  try {
-    const response = await fetch(`${API_URL}/auth/logout`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ refreshToken })
-    });
-    
-    return handleResponse(response);
-  } catch (error) {
-    console.error('Logout error:', error);
     throw error;
   }
 };
@@ -171,45 +199,49 @@ export const resetPassword = async (token, password) => {
 };
 
 /**
- * Verify email
- * @param {string} token - Email verification token
- * @returns {Promise<Object>} Email verification response with user email and role
+ * Google authentication
+ * @param {string} idToken - Google ID token
+ * @param {string} userType - User type (patient, doctor)
+ * @returns {Promise<Object>} Google auth response
  */
-export const verifyEmail = async (token) => {
+export const googleAuth = async (idToken, userType = 'patient') => {
   try {
-    const response = await fetch(`${API_URL}/auth/verify-email/${token}`, {
-      method: 'GET',
+    const response = await fetch(`${API_URL}/auth/google`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json'
-      }
+      },
+      body: JSON.stringify({ 
+        idToken, 
+        userType
+      })
     });
     
     return handleResponse(response);
   } catch (error) {
-    console.error('Email verification error:', error);
+    console.error('Google auth error:', error);
     throw error;
   }
 };
 
 /**
- * Resend verification email
- * @param {string} email - User email
- * @param {string} redirectPath - Path to redirect after verification
- * @returns {Promise<Object>} Resend verification response
+ * Logout user
+ * @param {string} refreshToken - User's refresh token
+ * @returns {Promise<Object>} Logout response
  */
-export const resendVerification = async (email, redirectPath = '/dashboard') => {
+export const logout = async (refreshToken) => {
   try {
-    const response = await fetch(`${API_URL}/auth/resend-verification`, {
+    const response = await fetch(`${API_URL}/auth/logout`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ email, redirectPath })
+      body: JSON.stringify({ refreshToken })
     });
     
     return handleResponse(response);
   } catch (error) {
-    console.error('Resend verification error:', error);
+    console.error('Logout error:', error);
     throw error;
   }
 };
@@ -232,30 +264,6 @@ export const getCurrentUser = async (token) => {
     return handleResponse(response);
   } catch (error) {
     console.error('Get current user error:', error);
-    throw error;
-  }
-};
-
-/**
- * Google authentication
- * @param {string} idToken - Google ID token
- * @param {string} userType - User type (user, doctor)
- * @param {string} redirectPath - Path to redirect after verification if needed
- * @returns {Promise<Object>} Authentication response
- */
-export const googleAuth = async (idToken, userType = 'user', redirectPath = '/dashboard') => {
-  try {
-    const response = await fetch(`${API_URL}/auth/google`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ idToken, userType, redirectPath })
-    });
-    
-    return handleResponse(response);
-  } catch (error) {
-    console.error('Google auth error:', error);
     throw error;
   }
 };

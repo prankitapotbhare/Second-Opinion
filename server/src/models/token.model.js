@@ -3,8 +3,7 @@ const mongoose = require('mongoose');
 const tokenSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    ref: 'User'
+    required: true
   },
   token: {
     type: String,
@@ -25,6 +24,10 @@ const tokenSchema = new mongoose.Schema({
     expires: '7d' // Automatically delete documents after 7 days
   }
 });
+
+// Add index for faster token lookups
+tokenSchema.index({ userId: 1, type: 1 });
+tokenSchema.index({ token: 1, type: 1 });
 
 const Token = mongoose.model('Token', tokenSchema);
 

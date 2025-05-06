@@ -9,9 +9,9 @@ export const validateEmail = (email) => {
 };
 
 /**
- * Validates a password
+ * Validates a password against security requirements
  * @param {string} password - The password to validate
- * @returns {Object} - Validation result with isValid and message
+ * @returns {Object} Validation result with isValid flag and message
  */
 export const validatePassword = (password) => {
   if (!password) {
@@ -19,30 +19,68 @@ export const validatePassword = (password) => {
   }
   
   if (password.length < 8) {
-    return { isValid: false, message: 'Password must be at least 8 characters long' };
+    return {
+      isValid: false,
+      message: 'Password must be at least 8 characters long'
+    };
   }
   
   // Check for at least one uppercase letter
   if (!/[A-Z]/.test(password)) {
-    return { isValid: false, message: 'Password must contain at least one uppercase letter' };
+    return {
+      isValid: false,
+      message: 'Password must contain at least one uppercase letter'
+    };
   }
   
   // Check for at least one lowercase letter
   if (!/[a-z]/.test(password)) {
-    return { isValid: false, message: 'Password must contain at least one lowercase letter' };
+    return {
+      isValid: false,
+      message: 'Password must contain at least one lowercase letter'
+    };
   }
   
   // Check for at least one number
   if (!/\d/.test(password)) {
-    return { isValid: false, message: 'Password must contain at least one number' };
+    return {
+      isValid: false,
+      message: 'Password must contain at least one number'
+    };
   }
   
   // Check for at least one special character
-  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-    return { isValid: false, message: 'Password must contain at least one special character' };
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    return {
+      isValid: false,
+      message: 'Password must contain at least one special character'
+    };
   }
   
-  return { isValid: true, message: '' };
+  // All checks passed
+  return {
+    isValid: true,
+    message: 'Password meets all requirements'
+  };
+};
+
+/**
+ * Formats user data to a consistent structure
+ * @param {Object} user - User data from API
+ * @returns {Object} Formatted user data
+ */
+export const formatUserData = (user) => {
+  return {
+    uid: user._id || user.id,
+    displayName: user.name,
+    email: user.email,
+    role: user.role,
+    photoURL: user.photoURL,
+    isEmailVerified: user.isEmailVerified,
+    emailVerifiedAt: user.emailVerifiedAt,
+    termsAccepted: user.termsAccepted,
+    termsAcceptedAt: user.termsAcceptedAt
+  };
 };
 
 /**
@@ -74,9 +112,9 @@ export const getDashboardUrl = (role) => {
       return '/admin/dashboard';
     case 'doctor':
       return '/doctor/dashboard';
-    case 'user':
+    case "patient":
     default:
-      return '/user/dashboard';
+      return '/';
   }
 };
 
@@ -91,9 +129,9 @@ export const getLoginUrl = (role) => {
       return '/login/admin';
     case 'doctor':
       return '/login/doctor';
-    case 'user':
+    case "patient":
     default:
-      return '/login/user';
+      return '/login/patient';
   }
 };
 

@@ -10,7 +10,7 @@ export default function LoginSelector() {
       title: "User Login",
       description: "Access your healthcare account",
       icon: <FaUserAlt className="h-5 w-5 text-blue-600" />,
-      href: "/login/user",
+      href: "/login/patient",
       color: "blue"
     },
     {

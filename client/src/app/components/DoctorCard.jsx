@@ -9,18 +9,15 @@ export default function DoctorCard({ doctor }) {
     setMounted(true);
   }, []);
 
-  // Default image if imageUrl is missing
-  const defaultImage = "https://public.readdy.ai/ai/img_res/44c49570964d9978bef233f93cc1e776.jpg";
-
   return (
     <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden p-4">
       <div className="flex flex-col sm:flex-row gap-4">
         {/* Doctor Image - Square */}
         <div className="w-full sm:w-1/5 max-w-[120px] mx-auto sm:mx-0 aspect-square overflow-hidden flex-shrink-0">
           <img
-            src={doctor.imageUrl || defaultImage}
+            src={doctor.photoURL}
             alt={doctor.name || 'Doctor'}
-            className="w-full h-full object-cover rounded-lg"
+            className="w-full h-full object-cover rounded-full"
           />
         </div>
 
@@ -51,12 +48,12 @@ export default function DoctorCard({ doctor }) {
           <div className="flex flex-col gap-2 justify-center mt-2 sm:mt-0">
             {mounted ? (
               <>
-                <Link href={`/user/doctors/${doctor.id}`} className="w-full">
+                <Link href={`/patient/doctors/${doctor.id}`} className="w-full">
                   <button className="w-full bg-teal-600 text-white px-4 py-2 rounded-md text-sm hover:bg-teal-700 transition-colors font-medium">
                     Know More
                   </button>
                 </Link>
-                <Link href={`/user/patient-details?doctorId=${doctor.id}`} className="w-full">
+                <Link href={`/patient/patient-details?doctorId=${doctor.id}`} className="w-full">
                   <button className="w-full border border-teal-600 text-teal-600 px-4 py-2 rounded-md text-sm hover:bg-teal-50 transition-colors font-medium">
                     Book a consultant
                   </button>

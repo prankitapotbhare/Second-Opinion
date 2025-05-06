@@ -10,7 +10,7 @@ export default function SignupSelector() {
       title: "Sign Up as User",
       description: "Get expert medical opinions and manage your health records",
       icon: <FaUserAlt className="h-5 w-5 text-blue-600" />,
-      href: "/signup/user",
+      href: "/signup/patient",
       color: "blue"
     },
     {

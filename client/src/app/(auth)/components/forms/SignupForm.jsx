@@ -9,7 +9,7 @@ import AuthDivider from '../common/AuthDivider';
 import { useAuth } from '@/contexts/AuthContext';
 
 const SignupForm = ({ 
-  userType = 'user', // 'user' or 'doctor'
+  userType = "patient", // "patient" or 'doctor'
   redirectPath
 }) => {
   const router = useRouter();
@@ -67,13 +67,13 @@ const SignupForm = ({
         termsAccepted: agreeTerms
       };
       
-      const result = await register(userData, finalRedirectPath);
+      const result = await register(userData);
       
       if (result.success) {
-        // If signup is successful, redirect to success page with redirect path
-        router.push(`/signup/success?email=${encodeURIComponent(email)}&type=${userType}&redirect=${encodeURIComponent(finalRedirectPath)}`);
+        // Redirect to verification page with email and redirect path
+        router.push(`/verify-email?email=${encodeURIComponent(email)}&type=${userType}&redirect=${encodeURIComponent(finalRedirectPath)}`);
       } else {
-        setError(result.error || 'Failed to create account');
+        setError(result.error || 'Registration failed. Please try again.');
         setIsLoading(false);
       }
     } catch (err) {
@@ -83,170 +83,182 @@ const SignupForm = ({
     }
   };
 
-  const handleGoogleSignup = async () => {
-    setIsLoading(true);
+  // Handle Google Sign In
+  const handleGoogleSignIn = async () => {
     setError('');
+    setIsLoading(true);
     
     try {
-      // Load the Google Identity Services script
-      const googleScript = document.createElement('script');
-      googleScript.src = 'https://accounts.google.com/gsi/client';
-      googleScript.async = true;
-      googleScript.defer = true;
-      document.head.appendChild(googleScript);
-      
-      googleScript.onload = () => {
-        // Initialize Google Identity Services
-        window.google.accounts.id.initialize({
-          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-          callback: handleGoogleCredentialResponse,
-          cancel_on_tap_outside: true
-        });
-        
-        // Prompt the user to select an account
-        window.google.accounts.id.prompt();
-      };
-    } catch (err) {
-      setError('Failed to initialize Google authentication');
-      console.error(err);
-      setIsLoading(false);
-    }
-  };
-  
-  // Handle the credential response from Google
-  const handleGoogleCredentialResponse = async (response) => {
-    try {
-      if (!response || !response.credential) {
-        throw new Error('Google authentication failed');
-      }
-      
       // Determine the redirect path
       const defaultRedirect = userType === 'doctor' ? '/doctor/portal' : '/';
       const finalRedirectPath = redirectPath || defaultRedirect;
       
-      // Call the googleAuth method from AuthContext with redirectPath
-      const result = await googleAuth(
-        response.credential, 
-        userType,
-        finalRedirectPath
-      );
+      // Initialize Google Sign-In
+      if (!window.google) {
+        setError('Google authentication is not available');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Get Google Identity Services
+      const googleIdentity = window.google.accounts.id;
+      
+      // Promise to handle the callback
+      const googleAuthPromise = new Promise((resolve, reject) => {
+        const handleCredentialResponse = async (response) => {
+          try {
+            // Call the googleAuth function with the ID token
+            const result = await googleAuth(
+              response.credential,
+              userType,
+              finalRedirectPath
+            );
+            
+            resolve(result);
+          } catch (error) {
+            reject(error);
+          }
+        };
+        
+        // Configure Google Sign-In
+        googleIdentity.initialize({
+          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+          callback: handleCredentialResponse,
+          auto_select: false
+        });
+        
+        // Prompt the user
+        googleIdentity.prompt((notification) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            reject(new Error('Google sign-in prompt was not displayed or was skipped'));
+          }
+        });
+      });
+      
+      // Wait for the Google authentication to complete
+      const result = await googleAuthPromise;
       
       if (result.success) {
+        // If this is a new user, we might want to collect additional information
         if (result.isNewUser) {
-          // If it's a new user, redirect to signup success page
-          router.push(`/signup/success?email=${encodeURIComponent(result.user.email)}&type=${userType}&redirect=${encodeURIComponent(finalRedirectPath)}`);
+          // For now, just redirect to the dashboard
+          router.push(finalRedirectPath);
         } else {
-          // If existing user, redirect to dashboard
+          // Existing user, redirect to dashboard
           router.push(finalRedirectPath);
         }
       } else {
         setError(result.error || 'Google authentication failed');
+        setIsLoading(false);
       }
     } catch (err) {
-      setError('An error occurred during Google authentication');
-      console.error(err);
-    } finally {
+      setError('An unexpected error occurred during Google authentication');
       setIsLoading(false);
+      console.error(err);
     }
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-md text-sm">
           {error}
         </div>
       )}
-
+      
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 gap-4">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Full Name
-            </label>
-            <input
-              id="name"
-              name="name"
-              type="text"
-              value={formData.name}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="Enter your full name"
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="Enter your email"
-              required
-            />
-          </div>
-
-          <PasswordInput
-            id="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            placeholder="Create a password"
-            label="Password"
-          />
-
-          <PasswordInput
-            id="confirmPassword"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            placeholder="Confirm your password"
-            label="Confirm Password"
-          />
-        </div>
-
-        <div className="flex items-center">
-          <input
-            id="agreeTerms"
-            name="agreeTerms"
-            type="checkbox"
-            checked={formData.agreeTerms}
-            onChange={handleChange}
-            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-          />
-          <label htmlFor="agreeTerms" className="ml-2 block text-xs text-gray-700">
-            I agree to the <a href="/terms" className="text-indigo-600 hover:text-indigo-500">Terms of Service</a> and <a href="/privacy" className="text-indigo-600 hover:text-indigo-500">Privacy Policy</a>
+        <div>
+          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+            Full Name
           </label>
+          <input
+            id="name"
+            name="name"
+            type="text"
+            autoComplete="name"
+            required
+            value={formData.name}
+            onChange={handleChange}
+            className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 text-base"
+            placeholder="Enter your full name"
+          />
         </div>
-
+        
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            Email Address
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={formData.email}
+            onChange={handleChange}
+            className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 text-base"
+            placeholder="Enter your email"
+          />
+        </div>
+        
+        <PasswordInput
+          id="password"
+          name="password"
+          value={formData.password}
+          onChange={handleChange}
+          placeholder="Create a password"
+          label="Password"
+        />
+        
+        <PasswordInput
+          id="confirmPassword"
+          name="confirmPassword"
+          value={formData.confirmPassword}
+          onChange={handleChange}
+          placeholder="Confirm your password"
+          label="Confirm Password"
+        />
+        
+        <div className="flex items-start">
+          <div className="flex items-center h-5">
+            <input
+              id="agreeTerms"
+              name="agreeTerms"
+              type="checkbox"
+              checked={formData.agreeTerms}
+              onChange={handleChange}
+              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+            />
+          </div>
+          <div className="ml-3 text-sm">
+            <label htmlFor="agreeTerms" className="font-medium text-gray-700">
+              I agree to the <Link href="/terms" className="text-indigo-600 hover:text-indigo-500">Terms of Service</Link> and <Link href="/privacy" className="text-indigo-600 hover:text-indigo-500">Privacy Policy</Link>
+            </label>
+          </div>
+        </div>
+        
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full py-2 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 px-4 bg-black text-white font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {isLoading ? 'Creating Account...' : 'Create Account'}
         </button>
       </form>
-
-      <AuthDivider text="or" />
-
+      
+      <AuthDivider text="or continue with" />
+      
       <SocialLoginButton 
-        provider="Google" 
-        onClick={handleGoogleSignup}
-        isLoading={isLoading && !formData.email}
+        provider="google"
+        onClick={handleGoogleSignIn}
+        disabled={isLoading}
       />
-
-      <div className="text-center">
-        <p className="text-xs text-gray-600">
+      
+      <div className="text-center mt-4">
+        <p className="text-sm text-gray-600">
           Already have an account?{' '}
           <Link href={`/login/${userType}`} className="font-medium text-indigo-600 hover:text-indigo-500">
-            Sign In
+            Sign in
           </Link>
         </p>
       </div>

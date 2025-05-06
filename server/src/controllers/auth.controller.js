@@ -25,6 +25,11 @@ exports.register = async (req, res, next) => {
       return res.status(statusCode).json(response);
     }
 
+    // Set default role to patient if not specified
+    if (!role) {
+      req.body.role = 'patient';
+    }
+
     const { user } = await authService.registerUser(req.body);
 
     const { response, statusCode } = responseUtil.successResponse(
@@ -32,6 +37,7 @@ exports.register = async (req, res, next) => {
       {
         userId: user._id,
         email: user.email,
+        role: req.body.role,
         termsAccepted: user.termsAccepted,
         termsAcceptedAt: user.termsAcceptedAt
       },
@@ -44,13 +50,69 @@ exports.register = async (req, res, next) => {
   }
 };
 
+// Verify email with OTP
+exports.verifyEmail = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+    
+    if (!email || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and OTP are required'
+      });
+    }
+    
+    // Updated to get user and tokens from the service
+    const { user, tokens } = await authService.verifyEmail(email, otp);
+
+    res.status(200).json({
+      success: true,
+      message: 'Email verified successfully',
+      data: {
+        user,
+        tokens
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Resend verification email
+exports.resendVerification = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+    
+    await authService.resendVerification(email);
+
+    res.status(200).json({
+      success: true,
+      message: 'If your email is unverified, a new verification OTP has been sent.'
+    });
+  } catch (error) {
+    // Don't expose whether the email exists or verification status
+    // for security reasons, always return a generic success message
+    res.status(200).json({
+      success: true,
+      message: 'If your email is unverified, a new verification OTP has been sent.'
+    });
+  }
+};
+
 // Login user
 exports.login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
     try {
-      const { user, tokens } = await authService.loginUser(email, password);
+      const { user, tokens } = await authService.loginUser(email, password, role);
 
       res.status(200).json({
         success: true,
@@ -76,25 +138,7 @@ exports.login = async (req, res, next) => {
   }
 };
 
-// Verify email
-exports.verifyEmail = async (req, res, next) => {
-  try {
-    const { token } = req.params;
-    
-    // Get the user email from the token
-    const userEmail = await authService.getUserEmailFromToken(token, 'verification');
-    
-    await authService.verifyEmail(token);
 
-    res.status(200).json({
-      success: true,
-      message: 'Email verified successfully',
-      email: userEmail // Include the email in the response
-    });
-  } catch (error) {
-    next(error);
-  }
-};
 
 // Refresh token
 exports.refreshToken = async (req, res, next) => {
@@ -109,22 +153,6 @@ exports.refreshToken = async (req, res, next) => {
       data: {
         tokens
       }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Logout user
-exports.logout = async (req, res, next) => {
-  try {
-    const { refreshToken } = req.body;
-    
-    await authService.logoutUser(refreshToken);
-
-    res.status(200).json({
-      success: true,
-      message: 'Logged out successfully'
     });
   } catch (error) {
     next(error);
@@ -168,46 +196,10 @@ exports.resetPassword = async (req, res, next) => {
   }
 };
 
-// Resend verification email
-exports.resendVerification = async (req, res, next) => {
-  try {
-    const { email, redirectPath } = req.body;
-    
-    await authService.resendVerification(email, redirectPath);
-
-    res.status(200).json({
-      success: true,
-      message: 'If your email is unverified, a new verification email has been sent.'
-    });
-  } catch (error) {
-    // Don't expose whether the email exists or verification status
-    res.status(200).json({
-      success: true,
-      message: 'If your email is unverified, a new verification email has been sent.'
-    });
-  }
-};
-
-// Get current user
-exports.getCurrentUser = async (req, res, next) => {
-  try {
-    const user = await authService.getCurrentUser(req.user.id);
-
-    res.status(200).json({
-      success: true,
-      data: {
-        user
-      }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
 // Google Authentication
 exports.googleAuth = async (req, res, next) => {
   try {
-    const { idToken, userType = 'user' } = req.body;
+    const { idToken, userType = 'patient' } = req.body;
 
     if (!idToken) {
       const { response, statusCode } = responseUtil.errorResponse(
@@ -218,7 +210,7 @@ exports.googleAuth = async (req, res, next) => {
     }
 
     // Validate userType to prevent security issues
-    if (userType && !['user', 'doctor'].includes(userType)) {
+    if (userType && !['patient', 'doctor'].includes(userType)) {
       const { response, statusCode } = responseUtil.errorResponse(
         'Invalid user type', 
         400
@@ -240,6 +232,38 @@ exports.googleAuth = async (req, res, next) => {
     res.status(statusCode).json(response);
   } catch (error) {
     logger.error('Google auth error:', error);
+    next(error);
+  }
+};
+
+// Logout user
+exports.logout = async (req, res, next) => {
+  try {
+    const { refreshToken } = req.body;
+    
+    await authService.logoutUser(refreshToken);
+
+    res.status(200).json({
+      success: true,
+      message: 'Logged out successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get current user
+exports.getCurrentUser = async (req, res, next) => {
+  try {
+    const user = await authService.getCurrentUser(req.user.id, req.user.role);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        user
+      }
+    });
+  } catch (error) {
     next(error);
   }
 };

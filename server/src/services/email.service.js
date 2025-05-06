@@ -88,16 +88,15 @@ const sendEmail = async (to, subject, html) => {
 };
 
 /**
- * Send verification email
+ * Send verification email with OTP
  * @param {string} to - Recipient email
  * @param {string} name - Recipient name
- * @param {string} token - Verification token
- * @param {string} redirectPath - Path to redirect after verification
+ * @param {string} otp - Verification OTP
  * @param {string} userType - Type of user (user, doctor)
  * @returns {Promise} Nodemailer info
  */
-const sendVerificationEmail = async (to, name, token, redirectPath, userType = 'user') => {
-  const { subject, html } = emailTemplates.verificationEmailTemplate(name, token, to, redirectPath, userType);
+const sendVerificationEmail = async (to, name, otp, userType = 'patient') => {
+  const { subject, html } = emailTemplates.verificationEmailTemplate(name, otp, userType);
   return await sendEmail(to, subject, html);
 };
 
@@ -109,7 +108,7 @@ const sendVerificationEmail = async (to, name, token, redirectPath, userType = '
  * @param {string} userType - Type of user (user, doctor, admin)
  * @returns {Promise} Nodemailer info
  */
-const sendPasswordResetEmail = async (to, name, token, userType = 'user') => {
+const sendPasswordResetEmail = async (to, name, token, userType = "patient") => {
   const { subject, html } = emailTemplates.passwordResetEmailTemplate(name, token, to, userType);
   return await sendEmail(to, subject, html);
 };
