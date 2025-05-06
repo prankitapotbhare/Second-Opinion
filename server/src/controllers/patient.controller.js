@@ -368,8 +368,7 @@ exports.requestAppointment = async (req, res, next) => {
     // Update submission with appointment details
     submission.appointmentDetails = {
       date: new Date(date),
-      time,
-      notes: notes || ''
+      time
     };
     
     // Update status to under-review

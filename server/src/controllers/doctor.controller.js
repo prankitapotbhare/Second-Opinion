@@ -159,6 +159,23 @@ exports.setAvailability = async (req, res, next) => {
       return next(createError(`Missing required fields: ${missingFields.join(', ')}`, 400));
     }
     
+    // Validate time format
+    const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+    if (!timeRegex.test(req.body.startTime) || !timeRegex.test(req.body.endTime)) {
+      return next(createError('Time format should be HH:MM (24-hour format)', 400));
+    }
+    
+    // Validate that end time is after start time
+    const [startHour, startMinute] = req.body.startTime.split(':').map(Number);
+    const [endHour, endMinute] = req.body.endTime.split(':').map(Number);
+    
+    const startMinutes = startHour * 60 + startMinute;
+    const endMinutes = endHour * 60 + endMinute;
+    
+    if (endMinutes <= startMinutes) {
+      return next(createError('End time must be after start time', 400));
+    }
+    
     // Check if availability already exists
     let availability = await Availability.findOne({ doctorId });
     

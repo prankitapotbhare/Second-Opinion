@@ -200,7 +200,6 @@ async function main() {
       patientDetails.appointmentDetails = {
         date: appointmentDate,
         time: randomFrom(TIME_SLOTS),
-        notes: faker.lorem.sentence(),
         isCompleted: status === 'completed',
         completedAt: status === 'completed' ? new Date(Math.min(appointmentDate.getTime() + 24 * 60 * 60 * 1000, now.getTime())) : null
       };

@@ -178,11 +178,6 @@ export default function ResponsePage() {
                       <p className="text-teal-600">
                         Your appointment request for {patientResponse.formattedDate} at {patientResponse.formattedTime} has been approved.
                       </p>
-                      {patientResponse.appointmentDetails?.notes && (
-                        <p className="mt-2 text-gray-700">
-                          <strong>Doctor's note:</strong> {patientResponse.appointmentDetails.notes}
-                        </p>
-                      )}
                     </div>
                   </>
                 ) : appointmentStatus === 'rejected' ? (
