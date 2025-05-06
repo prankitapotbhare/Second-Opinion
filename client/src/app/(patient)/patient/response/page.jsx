@@ -211,7 +211,7 @@ export default function ResponsePage() {
             <div className="mb-6">
               <h3 className="text-xl font-medium mb-2">Required(Yes or No)</h3>
               <div className="bg-white border border-gray-200 rounded-lg p-6 mb-8 shadow-sm">
-                <div className={`w-full text-gray-800 ${patientResponse.status === 'opinion-needed' ? 'text-teal-600' : ''}`}>
+                <div className={`w-full text-gray-800 ${patientResponse.statusColor === 'teal' || patientResponse.statusColor === 'green' ? 'text-teal-600' : ''}`}>
                   <div className="flex justify-between items-center">
                     {patientResponse.status === 'pending' ? (
                       <div className="flex items-center">
@@ -223,15 +223,15 @@ export default function ResponsePage() {
                     ) : patientResponse.status === 'opinion-not-needed' ? (
                       <p>No, a second opinion is not required at this time. The doctor has reviewed your case and provided feedback.</p>
                     ) : patientResponse.status === 'under-review' ? (
-                      <p className="text-teal-600">Yes, a second opinion is needed. Your appointment request is currently under review by the doctor.</p>
+                      <p className="text-purple-700">Yes, a second opinion is needed. Your appointment request is currently under review by the doctor.</p>
                     ) : patientResponse.status === 'approved' ? (
-                      <p className="text-green-600">Yes, a second opinion is needed. Please check the appointment details above.</p>
+                      <p className="text-green-600">Yes, a second opinion is needed. Your appointment has been approved.</p>
                     ) : patientResponse.status === 'rejected' ? (
-                      <p className="text-red-600">Yes, a second opinion is needed. You may request a new appointment time.</p>
+                      <p className="text-red-600">Yes, a second opinion is needed. Your appointment request was not approved. You may request a new time.</p>
                     ) : patientResponse.status === 'completed' ? (
-                      <p className="text-purple-600">Yes, a second opinion is needed. Your second opinion consultation has been completed. Thank you for using our service.</p>
+                      <p className="text-green-600">Yes, a second opinion was needed. Your consultation has been completed.</p>
                     ) : (
-                      <p>Status: {patientResponse.statusText || patientResponse.status}</p>
+                      <p>Status: {patientResponse.statusText}</p>
                     )}
                   </div>
                 </div>
