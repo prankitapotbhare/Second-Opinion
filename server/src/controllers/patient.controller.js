@@ -278,6 +278,9 @@ exports.getAvailableSlots = async (req, res, next) => {
       return next(createError('Date is required', 400));
     }
     
+    // Validate doctor ID
+    validationService.validateObjectId(doctorId, 'doctor');
+    
     // Validate date format
     const dateObj = new Date(date);
     if (isNaN(dateObj.getTime())) {
@@ -295,6 +298,12 @@ exports.getAvailableSlots = async (req, res, next) => {
     const availability = await Availability.findOne({ doctorId });
     if (!availability) {
       return next(createError('Doctor availability not found', 404));
+    }
+    
+    // If no time slots are generated yet, generate them
+    if (!availability.timeSlots || availability.timeSlots.length === 0) {
+      await availability.generateTimeSlots();
+      await availability.save();
     }
     
     // Get available slots
@@ -356,13 +365,22 @@ exports.requestAppointment = async (req, res, next) => {
     
     // Check if the selected slot is available
     const availability = await Availability.findOne({ doctorId: submission.doctorId });
+    
     if (!availability) {
       return next(createError('Doctor availability not found', 404));
     }
     
-    const isAvailable = await availability.isAvailable(new Date(date), time);
+    const isAvailable = await availability.isAvailable(date, time);
+    
     if (!isAvailable) {
-      return next(createError('The selected time slot is no longer available', 409));
+      return next(createError('The selected time slot is not available', 400));
+    }
+    
+    // Reserve the slot
+    const slotReserved = await availability.reserveSlot(date, time);
+    
+    if (!slotReserved) {
+      return next(createError('Failed to reserve the time slot', 500));
     }
     
     // Update submission with appointment details
@@ -371,10 +389,7 @@ exports.requestAppointment = async (req, res, next) => {
       time
     };
     
-    // Update status to under-review
     submission.status = 'under-review';
-    
-    // Save the updated submission
     await submission.save();
     
     // Reserve the slot temporarily (mark as unavailable for 24 hours)
