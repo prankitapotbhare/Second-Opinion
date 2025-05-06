@@ -506,39 +506,40 @@ export const requestAppointment = async (submissionId, appointmentDetails) => {
 };
 
 /**
- * Submit a review for a doctor
- * @param {string} submissionId - ID of the submission
- * @param {Object} reviewData - Review data
- * @param {number} reviewData.rating - Rating (1-5)
- * @param {string} reviewData.comment - Review comment
- * @returns {Promise<Object>} Success response
+ * Submit a review for a doctor after appointment
+ * @param {string} submissionId - ID of the patient submission
+ * @param {Object} reviewData - { rating, comment }
+ * @returns {Promise<Object>} Review submission result
  */
 export const submitReview = async (submissionId, reviewData) => {
   if (!submissionId) {
     throw new Error('Submission ID is required');
   }
   
-  if (!reviewData.rating || !reviewData.comment) {
-    throw new Error('Rating and comment are required');
+  if (!reviewData || !reviewData.rating) {
+    throw new Error('Rating is required');
   }
-  
-  if (reviewData.rating < 1 || reviewData.rating > 5) {
-    throw new Error('Rating must be between 1 and 5');
-  }
-  
-  const token = getAuthToken();
   
   try {
-    const response = await fetch(`${API_URL}/patient/response/${submissionId}/review`, {
+    const token = getAuthToken();
+    const url = `${API_URL}/patient/response/${submissionId}/review`;
+    
+    console.log('Submitting review to:', url, reviewData);
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(reviewData)
+      body: JSON.stringify({
+        rating: reviewData.rating,
+        comment: reviewData.comment || ''
+      })
     });
     
-    return handleResponse(response);
+    const data = await handleResponse(response);
+    return data;
   } catch (error) {
     console.error('Error submitting review:', error);
     throw error;

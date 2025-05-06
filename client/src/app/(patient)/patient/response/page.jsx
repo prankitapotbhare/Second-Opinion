@@ -298,80 +298,82 @@ export default function ResponsePage() {
         )}
 
         {activeTab === 'comments' && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-xl font-medium mb-6">Comments & Ratings</h3>
-            
-            {feedbackSubmitted ? (
-              <div className="text-center py-8">
-                <FaCheckCircle className="text-green-500 text-4xl mx-auto mb-4" />
-                <p className="text-lg text-gray-700">Thank you for your feedback!</p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit}>
-                <div className="mb-6">
-                  <label htmlFor="comments" className="block text-sm font-medium text-gray-700 mb-2">
-                    Comments
-                  </label>
-                  <textarea
-                    id="comments"
-                    name="comments"
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    placeholder="Share your experience with the doctor's response..."
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    disabled={reviewSubmitLoading}
-                  />
-                </div>
-                
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Rating
-                  </label>
-                  <div className="flex items-center">
-                    {[...Array(5)].map((_, index) => {
-                      const ratingValue = index + 1;
-                      return (
-                        <button
-                          type="button"
-                          key={ratingValue}
-                          className={`text-2xl ${
-                            (hover || rating) >= ratingValue ? 'text-yellow-400' : 'text-gray-300'
-                          } focus:outline-none mr-1`}
-                          onClick={() => setRating(ratingValue)}
-                          onMouseEnter={() => setHover(ratingValue)}
-                          onMouseLeave={() => setHover(null)}
-                          disabled={reviewSubmitLoading}
-                        >
-                          <FaStar />
-                        </button>
-                      );
-                    })}
-                    <span className="ml-2 text-gray-600">
-                      {rating} out of 5
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    className="px-6 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors flex items-center"
-                    disabled={reviewSubmitLoading}
-                  >
-                    {reviewSubmitLoading ? (
-                      <>
-                        <FaSpinner className="animate-spin mr-2" />
-                        Submitting...
-                      </>
-                    ) : (
-                      'Submit Feedback'
-                    )}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
+        <div>
+        <h3 className="text-xl font-medium mb-4">Rate Your Experience</h3>
+        
+        {appointmentStatus === 'approved' || appointmentStatus === 'completed' ? (
+        <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-lg p-6 mb-8 shadow-sm">
+        {reviewSubmitSuccess ? (
+        <div className="flex items-center text-green-600 mb-4">
+        <FaCheckCircle className="mr-2" />
+        Thank you for your feedback!
+        </div>
+        ) : (
+        <>
+        <div className="mb-4">
+        <label className="block text-gray-700 mb-2">Rating</label>
+        <div className="flex">
+        {[...Array(5)].map((_, i) => {
+        const ratingValue = i + 1;
+        return (
+        <label key={i} className="cursor-pointer">
+        <input
+        type="radio"
+        name="rating"
+        className="hidden"
+        value={ratingValue}
+        onClick={() => setRating(ratingValue)}
+        />
+        <FaStar
+        className="mr-1"
+        color={ratingValue <= (hover || rating) ? "#ffc107" : "#e4e5e9"}
+        size={24}
+        onMouseEnter={() => setHover(ratingValue)}
+        onMouseLeave={() => setHover(null)}
+        />
+        </label>
+        );
+        })}
+        <span className="ml-2 text-gray-600">{rating}/5</span>
+        </div>
+        </div>
+        
+        <div className="mb-4">
+        <label className="block text-gray-700 mb-2">Comment</label>
+        <textarea
+        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+        rows="4"
+        placeholder="Share your experience with the doctor..."
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        ></textarea>
+        </div>
+        
+        <button
+        type="submit"
+        className="bg-teal-600 text-white px-6 py-2 rounded-md hover:bg-teal-700 transition-colors flex items-center"
+        disabled={reviewSubmitLoading}
+        >
+        {reviewSubmitLoading ? (
+        <>
+        <FaSpinner className="animate-spin mr-2" />
+        Submitting...
+        </>
+        ) : (
+        'Submit Review'
+        )}
+        </button>
+        </>
+        )}
+        </form>
+        ) : (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-8">
+        <p className="text-gray-600">
+        You can submit a review after your appointment has been approved and completed.
+        </p>
+        </div>
+        )}
+        </div>
         )}
       </main>
     </div>

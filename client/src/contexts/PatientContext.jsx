@@ -358,20 +358,15 @@ export const PatientProvider = ({ children }) => {
     }
   }, [reviewsPagination.currentPage]);
 
-  // Submit a review for a doctor
+  // Submit doctor review
   const submitDoctorReview = useCallback(async (submissionId, reviewData) => {
     if (!submissionId) {
       setReviewSubmitError("Submission ID is required");
       return null;
     }
     
-    if (!reviewData.rating || !reviewData.comment) {
-      setReviewSubmitError("Rating and comment are required");
-      return null;
-    }
-    
-    if (reviewData.rating < 1 || reviewData.rating > 5) {
-      setReviewSubmitError("Rating must be between 1 and 5");
+    if (!reviewData || !reviewData.rating) {
+      setReviewSubmitError("Rating is required");
       return null;
     }
     
@@ -380,23 +375,31 @@ export const PatientProvider = ({ children }) => {
     setReviewSubmitSuccess(false);
     
     try {
+      console.log('Submitting review for submission:', submissionId, reviewData);
       const result = await submitReview(submissionId, reviewData);
       setReviewSubmitSuccess(true);
       
-      // If we have the current doctor loaded, refresh the reviews
-      if (currentDoctor) {
-        fetchDoctorReviews(currentDoctor.id);
+      // Update the patient response with the new review
+      if (patientResponse && patientResponse.id === submissionId) {
+        setPatientResponse({
+          ...patientResponse,
+          hasReview: true,
+          review: {
+            rating: reviewData.rating,
+            comment: reviewData.comment || ''
+          }
+        });
       }
       
       return result;
     } catch (err) {
-      const errorMessage = err.data?.message || err.message || "Failed to submit review";
-      setReviewSubmitError(errorMessage);
+      console.error('Error submitting review:', err);
+      setReviewSubmitError(err.message || "Failed to submit review");
       return null;
     } finally {
       setReviewSubmitLoading(false);
     }
-  }, [currentDoctor, fetchDoctorReviews]);
+  }, [patientResponse]);
 
   return (
     <PatientContext.Provider

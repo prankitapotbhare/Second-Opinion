@@ -378,57 +378,84 @@ exports.requestAppointment = async (req, res, next) => {
 };
 
 // --- Submit a review for a doctor ---
+// Submit review for a doctor
 exports.submitReview = async (req, res, next) => {
   try {
+    const { submissionId } = req.params;
     const patientId = req.user.id;
-    const { responseId } = req.params;
     const { rating, comment } = req.body;
-
-    if (!rating || !comment) {
-      return next(createError('Rating and comment are required', 400));
+    
+    // Validate required fields
+    if (!rating) {
+      return next(createError('Rating is required', 400));
     }
+    
+    // Validate rating is between 1 and 5
     if (rating < 1 || rating > 5) {
       return next(createError('Rating must be between 1 and 5', 400));
     }
-
-    // Find the submission and ensure status is NOT 'pending'
-    const submission = await PatientDetails.findOne({
-      _id: responseId,
+    
+    // Find the submission
+    const submission = await PatientDetails.findOne({ 
+      _id: submissionId,
       patientId
     });
-
+    
     if (!submission) {
       return next(createError('Submission not found', 404));
     }
-    if (submission.status === 'pending') {
-      return next(createError('You cannot review until your submission is processed', 403));
+    
+    // Check if the submission status is approved or completed
+    if (submission.status !== 'approved' && submission.status !== 'completed') {
+      return next(createError('You can only review after your appointment has been approved or completed', 400));
     }
-
-    const doctor = await Doctor.findById(submission.doctorId);
+    
+    // Check if the patient has already submitted a review for this submission
+    if (submission.hasReview) {
+      return next(createError('You have already submitted a review for this appointment', 400));
+    }
+    
+    // Get the doctor ID from the submission
+    const doctorId = submission.doctorId;
+    
+    // Add review to the doctor's reviews array
+    const doctor = await Doctor.findById(doctorId);
+    
     if (!doctor) {
       return next(createError('Doctor not found', 404));
     }
-    const alreadyReviewed = doctor.reviews.some(
-      (r) => r.patientId.toString() === patientId && r.comment && r.createdAt && r.comment === comment
-    );
-    if (alreadyReviewed) {
-      return next(createError('You have already reviewed this doctor for this submission', 409));
-    }
-
+    
+    // Add the review
     doctor.reviews.push({
       patientId,
       rating,
-      comment
+      comment: comment || '',
+      createdAt: new Date()
     });
-
-    const totalRatings = doctor.reviews.reduce((sum, r) => sum + r.rating, 0);
-    doctor.averageRating = totalRatings / doctor.reviews.length;
-
+    
+    // Calculate new average rating
+    const totalRating = doctor.reviews.reduce((sum, review) => sum + review.rating, 0);
+    doctor.averageRating = totalRating / doctor.reviews.length;
+    
+    // Save the doctor with the new review
     await doctor.save();
-
-    res.status(201).json({
+    
+    // Mark the submission as having a review
+    submission.hasReview = true;
+    submission.review = {
+      rating,
+      comment: comment || ''
+    };
+    
+    await submission.save();
+    
+    res.status(200).json({
       success: true,
-      message: 'Review submitted successfully'
+      message: 'Review submitted successfully',
+      data: {
+        rating,
+        comment: comment || ''
+      }
     });
   } catch (error) {
     next(error);
