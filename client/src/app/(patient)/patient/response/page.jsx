@@ -125,8 +125,10 @@ export default function ResponsePage() {
     );
   }
 
-  // Determine if appointment is requested
-  const appointmentRequested = patientResponse.appointmentDetails !== null;
+  // Determine if appointment is requested - check if date and time are set
+  const appointmentRequested = patientResponse.status === 'approved' || 
+                               patientResponse.status === 'rejected' || 
+                               patientResponse.status === 'under-review';
   const appointmentStatus = patientResponse.status;
   const feedbackSubmitted = reviewSubmitSuccess;
 
@@ -190,36 +192,51 @@ export default function ResponsePage() {
                       </button>
                     </div>
                   </>
-                ) : (
+                ) : appointmentStatus === 'under-review' ? (
                   <>
-                    <h3 className="text-xl font-medium mb-2">Appointment Pending</h3>
+                    <h3 className="text-xl font-medium mb-2">Appointment Under Review</h3>
                     <div className="bg-white border border-yellow-200 rounded-lg p-6 mb-8 shadow-sm">
                       <div className="flex items-center">
                         <FaSpinner className="animate-spin text-yellow-500 mr-2" />
                         <p className="text-yellow-700">
-                          Your appointment request for {patientResponse.formattedDate} at {patientResponse.formattedTime} is pending approval.
+                          Your appointment request for {patientResponse.formattedDate} at {patientResponse.formattedTime} is under review.
                         </p>
                       </div>
                     </div>
                   </>
-                )}
+                ) : null}
               </div>
             )}
 
             <div className="mb-6">
               <h3 className="text-xl font-medium mb-2">Required(Yes or No)</h3>
               <div className="bg-white border border-gray-200 rounded-lg p-6 mb-8 shadow-sm">
-                <div className={`w-full text-gray-800 ${patientResponse.doctorResponse?.secondOpinionRequired ? 'text-teal-600' : ''}`}>
+                <div className={`w-full text-gray-800 ${patientResponse.status === 'opinion-needed' ? 'text-teal-600' : ''}`}>
                   <div className="flex justify-between items-center">
-                    {patientResponse.doctorResponse?.secondOpinionRequired ? (
-                      <p>Yes, Second opinion needed. Please choose a date and time.</p>
+                    {patientResponse.status === 'pending' ? (
+                      <div className="flex items-center">
+                        <FaSpinner className="animate-spin text-yellow-500 mr-2" />
+                        <p className="text-yellow-700">Your submission is pending review by the doctor.</p>
+                      </div>
+                    ) : patientResponse.status === 'opinion-needed' ? (
+                      <p className="text-teal-600">Yes, a second opinion is needed. Please choose a date and time for your appointment.</p>
+                    ) : patientResponse.status === 'opinion-not-needed' ? (
+                      <p>No, a second opinion is not required at this time. The doctor has reviewed your case and provided feedback.</p>
+                    ) : patientResponse.status === 'under-review' ? (
+                      <p className="text-teal-600">Yes, a second opinion is needed. Your appointment request is currently under review by the doctor.</p>
+                    ) : patientResponse.status === 'approved' ? (
+                      <p className="text-green-600">Yes, a second opinion is needed. Please check the appointment details above.</p>
+                    ) : patientResponse.status === 'rejected' ? (
+                      <p className="text-red-600">Yes, a second opinion is needed. You may request a new appointment time.</p>
+                    ) : patientResponse.status === 'completed' ? (
+                      <p className="text-purple-600">Yes, a second opinion is needed. Your second opinion consultation has been completed. Thank you for using our service.</p>
                     ) : (
-                      <p>No, a second opinion is not required at this time.</p>
+                      <p>Status: {patientResponse.statusText || patientResponse.status}</p>
                     )}
                   </div>
                 </div>
               </div>
-              {patientResponse.doctorResponse?.secondOpinionRequired && !appointmentRequested && (
+              {patientResponse.status === 'opinion-needed' && !appointmentRequested && (
                 <div className="flex justify-end mb-4">
                   <button 
                     onClick={handleRequestAppointment}
