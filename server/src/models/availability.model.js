@@ -187,6 +187,158 @@ availabilitySchema.methods.getAppointmentStats = async function() {
   };
 };
 
+// Method to reserve a slot temporarily
+availabilitySchema.methods.reserveSlot = async function(date, time) {
+  const dayOfWeek = new Date(date).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+  
+  // Find the day in timeSlots array
+  let daySlots = this.timeSlots.find(day => day.day === dayOfWeek);
+  
+  // If day doesn't exist in timeSlots, create it
+  if (!daySlots) {
+    daySlots = {
+      day: dayOfWeek,
+      slots: []
+    };
+    this.timeSlots.push(daySlots);
+  }
+  
+  // Find the specific time slot
+  let timeSlot = daySlots.slots.find(slot => slot.startTime === time);
+  
+  // If slot doesn't exist, create it
+  if (!timeSlot) {
+    // Calculate end time based on appointment duration
+    const [hours, minutes] = time.split(':').map(Number);
+    let endHour = hours;
+    let endMinute = minutes + this.appointmentDuration;
+    
+    if (endMinute >= 60) {
+      endHour += Math.floor(endMinute / 60);
+      endMinute = endMinute % 60;
+    }
+    
+    const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+    
+    timeSlot = {
+      startTime: time,
+      endTime: endTime,
+      isAvailable: false,
+      reservedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
+    };
+    
+    daySlots.slots.push(timeSlot);
+  } else {
+    // Update existing slot
+    timeSlot.isAvailable = false;
+    timeSlot.reservedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+  }
+  
+  // Save the updated availability
+  await this.save();
+  
+  return true;
+};
+
+// Update isAvailable method to check reservations
+availabilitySchema.methods.isAvailable = async function(date, time) {
+  const dayOfWeek = new Date(date).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+  
+  // Check if doctor works on this day
+  if (!this.workingDays[dayOfWeek] || dayOfWeek === this.weeklyHoliday) {
+    return false;
+  }
+  
+  // Check if the time is within working hours
+  const [requestHour, requestMinute] = time.split(':').map(Number);
+  const [startHour, startMinute] = this.startTime.split(':').map(Number);
+  const [endHour, endMinute] = this.endTime.split(':').map(Number);
+  
+  const requestTime = requestHour * 60 + requestMinute;
+  const startTime = startHour * 60 + startMinute;
+  const endTime = endHour * 60 + endMinute;
+  
+  if (requestTime < startTime || requestTime >= endTime) {
+    return false;
+  }
+  
+  // Check if slot is reserved in timeSlots
+  const daySlots = this.timeSlots.find(day => day.day === dayOfWeek);
+  if (daySlots) {
+    const timeSlot = daySlots.slots.find(slot => slot.startTime === time);
+    if (timeSlot) {
+      // If slot has reservedUntil and it's in the past, consider it available again
+      if (timeSlot.reservedUntil && new Date() > timeSlot.reservedUntil) {
+        timeSlot.isAvailable = true;
+        delete timeSlot.reservedUntil;
+        await this.save();
+        return true;
+      }
+      return timeSlot.isAvailable;
+    }
+  }
+  
+  // Get existing appointments for this date and time
+  const PatientDetails = mongoose.model('PatientDetails');
+  const existingAppointment = await PatientDetails.findOne({
+    doctorId: this.doctorId,
+    status: { $in: ['approved', 'under-review'] },
+    'appointmentDetails.date': {
+      $gte: new Date(date).setHours(0, 0, 0, 0),
+      $lt: new Date(date).setHours(23, 59, 59, 999)
+    },
+    'appointmentDetails.time': time
+  });
+  
+  return !existingAppointment;
+};
+
+// Method to confirm a slot reservation permanently
+availabilitySchema.methods.confirmSlot = async function(date, time) {
+  const dayOfWeek = new Date(date).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+  
+  // Find the day in timeSlots array
+  let daySlots = this.timeSlots.find(day => day.day === dayOfWeek);
+  
+  // If day exists in timeSlots
+  if (daySlots) {
+    // Find the specific time slot
+    let timeSlot = daySlots.slots.find(slot => slot.startTime === time);
+    
+    // If slot exists, mark it as permanently unavailable
+    if (timeSlot) {
+      timeSlot.isAvailable = false;
+      delete timeSlot.reservedUntil; // Remove temporary reservation
+      await this.save();
+    }
+  }
+  
+  return true;
+};
+
+// Method to release a reserved slot
+availabilitySchema.methods.releaseSlot = async function(date, time) {
+  const dayOfWeek = new Date(date).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+  
+  // Find the day in timeSlots array
+  let daySlots = this.timeSlots.find(day => day.day === dayOfWeek);
+  
+  // If day exists in timeSlots
+  if (daySlots) {
+    // Find the specific time slot
+    let timeSlot = daySlots.slots.find(slot => slot.startTime === time);
+    
+    // If slot exists, mark it as available again
+    if (timeSlot) {
+      timeSlot.isAvailable = true;
+      delete timeSlot.reservedUntil;
+      await this.save();
+    }
+  }
+  
+  return true;
+};
+
 const Availability = mongoose.model('Availability', availabilitySchema);
 
 module.exports = Availability;

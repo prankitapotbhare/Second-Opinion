@@ -1,25 +1,80 @@
 "use client";
 
-import React, { useState } from 'react';
-import { FaCalendarAlt } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { FaCalendarAlt, FaSpinner } from 'react-icons/fa';
+import { usePatient } from '@/contexts/PatientContext';
 
-const DateTimePicker = ({ onSelect, onClose }) => {
+const DateTimePicker = ({ onSelect, onClose, doctorId }) => {
   // Format today's date as YYYY-MM-DD for initial state
   const today = new Date().toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState(today);
   const [selectedTime, setSelectedTime] = useState('');
+  const [fetchTrigger, setFetchTrigger] = useState(0); // Add this to force re-fetch
+  
+  const { 
+    availableSlots, 
+    slotsLoading, 
+    slotsError, 
+    fetchAvailableSlots,
+    patientResponse
+  } = usePatient();
 
-  const timeSlots = [
-    '09:00 A.M', '10:00 A.M', '11:00 A.M',
-    '01:00 P.M', '02:00 P.M', '03:00 P.M',
-    '05:00 P.M', '06:00 P.M', '07:00 P.M',
-    '08:00 P.M', '10:00 P.M', '11:00 P.M'
-  ];
+  // Log props when component mounts
+  useEffect(() => {
+    console.log('DateTimePicker mounted with doctorId prop:', doctorId);
+    console.log('PatientResponse:', patientResponse);
+    console.log('PatientResponse doctorId:', patientResponse?.doctorId);
+  }, [doctorId, patientResponse]);
+
+  // Fetch available slots when component mounts and when date changes
+  useEffect(() => {
+    // Use the doctorId from props or from patientResponse
+    const doctor = doctorId || (patientResponse && patientResponse.doctorId);
+    
+    console.log('Attempting to fetch slots with doctor ID:', doctor);
+    
+    if (doctor) {
+      console.log('Fetching slots for doctor:', doctor, 'date:', selectedDate);
+      fetchAvailableSlots(doctor, selectedDate);
+    } else {
+      console.error('No doctor ID available for fetching slots');
+    }
+  }, [selectedDate, doctorId, patientResponse, fetchAvailableSlots, fetchTrigger]);
+
+  // Debug logs for state changes
+  useEffect(() => {
+    console.log('Current available slots:', availableSlots);
+    console.log('Slots loading:', slotsLoading);
+    console.log('Slots error:', slotsError);
+  }, [availableSlots, slotsLoading, slotsError]);
 
   const handleSubmit = () => {
     if (selectedDate && selectedTime) {
-      onSelect({ date: selectedDate, time: selectedTime });
+      // Convert time format back to 24-hour for API (e.g., "09:00 A.M" to "09:00")
+      const timeValue = selectedTime.split(' ')[0];
+      const period = selectedTime.split(' ')[1];
+      
+      let [hours, minutes] = timeValue.split(':').map(Number);
+      
+      if (period === 'P.M' && hours < 12) {
+        hours += 12;
+      } else if (period === 'A.M' && hours === 12) {
+        hours = 0;
+      }
+      
+      const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      
+      console.log('Submitting date:', selectedDate, 'time:', formattedTime);
+      onSelect({ 
+        date: selectedDate, 
+        time: formattedTime 
+      });
     }
+  };
+
+  const handleRetry = () => {
+    // Force a re-fetch of the slots
+    setFetchTrigger(prev => prev + 1);
   };
 
   return (
@@ -35,7 +90,12 @@ const DateTimePicker = ({ onSelect, onClose }) => {
               type="date"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent cursor-pointer"
               value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
+              onChange={(e) => {
+                const newDate = e.target.value;
+                console.log('Date changed to:', newDate);
+                setSelectedDate(newDate);
+                setSelectedTime(''); // Reset time when date changes
+              }}
               min={today}
               required
             />
@@ -45,11 +105,36 @@ const DateTimePicker = ({ onSelect, onClose }) => {
         
         {/* Time Picker */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Time Picker</label>
-          <div className="grid grid-cols-3 gap-2">
-            {timeSlots.map((time) => (
+          <label className="block text-sm font-medium text-gray-700 mb-2 flex justify-between items-center">
+            <span>
+              Available Time Slots
+              {slotsLoading && <FaSpinner className="inline-block ml-2 animate-spin text-teal-600" />}
+            </span>
+            <button 
+              onClick={handleRetry} 
+              className="text-xs text-teal-600 hover:underline"
+              type="button"
+            >
+              Refresh
+            </button>
+          </label>
+          
+          {slotsError && (
+            <div className="text-red-500 text-sm mb-2">
+              Error loading available slots: {slotsError}
+            </div>
+          )}
+          
+          {!slotsLoading && availableSlots.length === 0 && (
+            <div className="text-amber-600 text-sm mb-2">
+              No available slots for this date. Please select another date.
+            </div>
+          )}
+          
+          <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+            {availableSlots.map((time, index) => (
               <button
-                key={time}
+                key={`${time}-${index}`}
                 type="button"
                 className={`py-2 px-2 border rounded-md text-sm ${
                   selectedTime === time
@@ -80,7 +165,7 @@ const DateTimePicker = ({ onSelect, onClose }) => {
             type="button"
             className="px-6 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:opacity-50 flex items-center"
             onClick={handleSubmit}
-            disabled={!selectedDate || !selectedTime}
+            disabled={!selectedDate || !selectedTime || slotsLoading}
           >
             Send Response
             <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

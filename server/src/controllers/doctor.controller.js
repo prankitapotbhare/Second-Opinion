@@ -647,26 +647,61 @@ exports.getPatientRequests = async (req, res, next) => {
 // Accept patient request
 exports.acceptPatientRequest = async (req, res, next) => {
   try {
-    const { requestId } = req.params;
     const doctorId = req.user.id;
+    const { requestId } = req.params;
     
-    // Find the request with status 'under-review' instead of 'opinion-needed'
-    const request = await PatientDetails.findOneAndUpdate(
-      { _id: requestId, doctorId, status: 'under-review' },
-      {
-        status: 'approved'
-      },
-      { new: true }
-    );
-    
-    if (!request) {
-      return next(createError('Request not found or already processed', 404));
+    // Validate request ID
+    if (!requestId) {
+      return next(createError('Request ID is required', 400));
     }
+    
+    // Find the patient request
+    const patientRequest = await PatientDetails.findOne({
+      _id: requestId,
+      doctorId,
+      status: 'under-review'
+    });
+    
+    if (!patientRequest) {
+      return next(createError('Patient request not found or not in review status', 404));
+    }
+    
+    // Verify the appointment slot is still available
+    const availability = await Availability.findOne({ doctorId });
+    if (!availability) {
+      return next(createError('Doctor availability not found', 404));
+    }
+    
+    const appointmentDate = patientRequest.appointmentDetails.date;
+    const appointmentTime = patientRequest.appointmentDetails.time;
+    
+    // Check for conflicting appointments (excluding this one)
+    const conflictingAppointment = await PatientDetails.findOne({
+      _id: { $ne: requestId },
+      doctorId,
+      status: 'approved',
+      'appointmentDetails.date': {
+        $gte: new Date(appointmentDate).setHours(0, 0, 0, 0),
+        $lt: new Date(appointmentDate).setHours(23, 59, 59, 999)
+      },
+      'appointmentDetails.time': appointmentTime
+    });
+    
+    if (conflictingAppointment) {
+      return next(createError('This time slot is no longer available', 409));
+    }
+    
+    // Update the request status to approved
+    patientRequest.status = 'approved';
+    await patientRequest.save();
+    
+    // Confirm the slot reservation permanently
+    await availability.confirmSlot(appointmentDate, appointmentTime);
     
     res.status(200).json({
       success: true,
-      message: 'Request accepted successfully',
-      data: request
+      message: 'Patient request approved successfully',
+      data: patientRequest
     });
   } catch (error) {
     next(error);
@@ -676,26 +711,42 @@ exports.acceptPatientRequest = async (req, res, next) => {
 // Reject patient request
 exports.rejectPatientRequest = async (req, res, next) => {
   try {
-    const { requestId } = req.params;
     const doctorId = req.user.id;
+    const { requestId } = req.params;
     
-    // Find the request with status 'under-review' instead of 'opinion-needed'
-    const request = await PatientDetails.findOneAndUpdate(
-      { _id: requestId, doctorId, status: 'under-review' },
-      {
-        status: 'rejected'
-      },
-      { new: true }
-    );
+    // Validate request ID
+    if (!requestId) {
+      return next(createError('Request ID is required', 400));
+    }
     
-    if (!request) {
-      return next(createError('Request not found or already processed', 404));
+    // Find the patient request
+    const patientRequest = await PatientDetails.findOne({
+      _id: requestId,
+      doctorId,
+      status: 'under-review'
+    });
+    
+    if (!patientRequest) {
+      return next(createError('Patient request not found or not in review status', 404));
+    }
+    
+    // Update the request status to rejected
+    patientRequest.status = 'rejected';
+    
+    await patientRequest.save();
+    
+    // Release the reserved slot
+    const availability = await Availability.findOne({ doctorId });
+    if (availability) {
+      const appointmentDate = patientRequest.appointmentDetails.date;
+      const appointmentTime = patientRequest.appointmentDetails.time;
+      await availability.releaseSlot(appointmentDate, appointmentTime);
     }
     
     res.status(200).json({
       success: true,
-      message: 'Request rejected successfully',
-      data: request
+      message: 'Patient request rejected successfully',
+      data: patientRequest
     });
   } catch (error) {
     next(error);

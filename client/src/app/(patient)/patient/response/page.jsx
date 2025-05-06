@@ -54,7 +54,14 @@ export default function ResponsePage() {
     }
   };
 
+  // Update the handleRequestAppointment function to log the doctorId
   const handleRequestAppointment = () => {
+    if (!patientResponse || !patientResponse.doctorId) {
+      console.error('No doctorId available in patientResponse:', patientResponse);
+      alert('Doctor information is missing. Please try again later.');
+      return;
+    }
+    console.log('Opening date picker with doctorId:', patientResponse.doctorId);
     setShowDateTimePicker(true);
   };
 
@@ -139,6 +146,7 @@ export default function ResponsePage() {
         <DateTimePicker 
           onSelect={handleDateTimeSelect}
           onClose={() => setShowDateTimePicker(false)}
+          doctorId={patientResponse.doctorId}
         />
       )}
 

@@ -392,6 +392,7 @@ export const getPatientResponse = async () => {
       success: data.success,
       id: data.data.id,
       status: data.data.status,
+      doctorId: data.data.doctorId,
       doctorResponse: data.data.doctorResponse ? {
         message: data.data.doctorResponse.message || '',
         responseDate: data.data.doctorResponse.responseDate ? new Date(data.data.doctorResponse.responseDate) : null,
@@ -425,16 +426,24 @@ export const getPatientResponse = async () => {
  * Get available time slots for a doctor on a specific date
  * @param {string} doctorId - Doctor's ID
  * @param {string} date - Date in YYYY-MM-DD format
- * @returns {Promise<Object>} Available time slots
+ * @returns {Promise<Array>} Array of available time slots
  */
 export const getAvailableTimeSlots = async (doctorId, date) => {
-  if (!doctorId || !date) {
-    throw new Error('Doctor ID and date are required');
+  if (!doctorId) {
+    console.error('getAvailableTimeSlots called without doctorId');
+    throw new Error('Doctor ID is required');
+  }
+  
+  if (!date) {
+    console.error('getAvailableTimeSlots called without date');
+    throw new Error('Date is required');
   }
   
   try {
     const token = getAuthToken();
     const url = `${API_URL}/patient/doctors/${doctorId}/available-slots?date=${date}`;
+    
+    console.log('Fetching available slots from URL:', url);
     
     const response = await fetch(url, {
       method: 'GET',
@@ -445,7 +454,14 @@ export const getAvailableTimeSlots = async (doctorId, date) => {
     });
     
     const data = await handleResponse(response);
-    return data.data;
+    console.log('Date format:', date);
+    console.log('API response for slots:', data);
+    
+    // Make sure we're accessing the correct property in the response
+    const slots = data.data?.availableSlots || [];
+    console.log('Extracted slots:', slots);
+    
+    return slots;
   } catch (error) {
     console.error('Error fetching available slots:', error);
     throw error;

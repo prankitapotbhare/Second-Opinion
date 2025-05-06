@@ -248,6 +248,7 @@ export const PatientProvider = ({ children }) => {
     }
   }, []);
 
+  // Available slots state
   const [availableSlots, setAvailableSlots] = useState([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [slotsError, setSlotsError] = useState(null);
@@ -255,20 +256,34 @@ export const PatientProvider = ({ children }) => {
   // Add this new function
   const fetchAvailableSlots = useCallback(async (doctorId, date) => {
     if (!doctorId || !date) {
+      console.error('Missing required parameters:', { doctorId, date });
       setSlotsError("Doctor ID and date are required");
       return [];
     }
     
     setSlotsLoading(true);
     setSlotsError(null);
+    setAvailableSlots([]);
     
     try {
-      const result = await getAvailableTimeSlots(doctorId, date);
-      setAvailableSlots(result.availableSlots || []);
-      return result.availableSlots || [];
+      console.log('Calling getAvailableTimeSlots with:', { doctorId, date });
+      const slots = await getAvailableTimeSlots(doctorId, date);
+      console.log('Fetched slots:', slots);
+      
+      // Format slots for display (e.g., "09:00" to "09:00 A.M")
+      const formattedSlots = slots.map(slot => {
+        const [hours, minutes] = slot.split(':').map(Number);
+        const period = hours >= 12 ? 'P.M' : 'A.M';
+        const displayHours = hours % 12 || 12;
+        return `${displayHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${period}`;
+      });
+      
+      console.log('Formatted slots:', formattedSlots);
+      setAvailableSlots(formattedSlots);
+      return formattedSlots;
     } catch (err) {
-      const errorMessage = err.message || "Failed to fetch available time slots";
-      setSlotsError(errorMessage);
+      console.error('Error fetching available slots:', err);
+      setSlotsError(err.message || "Failed to load available slots");
       return [];
     } finally {
       setSlotsLoading(false);

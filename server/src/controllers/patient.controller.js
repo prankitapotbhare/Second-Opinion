@@ -270,23 +270,24 @@ exports.getAvailableSlots = async (req, res, next) => {
     const { date } = req.query;
     
     // Validate required parameters
-    if (!doctorId || !date) {
-      return next(createError('Doctor ID and date are required', 400));
+    if (!doctorId) {
+      return next(createError('Doctor ID is required', 400));
     }
     
-    // Validate doctor ID
-    validationService.validateObjectId(doctorId, 'doctor');
+    if (!date) {
+      return next(createError('Date is required', 400));
+    }
     
     // Validate date format
-    const selectedDate = new Date(date);
-    if (isNaN(selectedDate.getTime())) {
-      return next(createError('Invalid date format', 400));
+    const dateObj = new Date(date);
+    if (isNaN(dateObj.getTime())) {
+      return next(createError('Invalid date format. Use YYYY-MM-DD', 400));
     }
     
     // Check if date is in the past
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    if (selectedDate < today) {
+    if (dateObj < today) {
       return next(createError('Cannot check availability for past dates', 400));
     }
     
@@ -297,12 +298,12 @@ exports.getAvailableSlots = async (req, res, next) => {
     }
     
     // Get available slots
-    const availableSlots = await availability.getAvailableSlots(selectedDate);
+    const availableSlots = await availability.getAvailableSlots(date);
     
     res.status(200).json({
       success: true,
       data: {
-        date: selectedDate,
+        date,
         availableSlots
       }
     });
@@ -354,18 +355,21 @@ exports.requestAppointment = async (req, res, next) => {
       notes: notes || ''
     };
     
-    // Update status to pending approval
+    // Update status to under-review
     submission.status = 'under-review';
     
+    // Save the updated submission
     await submission.save();
+    
+    // Reserve the slot temporarily (mark as unavailable for 24 hours)
+    await availability.reserveSlot(new Date(date), time);
     
     res.status(200).json({
       success: true,
       message: 'Appointment requested successfully',
       data: {
-        status: submission.status,
         appointmentDetails: submission.appointmentDetails,
-        doctorResponse: submission.doctorResponse
+        status: submission.status
       }
     });
   } catch (error) {
