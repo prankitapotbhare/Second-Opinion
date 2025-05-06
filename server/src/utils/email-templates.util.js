@@ -49,7 +49,7 @@ const verificationEmailTemplate = (name, otp, userType = 'patient') => {
  * @param {string} userType - Type of user (user, doctor, admin)
  * @returns {Object} Email subject and HTML content
  */
-const passwordResetEmailTemplate = (name, token, email, userType = 'user') => {
+const passwordResetEmailTemplate = (name, token, email, userType = "patient") => {
   const resetUrl = `${CLIENT_URL}/reset-password?token=${token}&email=${encodeURIComponent(email)}&type=${userType}`;
   
   return {

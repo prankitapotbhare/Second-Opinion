@@ -112,9 +112,9 @@ export const getDashboardUrl = (role) => {
       return '/admin/dashboard';
     case 'doctor':
       return '/doctor/dashboard';
-    case 'user':
+    case "patient":
     default:
-      return '/user/dashboard';
+      return '/';
   }
 };
 
@@ -129,9 +129,9 @@ export const getLoginUrl = (role) => {
       return '/login/admin';
     case 'doctor':
       return '/login/doctor';
-    case 'user':
+    case "patient":
     default:
-      return '/login/user';
+      return '/login/patient';
   }
 };
 

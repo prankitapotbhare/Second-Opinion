@@ -9,6 +9,9 @@
     "build": "npm prune --production",
     "test": "echo \"Error: no test specified\" && exit 1",
     "create-admin": "node src/scripts/create-admin.js",
+    "generate-doctors": "node src/scripts/generate-doctors.js",
+    "generate-patients": "node src/scripts/generate-patients.js",
+    "generate-patient-details": "node src/scripts/generate-patient-details.js",
     "generate-jwt": "node src/scripts/generate-jwt-secrets.js",
     "test-email": "node src/scripts/test-email.js"
   },
@@ -28,6 +31,7 @@
     "nodemailer": "^6.10.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "faker": "^5.5.3"
   }
 }

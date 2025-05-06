@@ -6,6 +6,7 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const Admin = require('../models/admin.model');
 const readline = require('readline');
+const logger = require('../utils/logger.util');
 
 // Connect to MongoDB
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/second-opinion';
@@ -24,7 +25,7 @@ const prompt = (question) => new Promise((resolve) => {
 async function createAdmin() {
   try {
     await mongoose.connect(MONGODB_URI);
-    console.log('Connected to MongoDB');
+    logger.info('Connected to MongoDB');
 
     // Get admin details from command line args or prompt
     let name = process.argv[2];
@@ -44,7 +45,7 @@ async function createAdmin() {
       password = await prompt('Enter admin password (min 6 characters): ');
       
       if (password.length < 6) {
-        console.error('Password must be at least 6 characters');
+        logger.error('Password must be at least 6 characters');
         rl.close();
         process.exit(1);
       }
@@ -54,7 +55,7 @@ async function createAdmin() {
     const existingAdmin = await Admin.findOne({ email });
     
     if (existingAdmin) {
-      console.log('Admin user already exists with this email');
+      logger.info('Admin user already exists with this email');
       rl.close();
       process.exit(0);
     }
@@ -72,12 +73,12 @@ async function createAdmin() {
     };
 
     const admin = await Admin.create(adminUser);
-    console.log(`Admin user created successfully with ID: ${admin._id}`);
+    logger.info(`Admin user created successfully with ID: ${admin._id}`);
     
     rl.close();
     process.exit(0);
   } catch (error) {
-    console.error('Error creating admin user:', error);
+    logger.error('Error creating admin user:', error);
     rl.close();
     process.exit(1);
   }

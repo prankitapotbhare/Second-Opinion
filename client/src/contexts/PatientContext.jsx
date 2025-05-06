@@ -1,7 +1,16 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getDoctorResponse, submitFeedback, requestSecondOpinion, checkAppointmentStatus } from '@/api/patient.api';
+import React, { createContext, useContext, useState, useCallback } from 'react';
+import { 
+  getDoctors,
+  getDoctorById,
+  submitPatientDetails,
+  requestAppointment,
+  getDoctorReviews,
+  submitReview,
+  getPatientResponse,
+  getAvailableTimeSlots // Add this import
+} from '@/api/patient.api';
 
 // Create the context
 const PatientContext = createContext();
@@ -17,285 +26,439 @@ export const usePatient = () => {
 
 export const PatientProvider = ({ children }) => {
   // Core state
-  const [currentSubmission, setCurrentSubmission] = useState(null);
-  const [doctorResponse, setDoctorResponse] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
-  // Feedback state
-  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  // Doctor state
+  const [doctors, setDoctors] = useState([]);
+  const [doctorsLoading, setDoctorsLoading] = useState(false);
+  const [doctorsError, setDoctorsError] = useState(null);
+  const [currentDoctor, setCurrentDoctor] = useState(null);
+  const [doctorLoading, setDoctorLoading] = useState(false);
+  const [doctorError, setDoctorError] = useState(null);
+  
+  // Patient details state
+  const [patientDetailsLoading, setPatientDetailsLoading] = useState(false);
+  const [patientDetailsError, setPatientDetailsError] = useState(null);
+  const [currentSubmission, setCurrentSubmission] = useState(null);
   
   // Appointment state
-  const [appointmentRequested, setAppointmentRequested] = useState(false);
-  const [appointmentDetails, setAppointmentDetails] = useState(null);
-  const [appointmentStatus, setAppointmentStatus] = useState(null); // 'pending', 'approved', 'rejected'
-  const [statusCheckInterval, setStatusCheckInterval] = useState(null);
+  const [appointmentLoading, setAppointmentLoading] = useState(false);
+  const [appointmentError, setAppointmentError] = useState(null);
+  
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalDoctors: 0,
+    limit: 8
+  });
 
-  // Load persisted data on mount
-  useEffect(() => {
-    loadPersistedData();
-  }, []);
+  // Response state
+  const [patientResponse, setPatientResponse] = useState(null);
+  const [responseLoading, setResponseLoading] = useState(false);
+  const [responseError, setResponseError] = useState(null);
+  
+  // Reviews state
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsError, setReviewsError] = useState(null);
+  const [reviewsPagination, setReviewsPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalReviews: 0,
+    limit: 10
+  });
+  
+  // Review submission state
+  const [reviewSubmitLoading, setReviewSubmitLoading] = useState(false);
+  const [reviewSubmitError, setReviewSubmitError] = useState(null);
+  const [reviewSubmitSuccess, setReviewSubmitSuccess] = useState(false);
 
-  // Load all persisted data from localStorage
-  const loadPersistedData = () => {
-    try {
-      const submissionId = localStorage.getItem('patientSubmissionId');
-      const feedbackStatus = localStorage.getItem('feedbackSubmitted');
-      const appointmentStatus = localStorage.getItem('appointmentRequested');
-      const appointmentData = localStorage.getItem('appointmentDetails');
-      const apptStatus = localStorage.getItem('appointmentStatus');
-      
-      if (submissionId) {
-        setCurrentSubmission({ id: submissionId });
-        fetchDoctorResponse(submissionId);
-      }
-      
-      if (feedbackStatus === 'true') {
-        setFeedbackSubmitted(true);
-      }
-      
-      if (appointmentStatus === 'true') {
-        setAppointmentRequested(true);
-      }
-      
-      if (appointmentData) {
-        try {
-          setAppointmentDetails(JSON.parse(appointmentData));
-        } catch (err) {
-          console.error('Error parsing appointment details:', err);
-        }
-      }
-      
-      if (apptStatus) {
-        setAppointmentStatus(apptStatus);
-      }
-    } catch (error) {
-      console.error('Error loading persisted data:', error);
-      setError('Failed to load saved data. Please try refreshing the page.');
+  // Fetch doctors list
+  const fetchDoctors = useCallback(async (params = {}) => {
+    // Don't set loading to true if we're just changing pages
+    const isPageChange = params.page && pagination.currentPage !== params.page;
+    
+    if (!isPageChange) {
+      setDoctorsLoading(true);
     }
-  };
-
-  // Check appointment status - memoized with useCallback to prevent recreation on each render
-  const checkAppointmentStatusUpdate = useCallback(async () => {
-    if (!doctorResponse?.id || !appointmentRequested) return;
+    
+    setDoctorsError(null);
     
     try {
-      const status = await checkAppointmentStatus(doctorResponse.id);
+      const result = await getDoctors(params);
       
-      if (status.status === 'not_found') {
-        return;
-      }
-      
-      // Update appointment status
-      setAppointmentStatus(status.status);
-      localStorage.setItem('appointmentStatus', status.status);
-      
-      // If approved, update the appointment details with any additional info from doctor
-      if (status.status === 'approved' && status.appointmentDetails) {
-        const updatedDetails = {...appointmentDetails, ...status.appointmentDetails};
-        setAppointmentDetails(updatedDetails);
-        localStorage.setItem('appointmentDetails', JSON.stringify(updatedDetails));
-      }
-      
-      // If status is final (approved/rejected), clear the interval
-      if (status.status === 'approved' || status.status === 'rejected') {
-        if (statusCheckInterval) {
-          clearInterval(statusCheckInterval);
-          setStatusCheckInterval(null);
-        }
-      }
-    } catch (err) {
-      console.error('Error checking appointment status:', err);
-    }
-  }, [doctorResponse?.id, appointmentRequested, appointmentDetails]);  // Removed statusCheckInterval from dependencies
-
-  // Set up status checking interval when appointment is requested
-  useEffect(() => {
-    // Only set up interval if appointment is pending and we have a response
-    if (appointmentRequested && appointmentStatus === 'pending' && doctorResponse?.id) {
-      // Clear any existing interval first to prevent duplicates
-      if (statusCheckInterval) {
-        clearInterval(statusCheckInterval);
-      }
-      
-      // Check status immediately
-      checkAppointmentStatusUpdate();
-      
-      // Then set up interval to check every 30 seconds
-      const intervalId = setInterval(() => {
-        checkAppointmentStatusUpdate();
-      }, 30000);
-      
-      setStatusCheckInterval(intervalId);
-      
-      // Clean up interval on unmount
-      return () => {
-        clearInterval(intervalId);
-      };
-    }
-    
-    // Clean up interval if appointment is no longer pending
-    if (statusCheckInterval && appointmentStatus !== 'pending') {
-      clearInterval(statusCheckInterval);
-      setStatusCheckInterval(null);
-    }
-    
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appointmentRequested, appointmentStatus, doctorResponse?.id]); // Removed checkAppointmentStatusUpdate and statusCheckInterval from dependencies
-
-  // Fetch doctor's response
-  const fetchDoctorResponse = async (submissionId) => {
-    if (!submissionId) return;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const response = await getDoctorResponse(submissionId);
-      setDoctorResponse(response);
-      
-      // Check if appointment was already requested in the response
-      if (response.appointmentRequested) {
-        setAppointmentRequested(true);
-        setAppointmentDetails(response.appointmentDetails);
-        setAppointmentStatus(response.appointmentStatus || 'pending');
-        
-        localStorage.setItem('appointmentRequested', 'true');
-        localStorage.setItem('appointmentDetails', JSON.stringify(response.appointmentDetails));
-        localStorage.setItem('appointmentStatus', response.appointmentStatus || 'pending');
-      }
-    } catch (err) {
-      console.error('Error fetching doctor response:', err);
-      setError('Failed to load doctor\'s response. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Set current submission and fetch response
-  const setSubmission = (submission) => {
-    if (!submission || !submission.id) {
-      console.error('Invalid submission data');
-      return;
-    }
-    
-    setCurrentSubmission(submission);
-    
-    // Store submission ID in localStorage for better persistence
-    localStorage.setItem('patientSubmissionId', submission.id);
-    
-    // Fetch doctor's response for this submission
-    fetchDoctorResponse(submission.id);
-  };
-
-  // Clear all submission and appointment data
-  const clearSubmission = () => {
-    // Clear state
-    setCurrentSubmission(null);
-    setDoctorResponse(null);
-    setFeedbackSubmitted(false);
-    setAppointmentRequested(false);
-    setAppointmentDetails(null);
-    setAppointmentStatus(null);
-    
-    // Clear interval if exists
-    if (statusCheckInterval) {
-      clearInterval(statusCheckInterval);
-      setStatusCheckInterval(null);
-    }
-    
-    // Clear from localStorage
-    localStorage.removeItem('patientSubmissionId');
-    localStorage.removeItem('feedbackSubmitted');
-    localStorage.removeItem('appointmentRequested');
-    localStorage.removeItem('appointmentDetails');
-    localStorage.removeItem('appointmentStatus');
-  };
-
-  // Submit feedback to doctor
-  const submitFeedbackToDoctor = async (responseId, rating, comment) => {
-    if (!responseId) {
-      throw new Error('Response ID is required');
-    }
-    
-    try {
-      await submitFeedback(responseId, rating, comment);
-      setFeedbackSubmitted(true);
-      localStorage.setItem('feedbackSubmitted', 'true');
-      return true;
-    } catch (error) {
-      console.error('Error submitting feedback:', error);
-      throw error;
-    }
-  };
-
-  // Request appointment for second opinion
-  const requestAppointment = async (responseId, dateTime) => {
-    if (!responseId) {
-      throw new Error('Response ID is required');
-    }
-    
-    if (!dateTime || !dateTime.date || !dateTime.time) {
-      throw new Error('Date and time are required');
-    }
-    
-    try {
-      const result = await requestSecondOpinion(responseId, dateTime);
-      
-      // Update state with appointment details
-      setAppointmentRequested(true);
-      setAppointmentDetails(dateTime);
-      setAppointmentStatus('pending');
-      
-      // Store in localStorage
-      localStorage.setItem('appointmentRequested', 'true');
-      localStorage.setItem('appointmentDetails', JSON.stringify(dateTime));
-      localStorage.setItem('appointmentStatus', 'pending');
+      setDoctors(result.doctors);
+      setPagination({
+        currentPage: parseInt(result.page),
+        totalPages: Math.ceil(result.total / result.limit),
+        totalDoctors: result.total,
+        limit: result.limit
+      });
       
       return result;
-    } catch (error) {
-      console.error('Error requesting appointment:', error);
-      throw error;
+    } catch (err) {
+      console.error('Error fetching doctors:', err);
+      setDoctorsError(err.message || 'Failed to fetch doctors');
+      return null;
+    } finally {
+      setDoctorsLoading(false);
+    }
+  }, [pagination.currentPage]);
+
+  // Fetch doctor by ID with cache control
+  const fetchDoctorById = useCallback(async (doctorId, bypassCache = false) => {
+    if (!doctorId) {
+      setDoctorError("Doctor ID is required");
+      return null;
+    }
+    
+    setDoctorLoading(true);
+    setDoctorError(null);
+    setCurrentDoctor(null);
+    
+    try {
+      const doctor = await getDoctorById(doctorId, bypassCache);
+      setCurrentDoctor(doctor);
+      return doctor;
+    } catch (err) {
+      setDoctorError(err.message || "Failed to load doctor details");
+      return null;
+    } finally {
+      setDoctorLoading(false);
+    }
+  }, []);
+
+  // Submit patient details to a doctor
+  const submitDetails = useCallback(async (patientDetails) => {
+    if (!patientDetails || !patientDetails.doctorId) {
+      setPatientDetailsError("Doctor ID and patient details are required");
+      return null;
+    }
+    
+    // Validate required fields
+    if (!patientDetails.fullName || !patientDetails.age || !patientDetails.relation || 
+        !patientDetails.contactNumber || !patientDetails.email || !patientDetails.gender || 
+        !patientDetails.problem) {
+      setPatientDetailsError("All required fields must be filled");
+      return null;
+    }
+    
+    setPatientDetailsLoading(true);
+    setPatientDetailsError(null);
+    setCurrentSubmission(null);
+    
+    try {
+      const result = await submitPatientDetails(patientDetails);
+      setCurrentSubmission(result.data.formSubmission);
+      return result.data.formSubmission;
+    } catch (err) {
+      const errorMessage = err.data?.message || err.message || "Failed to submit patient details";
+      setPatientDetailsError(errorMessage);
+      return null;
+    } finally {
+      setPatientDetailsLoading(false);
+    }
+  }, []);
+  
+  // Helper function to format status text for UI
+  const formatStatusText = (status) => {
+    switch (status) {
+      case 'pending':
+        return 'Pending Review';
+      case 'opinion-needed':
+        return 'Second Opinion Needed';
+      case 'opinion-not-needed':
+        return 'Second Opinion Not Needed';
+      case 'under-review':
+        return 'Appointment Under Review';
+      case 'approved':
+        return 'Appointment Approved';
+      case 'rejected':
+        return 'Appointment Rejected';
+      case 'completed':
+        return 'Appointment Completed';
+      default:
+        return 'Unknown Status';
     }
   };
-
-  // Refresh doctor response data
-  const refreshResponse = () => {
-    if (currentSubmission && currentSubmission.id) {
-      fetchDoctorResponse(currentSubmission.id);
-    } else {
-      console.error('No submission to refresh');
+  
+  // Helper function to get status color for UI
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending':
+        return 'yellow';
+      case 'opinion-needed':
+        return 'blue';
+      case 'opinion-not-needed':
+        return 'gray';
+      case 'under-review':
+        return 'purple';
+      case 'approved':
+        return 'green';
+      case 'rejected':
+        return 'red';
+      case 'completed':
+        return 'green';
+      default:
+        return 'gray';
     }
   };
-
-  // Context value
-  const contextValue = {
-    // Core data
-    currentSubmission,
-    doctorResponse,
-    loading,
-    error,
-    
-    // Feedback data
-    feedbackSubmitted,
-    setFeedbackSubmitted,
-    
-    // Appointment data
-    appointmentRequested,
-    appointmentDetails,
-    appointmentStatus,
-    
-    // Actions
-    setSubmission,
-    clearSubmission,
-    submitFeedbackToDoctor,
-    requestAppointment,
-    refreshResponse,
-    checkAppointmentStatusUpdate
+  
+  // Helper function to format date
+  const formatDate = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   };
+
+  // Get patient response
+  const fetchPatientResponse = useCallback(async () => {
+    setResponseLoading(true);
+    setResponseError(null);
+    
+    try {
+      const result = await getPatientResponse();
+      
+      // Format status for UI display
+      const formattedResponse = {
+        ...result,
+        statusText: formatStatusText(result.status),
+        statusColor: getStatusColor(result.status),
+        formattedDate: result.appointmentDetails?.date ? 
+          formatDate(result.appointmentDetails.date) : null,
+        formattedTime: result.appointmentDetails?.time || null,
+        isActionable: ['opinion-needed', 'pending'].includes(result.status)
+      };
+      
+      setPatientResponse(formattedResponse);
+      return formattedResponse;
+    } catch (err) {
+      const errorMessage = err.message || "Failed to get patient response";
+      setResponseError(errorMessage);
+      return null;
+    } finally {
+      setResponseLoading(false);
+    }
+  }, []);
+
+  // Available slots state
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState(null);
+
+  // Add this new function
+  const fetchAvailableSlots = useCallback(async (doctorId, date) => {
+    if (!doctorId || !date) {
+      console.error('Missing required parameters:', { doctorId, date });
+      setSlotsError("Doctor ID and date are required");
+      return [];
+    }
+    
+    setSlotsLoading(true);
+    setSlotsError(null);
+    setAvailableSlots([]);
+    
+    try {
+      console.log('Calling getAvailableTimeSlots with:', { doctorId, date });
+      const slots = await getAvailableTimeSlots(doctorId, date);
+      console.log('Fetched slots:', slots);
+      
+      // Format slots for display (e.g., "09:00" to "09:00 A.M")
+      const formattedSlots = slots.map(slot => {
+        const [hours, minutes] = slot.split(':').map(Number);
+        const period = hours >= 12 ? 'P.M' : 'A.M';
+        const displayHours = hours % 12 || 12;
+        return `${displayHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${period}`;
+      });
+      
+      console.log('Formatted slots:', formattedSlots);
+      setAvailableSlots(formattedSlots);
+      return formattedSlots;
+    } catch (err) {
+      console.error('Error fetching available slots:', err);
+      setSlotsError(err.message || "Failed to load available slots");
+      return [];
+    } finally {
+      setSlotsLoading(false);
+    }
+  }, []);
+
+  // Request appointment
+  const requestDoctorAppointment = useCallback(async (submissionId, appointmentDetails) => {
+    if (!submissionId || !appointmentDetails) {
+      setAppointmentError("Submission ID and appointment details are required");
+      return null;
+    }
+    
+    if (!appointmentDetails.date || !appointmentDetails.time) {
+      setAppointmentError("Date and time are required");
+      return null;
+    }
+    
+    setAppointmentLoading(true);
+    setAppointmentError(null);
+    
+    try {
+      const result = await requestAppointment(submissionId, appointmentDetails);
+      
+      // Update the patient response with the new data
+      await fetchPatientResponse();
+      
+      return result.data;
+    } catch (err) {
+      const errorMessage = err.data?.message || err.message || "Failed to request appointment";
+      setAppointmentError(errorMessage);
+      return null;
+    } finally {
+      setAppointmentLoading(false);
+    }
+  }, [fetchPatientResponse]);
+  
+  // Fetch doctor reviews
+  const fetchDoctorReviews = useCallback(async (doctorId, params = {}) => {
+    if (!doctorId) {
+      setReviewsError("Doctor ID is required");
+      return null;
+    }
+    
+    // Don't set loading to true if we're just changing pages
+    const isPageChange = params.page && reviewsPagination.currentPage !== params.page;
+    
+    if (!isPageChange) {
+      setReviewsLoading(true);
+    }
+    
+    setReviewsError(null);
+    
+    try {
+      const result = await getDoctorReviews(doctorId, params);
+      
+      setReviews(result.reviews);
+      setReviewsPagination({
+        currentPage: parseInt(result.page),
+        totalPages: result.totalPages,
+        totalReviews: result.totalReviews,
+        limit: result.limit
+      });
+      
+      return result;
+    } catch (err) {
+      console.error('Error fetching doctor reviews:', err);
+      setReviewsError(err.message || 'Failed to fetch doctor reviews');
+      return null;
+    } finally {
+      setReviewsLoading(false);
+    }
+  }, [reviewsPagination.currentPage]);
+
+  // Submit doctor review
+  const submitDoctorReview = useCallback(async (submissionId, reviewData) => {
+    if (!submissionId) {
+      setReviewSubmitError("Submission ID is required");
+      return null;
+    }
+    
+    if (!reviewData || !reviewData.rating) {
+      setReviewSubmitError("Rating is required");
+      return null;
+    }
+    
+    setReviewSubmitLoading(true);
+    setReviewSubmitError(null);
+    setReviewSubmitSuccess(false);
+    
+    try {
+      console.log('Submitting review for submission:', submissionId, reviewData);
+      const result = await submitReview(submissionId, reviewData);
+      setReviewSubmitSuccess(true);
+      
+      // Update the patient response with the new review
+      if (patientResponse && patientResponse.id === submissionId) {
+        setPatientResponse({
+          ...patientResponse,
+          hasReview: true,
+          review: {
+            rating: reviewData.rating,
+            comment: reviewData.comment || ''
+          }
+        });
+      }
+      
+      return result;
+    } catch (err) {
+      console.error('Error submitting review:', err);
+      setReviewSubmitError(err.message || "Failed to submit review");
+      return null;
+    } finally {
+      setReviewSubmitLoading(false);
+    }
+  }, [patientResponse]);
 
   return (
-    <PatientContext.Provider value={contextValue}>
+    <PatientContext.Provider
+      value={{
+        // Core data
+        loading,
+        error,
+        
+        // Doctor data
+        doctors,
+        doctorsLoading,
+        doctorsError,
+        fetchDoctors,
+        pagination,
+        setPagination,
+        currentDoctor,
+        doctorLoading,
+        doctorError,
+        fetchDoctorById,
+        refreshDoctorDetails: (doctorId) => fetchDoctorById(doctorId, true),
+        
+        // Patient details data
+        patientDetailsLoading,
+        patientDetailsError,
+        currentSubmission,
+        submitDetails,
+
+        // Response data
+        patientResponse,
+        responseLoading,
+        responseError,
+        fetchPatientResponse,
+
+        // Time slots data
+        availableSlots,
+        slotsLoading,
+        slotsError,
+        fetchAvailableSlots,
+        
+        // Appointment data
+        appointmentLoading,
+        appointmentError,
+        requestDoctorAppointment,
+        
+        // Reviews data
+        reviews,
+        reviewsLoading,
+        reviewsError,
+        reviewsPagination,
+        fetchDoctorReviews,
+        averageRating: reviews.length > 0 ? reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length : 0,
+        
+        // Review submission data
+        reviewSubmitLoading,
+        reviewSubmitError,
+        reviewSubmitSuccess,
+        submitDoctorReview,
+      }}
+    >
       {children}
     </PatientContext.Provider>
   );

@@ -1,430 +1,482 @@
-const Patient = require('../models/patient.model');
-const fs = require('fs');
-const path = require('path');
-const mongoose = require('mongoose');
+const Doctor = require('../models/doctor.model');
+const Availability = require('../models/availability.model');
+const PatientDetails = require('../models/patientDetails.model');
+const fileService = require('../services/file.service');
+const validationService = require('../services/validation.service');
+const { createError } = require('../utils/error.util');
 
-// Get patient details
-exports.getPatientDetails = async (req, res) => {
+// --- PUBLIC: Get doctors with filters ---
+exports.getDoctorsPublic = async (req, res, next) => {
   try {
-    const patient = await Patient.findById(req.params.id).select('-password');
-    if (!patient) {
-      return res.status(404).json({ message: 'Patient not found' });
+    const { location, department, limit = 10, page = 1 } = req.query;
+    const query = {};
+
+    if (location) {
+      query.location = { $regex: new RegExp(location, 'i') };
     }
-    res.json(patient);
+    if (department) {
+      query.specialization = { $regex: new RegExp(department, 'i') };
+    }
+
+    // Only show doctors with completed profiles
+    query.isProfileComplete = true;
+
+    // Get total count for pagination
+    const total = await Doctor.countDocuments(query);
+
+    const doctors = await Doctor.find(query)
+      .select('name photoURL specialization degree experience')
+      .limit(Number(limit))
+      .skip((Number(page) - 1) * Number(limit));
+
+    res.status(200).json({
+      success: true,
+      data: doctors,
+      total,
+      page: Number(page),
+      limit: Number(limit)
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-// Create new patient
-exports.createPatient = async (req, res) => {
+// --- PUBLIC: Get doctor by ID ---
+exports.getDoctorByIdPublic = async (req, res, next) => {
   try {
-    const patient = new Patient(req.body);
-    await patient.save();
+    const { doctorId } = req.params;
     
-    // Remove password from response
-    const patientResponse = patient.toObject();
-    delete patientResponse.password;
+    // Validate doctor ID
+    validationService.validateObjectId(doctorId, 'doctor');
     
-    res.status(201).json(patientResponse);
+    // Find doctor with completed profile and populate availability in a single query
+    const doctor = await Doctor.findOne({ 
+      _id: doctorId,
+      isProfileComplete: true 
+    })
+    .select(
+      '_id name email specialization experience degree hospitalAffiliation ' +
+      'hospitalAddress licenseNumber issuingMedicalCouncil consultationFee ' + 
+      'languages location photoURL gender bio timezone'
+    )
+    .populate({
+      path: 'availability',
+      select: 'workingDays startTime endTime weeklyHoliday timeSlots'
+    })
+    .lean();
+    
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor not found or profile not complete'
+      });
+    }
+    
+    // If availability isn't found through populate, try to find it directly
+    // This is a fallback for doctors created before the schema update
+    if (!doctor.availability) {
+      const availability = await Availability.findOne({ doctorId: doctor._id }).lean();
+      
+      if (availability) {
+        doctor.availability = {
+          workingDays: availability.workingDays,
+          startTime: availability.startTime,
+          endTime: availability.endTime,
+          weeklyHoliday: availability.weeklyHoliday,
+          timeSlots: availability.timeSlots
+        };
+      }
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: doctor
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    next(error);
   }
 };
 
-// Update patient details
-exports.updatePatient = async (req, res) => {
+// --- PUBLIC: Get doctor reviews ---
+exports.getDoctorReviewsPublic = async (req, res, next) => {
   try {
-    // Don't allow password updates through this endpoint
-    if (req.body.password) {
-      delete req.body.password;
+    const { doctorId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+    
+    // Validate doctor ID
+    validationService.validateObjectId(doctorId, 'doctor');
+    
+    // Find doctor with completed profile
+    const doctor = await Doctor.findOne({ 
+      _id: doctorId,
+      isProfileComplete: true 
+    })
+    .select('reviews averageRating')
+    .populate({
+      path: 'reviews.patientId',
+      select: 'name photoURL'
+    });
+    
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor not found or profile not complete'
+      });
     }
     
-    const patient = await Patient.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    ).select('-password');
-    
-    if (!patient) {
-      return res.status(404).json({ message: 'Patient not found' });
+    // Helper to format "dayAgo"
+    function getDayAgo(date) {
+      const now = new Date();
+      const diffMs = now - date;
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      if (diffDays === 0) return 'Today';
+      if (diffDays === 1) return '1 day ago';
+      return `${diffDays} days ago`;
     }
+
+    // Sort reviews by date (newest first)
+    const sortedReviews = doctor.reviews
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     
-    res.json(patient);
+    // Apply pagination
+    const startIndex = (Number(page) - 1) * Number(limit);
+    const endIndex = startIndex + Number(limit);
+    const paginatedReviews = sortedReviews.slice(startIndex, endIndex);
+    
+    // Format reviews for response
+    const formattedReviews = paginatedReviews.map(review => ({
+      id: review._id,
+      patientName: review.patientId ? review.patientId.name : 'Anonymous',
+      patientPhoto: review.patientId ? review.patientId.photoURL : null,
+      rating: review.rating,
+      comment: review.comment,
+      dayAgo: getDayAgo(review.createdAt)
+    }));
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        reviews: formattedReviews,
+        averageRating: doctor.averageRating,
+        totalReviews: doctor.reviews.length,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(doctor.reviews.length / Number(limit))
+      }
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    next(error);
   }
 };
 
-// Submit a new form
-exports.submitForm = async (req, res) => {
+// --- Create patient details ---
+exports.createPatientDetails = async (req, res, next) => {
   try {
-    const { doctorId, age, gender, phone, emergencyContact, problem } = req.body;
-    
+    const patientId = req.user.id;
+    const { 
+      doctorId, 
+      fullName, 
+      age, 
+      relation, 
+      contactNumber, 
+      email, 
+      gender, 
+      emergencyContact, 
+      problem 
+    } = req.body;
+
     // Validate required fields
-    if (!doctorId || !age || !gender || !phone || !problem) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Missing required fields',
-        details: {
-          doctorId: !doctorId ? 'Doctor ID is required' : null,
-          age: !age ? 'Age is required' : null,
-          gender: !gender ? 'Gender is required' : null,
-          phone: !phone ? 'Phone number is required' : null,
-          problem: !problem ? 'Problem description is required' : null
-        }
-      });
+    if (!doctorId || !fullName || !age || !relation || !contactNumber || !email || !gender || !emergencyContact || !problem) {
+      return next(createError('Missing required fields', 400));
     }
-    
-    // Validate age
-    if (isNaN(age) || age <= 0 || age > 120) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Invalid age value' 
-      });
+
+    // Validate doctor exists
+    const doctorExists = await Doctor.exists({ _id: doctorId, isProfileComplete: true });
+    if (!doctorExists) {
+      return next(createError('Doctor not found or profile not complete', 404));
     }
-    
-    // Validate gender
-    if (!['Male', 'Female', 'Other'].includes(gender)) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Gender must be Male, Female, or Other' 
-      });
-    }
-    
-    // Ensure doctorId is a valid ObjectId
-    if (!mongoose.Types.ObjectId.isValid(doctorId)) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Invalid doctor ID' 
-      });
-    }
-    
-    // Ensure patient ID matches authenticated user or user has admin role
-    if (req.params.id !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ 
-        success: false,
-        message: 'You are not authorized to submit forms for this patient' 
-      });
-    }
-    
-    const patient = await Patient.findById(req.params.id);
-    if (!patient) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Patient not found' 
-      });
-    }
-    
-    // Create new form submission
-    const newFormSubmission = {
-      doctorId,
-      age,
-      gender,
-      phone,
-      emergencyContact,
-      problem,
-      medicalFiles: [],
-      status: 'pending',
-      submittedAt: new Date()
-    };
-    
-    // Add form submission to patient's formSubmissions array
-    patient.formSubmissions.push(newFormSubmission);
-    await patient.save();
-    
-    // Return the newly created form submission
-    const formSubmission = patient.formSubmissions[patient.formSubmissions.length - 1];
-    
+
+    // Process uploaded files
+    const medicalFiles = fileService.processUploadedFiles(req.files);
+
+    // Create patient details
+    const patientDetails = await PatientDetails.create({
+      patientId,
+      doctorId: req.body.doctorId,
+      fullName: req.body.fullName,
+      age: req.body.age,
+      relation: req.body.relation,
+      contactNumber: req.body.contactNumber,
+      email: req.body.email,
+      gender: req.body.gender,
+      phone: req.body.contactNumber,
+      emergencyContact: req.body.emergencyContact,
+      problem: req.body.problem,
+      medicalFiles: medicalFiles
+    });
+
+    await patientDetails.save();
+
     res.status(201).json({
       success: true,
       message: 'Form submitted successfully',
       data: {
-        formSubmission
+        formSubmission: patientDetails
       }
     });
   } catch (error) {
-    console.error('Form submission error:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'An error occurred while submitting the form',
-      error: error.message
-    });
+    next(error);
   }
 };
 
-// Get all form submissions for a patient
-exports.getFormSubmissions = async (req, res) => {
+// --- Get response status ---
+exports.getResponse = async (req, res, next) => {
   try {
-    const patient = await Patient.findById(req.params.id)
-      .select('formSubmissions')
-      .populate({
-        path: 'formSubmissions.doctorId',
-        select: 'name specialization'
-      });
+    const patientId = req.user.id;
     
-    if (!patient) {
-      return res.status(404).json({ message: 'Patient not found' });
+    // Find the latest submission for this patient
+    const submission = await PatientDetails.findOne({ patientId })
+      .sort({ createdAt: -1 });
+
+    if (!submission) {
+      return res.status(404).json({
+        success: false,
+        message: 'Submission not found',
+        data: {
+          status: 'not_found'
+        }
+      });
     }
     
-    res.json({
+    res.status(200).json({
       success: true,
       data: {
-        formSubmissions: patient.formSubmissions
+        id: submission._id,
+        status: submission.status,
+        doctorId: submission.doctorId,
+        doctorResponse: submission.doctorResponse || null,
+        appointmentDetails: submission.appointmentDetails || null
       }
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-// Get a specific form submission
-exports.getFormSubmission = async (req, res) => {
+// --- Get available slots for a doctor on a specific date ---
+exports.getAvailableSlots = async (req, res, next) => {
   try {
-    const { id, formId } = req.params;
+    const { doctorId } = req.params;
+    const { date } = req.query;
     
-    const patient = await Patient.findById(id);
-    if (!patient) {
-      return res.status(404).json({ message: 'Patient not found' });
+    // Validate required parameters
+    if (!doctorId) {
+      return next(createError('Doctor ID is required', 400));
     }
     
-    const formSubmission = patient.formSubmissions.id(formId);
-    if (!formSubmission) {
-      return res.status(404).json({ message: 'Form submission not found' });
+    if (!date) {
+      return next(createError('Date is required', 400));
     }
     
-    res.json({
+    // Validate date format
+    const dateObj = new Date(date);
+    if (isNaN(dateObj.getTime())) {
+      return next(createError('Invalid date format. Use YYYY-MM-DD', 400));
+    }
+    
+    // Check if date is in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (dateObj < today) {
+      return next(createError('Cannot check availability for past dates', 400));
+    }
+    
+    // Find doctor's availability
+    const availability = await Availability.findOne({ doctorId });
+    if (!availability) {
+      return next(createError('Doctor availability not found', 404));
+    }
+    
+    // Get available slots
+    const availableSlots = await availability.getAvailableSlots(date);
+    
+    // If the requested date is today, filter out slots that have already passed
+    const isToday = dateObj.toDateString() === new Date().toDateString();
+    let filteredSlots = availableSlots;
+    
+    if (isToday) {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      
+      filteredSlots = availableSlots.filter(slot => {
+        const [slotHour, slotMinute] = slot.split(':').map(Number);
+        // Compare slot time with current time
+        return (slotHour > currentHour) || 
+               (slotHour === currentHour && slotMinute > currentMinute);
+      });
+    }
+    
+    res.status(200).json({
       success: true,
       data: {
-        formSubmission
+        date,
+        availableSlots: filteredSlots
       }
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-// Upload medical file to a specific form submission
-exports.uploadMedicalFile = async (req, res) => {
+// --- Update the requestAppointment method to check availability ---
+exports.requestAppointment = async (req, res, next) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'No file uploaded' 
-      });
-    }
-
-    const { id, formId } = req.params;
+    const patientId = req.user.id;
+    const { responseId } = req.params;
+    const { date, time, notes } = req.body;
     
-    // Ensure patient ID matches authenticated user or user has appropriate role
-    if (id !== req.user.id && !['admin', 'doctor'].includes(req.user.role)) {
-      return res.status(403).json({ 
-        success: false,
-        message: 'You are not authorized to upload files for this patient' 
-      });
+    // Validate submission ID
+    validationService.validateObjectId(responseId, 'submission');
+    
+    // Validate required fields
+    if (!date || !time) {
+      return next(createError('Date and time are required', 400));
     }
     
-    const patient = await Patient.findById(id);
-    if (!patient) {
-      // Delete the uploaded file if patient not found
-      fs.unlinkSync(req.file.path);
-      return res.status(404).json({ 
-        success: false,
-        message: 'Patient not found' 
-      });
+    const submission = await PatientDetails.findOne({
+      _id: responseId,
+      patientId,
+      status: { $in: ['opinion-needed', 'rejected'] }
+    });
+    
+    if (!submission) {
+      return next(createError('Submission not found or not eligible for appointment', 404));
     }
     
-    const formSubmission = patient.formSubmissions.id(formId);
-    if (!formSubmission) {
-      // Delete the uploaded file if form submission not found
-      fs.unlinkSync(req.file.path);
-      return res.status(404).json({ 
-        success: false,
-        message: 'Form submission not found' 
-      });
+    // Check if the selected slot is available
+    const availability = await Availability.findOne({ doctorId: submission.doctorId });
+    if (!availability) {
+      return next(createError('Doctor availability not found', 404));
     }
-
-    const fileInfo = {
-      fileName: req.file.originalname,
-      fileType: req.file.mimetype,
-      fileSize: req.file.size,
-      uploadDate: new Date(),
-      filePath: req.file.path
+    
+    const isAvailable = await availability.isAvailable(new Date(date), time);
+    if (!isAvailable) {
+      return next(createError('The selected time slot is no longer available', 409));
+    }
+    
+    // Update submission with appointment details
+    submission.appointmentDetails = {
+      date: new Date(date),
+      time,
+      notes: notes || ''
     };
-
-    formSubmission.medicalFiles.push(fileInfo);
-    await patient.save();
-
-    res.status(201).json({
+    
+    // Update status to under-review
+    submission.status = 'under-review';
+    
+    // Save the updated submission
+    await submission.save();
+    
+    // Reserve the slot temporarily (mark as unavailable for 24 hours)
+    await availability.reserveSlot(new Date(date), time);
+    
+    res.status(200).json({
       success: true,
-      message: 'File uploaded successfully',
+      message: 'Appointment requested successfully',
       data: {
-        file: fileInfo
+        appointmentDetails: submission.appointmentDetails,
+        status: submission.status
       }
     });
   } catch (error) {
-    // Delete the uploaded file if an error occurs
-    if (req.file && req.file.path) {
-      fs.unlinkSync(req.file.path);
-    }
-    console.error('File upload error:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'An error occurred while uploading the file',
-      error: error.message
-    });
+    next(error);
   }
 };
 
-// Add a new method to update a form submission
-exports.updateFormSubmission = async (req, res) => {
+// --- Submit a review for a doctor ---
+// Submit review for a doctor
+exports.submitReview = async (req, res, next) => {
   try {
-    const { id, formId } = req.params;
-    const { status, problem } = req.body;
+    const { submissionId } = req.params;
+    const patientId = req.user.id;
+    const { rating, comment } = req.body;
     
-    // Ensure patient ID matches authenticated user or user has admin role
-    if (id !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ 
-        success: false,
-        message: 'You are not authorized to update forms for this patient' 
-      });
+    // Validate required fields
+    if (!rating) {
+      return next(createError('Rating is required', 400));
     }
     
-    const patient = await Patient.findById(id);
-    if (!patient) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Patient not found' 
-      });
+    // Validate rating is between 1 and 5
+    if (rating < 1 || rating > 5) {
+      return next(createError('Rating must be between 1 and 5', 400));
     }
     
-    const formSubmission = patient.formSubmissions.id(formId);
-    if (!formSubmission) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Form submission not found' 
-      });
+    // Find the submission
+    const submission = await PatientDetails.findOne({ 
+      _id: submissionId,
+      patientId
+    });
+    
+    if (!submission) {
+      return next(createError('Submission not found', 404));
     }
     
-    // Only allow updating certain fields
-    if (problem) formSubmission.problem = problem;
-    
-    // Only allow doctors or admins to update status
-    if (status && ['doctor', 'admin'].includes(req.user.role)) {
-      if (!['pending', 'in-review', 'completed', 'rejected'].includes(status)) {
-        return res.status(400).json({ 
-          success: false,
-          message: 'Invalid status value' 
-        });
-      }
-      formSubmission.status = status;
+    // Check if the submission status is approved or completed
+    if (submission.status !== 'approved' && submission.status !== 'completed') {
+      return next(createError('You can only review after your appointment has been approved or completed', 400));
     }
     
-    await patient.save();
+    // Check if the patient has already submitted a review for this submission
+    if (submission.hasReview) {
+      return next(createError('You have already submitted a review for this appointment', 400));
+    }
     
-    res.json({
+    // Get the doctor ID from the submission
+    const doctorId = submission.doctorId;
+    
+    // Add review to the doctor's reviews array
+    const doctor = await Doctor.findById(doctorId);
+    
+    if (!doctor) {
+      return next(createError('Doctor not found', 404));
+    }
+    
+    // Add the review
+    doctor.reviews.push({
+      patientId,
+      rating,
+      comment: comment || '',
+      createdAt: new Date()
+    });
+    
+    // Calculate new average rating
+    const totalRating = doctor.reviews.reduce((sum, review) => sum + review.rating, 0);
+    doctor.averageRating = totalRating / doctor.reviews.length;
+    
+    // Save the doctor with the new review
+    await doctor.save();
+    
+    // Mark the submission as having a review
+    submission.hasReview = true;
+    submission.review = {
+      rating,
+      comment: comment || ''
+    };
+    
+    await submission.save();
+    
+    res.status(200).json({
       success: true,
-      message: 'Form submission updated successfully',
+      message: 'Review submitted successfully',
       data: {
-        formSubmission
+        rating,
+        comment: comment || ''
       }
     });
   } catch (error) {
-    console.error('Form update error:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'An error occurred while updating the form',
-      error: error.message
-    });
+    next(error);
   }
 };
 
-// Add a method to delete a medical file
-exports.deleteMedicalFile = async (req, res) => {
-  try {
-    const { id, formId, fileId } = req.params;
-    
-    // Ensure patient ID matches authenticated user or user has admin role
-    if (id !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ 
-        success: false,
-        message: 'You are not authorized to delete files for this patient' 
-      });
-    }
-    
-    const patient = await Patient.findById(id);
-    if (!patient) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Patient not found' 
-      });
-    }
-    
-    const formSubmission = patient.formSubmissions.id(formId);
-    if (!formSubmission) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Form submission not found' 
-      });
-    }
-    
-    const file = formSubmission.medicalFiles.id(fileId);
-    if (!file) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'File not found' 
-      });
-    }
-    
-    // Delete the file from the filesystem
-    if (fs.existsSync(file.filePath)) {
-      fs.unlinkSync(file.filePath);
-    }
-    
-    // Remove the file from the formSubmission
-    formSubmission.medicalFiles.pull(fileId);
-    await patient.save();
-    
-    res.json({
-      success: true,
-      message: 'File deleted successfully'
-    });
-  } catch (error) {
-    console.error('File deletion error:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'An error occurred while deleting the file',
-      error: error.message
-    });
-  }
-};
-
-// Download medical file from a specific form submission
-exports.downloadMedicalFile = async (req, res) => {
-  try {
-    const { id, formId, fileId } = req.params;
-    
-    const patient = await Patient.findById(id);
-    if (!patient) {
-      return res.status(404).json({ message: 'Patient not found' });
-    }
-    
-    const formSubmission = patient.formSubmissions.id(formId);
-    if (!formSubmission) {
-      return res.status(404).json({ message: 'Form submission not found' });
-    }
-    
-    const file = formSubmission.medicalFiles.id(fileId);
-    if (!file) {
-      return res.status(404).json({ message: 'File not found' });
-    }
-
-    if (!fs.existsSync(file.filePath)) {
-      return res.status(404).json({ message: 'File not found on server' });
-    }
-
-    res.download(file.filePath, file.fileName);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+// Add this new function to the existing file

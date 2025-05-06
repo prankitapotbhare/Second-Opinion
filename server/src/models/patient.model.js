@@ -1,51 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-// Define the form submission schema
-const formSubmissionSchema = new mongoose.Schema({
-  doctorId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Doctor',
-    required: [true, 'Doctor ID is required']
-  },
-  age: {
-    type: Number,
-    required: [true, 'Age is required']
-  },
-  gender: {
-    type: String,
-    enum: ['Male', 'Female', 'Other'],
-    required: [true, 'Gender is required']
-  },
-  phone: {
-    type: String,
-    required: [true, 'Phone number is required']
-  },
-  emergencyContact: {
-    type: String
-  },
-  problem: {
-    type: String,
-    required: [true, 'Problem description is required']
-  },
-  medicalFiles: [{
-    fileName: String,
-    fileType: String,
-    fileSize: Number,
-    uploadDate: Date,
-    filePath: String
-  }],
-  status: {
-    type: String,
-    enum: ['pending', 'in-review', 'completed', 'rejected'],
-    default: 'pending'
-  },
-  submittedAt: {
-    type: Date,
-    default: Date.now
-  }
-}, { timestamps: true });
-
 const patientSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -98,10 +53,9 @@ const patientSchema = new mongoose.Schema({
   // Add role field for consistency
   role: {
     type: String,
-    default: 'patient'
+    default: 'patient',
+    immutable: true
   },
-  // Collection of form submissions
-  formSubmissions: [formSubmissionSchema],
   createdAt: {
     type: Date,
     default: Date.now

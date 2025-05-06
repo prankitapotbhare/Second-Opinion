@@ -1,7 +1,6 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import * as authApi from '@/api/auth.api';
 
 // Create the auth context
@@ -271,7 +270,15 @@ export const AuthProvider = ({ children }) => {
       }
       
       setLoading(false);
-      return { success: false, error: response.message };
+      // Pass through all relevant fields from backend
+      return { 
+        success: false, 
+        error: response.message, 
+        needsVerification: response.needsVerification, 
+        email: response.email,
+        wrongRole: response.wrongRole,
+        actualRole: response.actualRole
+      };
     } catch (error) {
       console.error("Login error:", error);
       
@@ -411,13 +418,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Google authentication
-  const googleAuth = async (idToken, userType = 'user') => {
+  const googleAuth = async (idToken, userType = "patient") => {
     setAuthError(null);
     setLoading(true);
     
     try {
-      // Map 'user' type to 'patient' for backend compatibility
-      const backendUserType = userType === 'user' ? 'patient' : userType;
+      // Map "patient" type to 'patient' for backend compatibility
+      const backendUserType = userType === "patient" ? 'patient' : userType;
       
       const response = await authApi.googleAuth(idToken, backendUserType);
       

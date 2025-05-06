@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import OtpVerificationForm from './OtpVerificationForm';
 
 const LoginForm = ({ 
-  userType = 'user', // 'user', 'doctor', or 'admin'
+  userType = "patient", // "patient", 'doctor', or 'admin'
   hideOptions = false,
   redirectPath
 }) => {
@@ -55,7 +55,7 @@ const LoginForm = ({
     try {
       // Map userType to expected role for backend
       let expectedRole;
-      if (userType === 'user') {
+      if (userType === "patient") {
         expectedRole = 'patient';
       } else if (userType === 'doctor' || userType === 'admin') {
         expectedRole = userType;
@@ -74,10 +74,13 @@ const LoginForm = ({
         // Check if email needs verification
         if (result.needsVerification) {
           setNeedsVerification(true);
-          setVerificationEmail(email);
-        } else if (result.wrongRole) {
-          // Handle wrong role (e.g., trying to log in as doctor with a patient account)
-          setError(result.error);
+          setVerificationEmail(result.email);
+        } else if (result.wrongRole && result.actualRole) {
+          // Handle wrong role error - redirect to correct login page
+          setError(`This account is registered as a ${result.actualRole}. Redirecting to the correct login page...`);
+          setTimeout(() => {
+            router.push(`/login/${result.actualRole}`);
+          }, 2000);
         } else {
           setError(result.error || 'Login failed. Please check your credentials.');
         }
@@ -97,7 +100,7 @@ const LoginForm = ({
     
     try {
       // Map userType to expected role for backend
-      const backendUserType = userType === 'user' ? 'patient' : userType;
+      const backendUserType = userType === "patient" ? 'patient' : userType;
       
       // Determine the redirect path
       const finalRedirectPath = redirectPath || (userType === 'admin' ? '/admin/dashboard' : 

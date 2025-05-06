@@ -10,14 +10,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
  * @param {string} role - User role (patient, doctor, admin)
  * @returns {Model} Mongoose model
  */
-exports.getModelByRole = (role) => {
+const getModelByRole = (role) => {
   switch (role) {
     case 'doctor':
       return Doctor;
     case 'admin':
       return Admin;
-    case 'patient':
-    case 'user':
+    case "patient":
+      return Patient;
     default:
       return Patient;
   }
@@ -26,7 +26,7 @@ exports.getModelByRole = (role) => {
 /**
  * Middleware to authenticate user
  */
-exports.authenticate = async (req, res, next) => {
+const authenticate = async (req, res, next) => {
   try {
     // Get token from header
     const authHeader = req.headers.authorization;
@@ -84,22 +84,28 @@ exports.authenticate = async (req, res, next) => {
 };
 
 // Middleware to check user role
-exports.authorize = (...roles) => {
+const checkRole = (roles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
         success: false,
-        message: 'Unauthorized'
+        message: 'Unauthorized - Authentication required'
       });
     }
-    
+
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        message: `Role ${req.user.role} is not authorized to access this resource`
+        message: 'Forbidden - You do not have permission to access this resource'
       });
     }
-    
+
     next();
   };
+};
+
+module.exports = { 
+  getModelByRole,
+  authenticate,
+  checkRole
 };

@@ -8,11 +8,21 @@ const { checkRole } = require('../middleware/role.middleware');
 router.use(authenticate);
 router.use(checkRole(['admin']));
 
-// Admin routes
-router.get('/:id', adminController.getAdminDetails);
-router.put('/:id', adminController.updateAdmin);
-router.get('/patients/all', adminController.getAllPatients);
-router.get('/doctors/all', adminController.getAllDoctors);
-router.post('/create', adminController.createAdmin);
+// Admin profile routes (using authenticated user)
+router.get('/profile', adminController.getAdminProfile);
+router.put('/profile', adminController.updateAdminProfile);
+
+// User management routes - Patients
+router.get('/patients', adminController.getAllPatients);
+router.delete('/patients/:id', adminController.deletePatient);
+
+// User management routes - Doctors
+router.get('/doctors', adminController.getAllDoctors);
+router.delete('/doctors/:id', adminController.deleteDoctor);
+
+// Admin management
+router.get('/admins', adminController.getAllAdmins);
+router.post('/admins', adminController.createAdmin);
+router.delete('/admins/:id', adminController.deleteAdmin);
 
 module.exports = router;
