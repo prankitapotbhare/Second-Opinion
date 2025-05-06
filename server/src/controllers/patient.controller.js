@@ -300,11 +300,28 @@ exports.getAvailableSlots = async (req, res, next) => {
     // Get available slots
     const availableSlots = await availability.getAvailableSlots(date);
     
+    // If the requested date is today, filter out slots that have already passed
+    const isToday = dateObj.toDateString() === new Date().toDateString();
+    let filteredSlots = availableSlots;
+    
+    if (isToday) {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      
+      filteredSlots = availableSlots.filter(slot => {
+        const [slotHour, slotMinute] = slot.split(':').map(Number);
+        // Compare slot time with current time
+        return (slotHour > currentHour) || 
+               (slotHour === currentHour && slotMinute > currentMinute);
+      });
+    }
+    
     res.status(200).json({
       success: true,
       data: {
         date,
-        availableSlots
+        availableSlots: filteredSlots
       }
     });
   } catch (error) {
