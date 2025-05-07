@@ -605,10 +605,20 @@ exports.getPatientRequests = async (req, res, next) => {
     const { page = 1, limit = 10 } = req.query;
     const doctorId = req.user.id;
     
-    // Get requests with opinion-needed status
+    // Get current date to filter out past appointments
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+    
+    // Get requests with under-review status and approved status (future appointments only)
     const query = { 
       doctorId,
-      status: 'under-review'
+      $or: [
+        { status: 'under-review' },
+        { 
+          status: 'approved',
+          'appointmentDetails.date': { $gte: currentDate }
+        }
+      ]
     };
     
     // Get total count for pagination
@@ -616,7 +626,7 @@ exports.getPatientRequests = async (req, res, next) => {
     
     // Get requests with pagination
     const requests = await PatientDetails.find(query)
-      .select('_id fullName patientId doctorId appointmentDetails.date appointmentDetails.time')
+      .select('_id fullName patientId doctorId appointmentDetails.date appointmentDetails.time status')
       .sort({ submittedAt: -1 })
       .limit(Number(limit))
       .skip((Number(page) - 1) * Number(limit));
@@ -649,7 +659,8 @@ exports.getPatientRequests = async (req, res, next) => {
         fullName: req.fullName,
         doctorId: req.doctorId,
         appointmentDate, // e.g., "12 Jan 2024"
-        appointmentTime  // e.g., "10:30 AM"
+        appointmentTime,  // e.g., "10:30 AM"
+        status: req.status // Include status to differentiate between pending and approved
       };
     });
     
