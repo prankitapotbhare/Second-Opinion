@@ -450,26 +450,33 @@ const AppointmentSection = () => {
           // Appointment Requests Grid
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {hasRequests ? (
-              patientRequests.map((request) => (
-                <div key={request.requestId} className="border border-gray-300 rounded-lg p-4 shadow-sm">
-                  <h3 className="text-base font-semibold text-gray-800 mb-1">{request.fullName}</h3>
-                  <p className="text-sm text-gray-600 mb-3">{request.appointmentDate} at {request.appointmentTime}</p>
-                  <div className="flex space-x-2">
-                    <button 
-                      className="flex-1 px-3 py-1.5 border border-green-500 bg-green-50 text-green-700 rounded-md hover:bg-green-100 text-sm font-medium"
-                      onClick={() => handleAcceptRequest(request.requestId)}
-                    >
-                      Accept
-                    </button>
-                    <button 
-                      className="flex-1 px-3 py-1.5 border border-red-500 bg-red-50 text-red-700 rounded-md hover:bg-red-100 text-sm font-medium"
-                      onClick={() => handleRejectRequest(request.requestId)}
-                    >
-                      Reject
-                    </button>
+              [...patientRequests]
+                .sort((a, b) => {
+                  // Parse dates for comparison
+                  const dateA = new Date(`${a.appointmentDate} ${a.appointmentTime}`);
+                  const dateB = new Date(`${b.appointmentDate} ${b.appointmentTime}`);
+                  return dateA - dateB; // Sort by ascending date (nearest first)
+                })
+                .map((request) => (
+                  <div key={request.requestId} className="border border-gray-300 rounded-lg p-4 shadow-sm">
+                    <h3 className="text-base font-semibold text-gray-800 mb-1">{request.fullName}</h3>
+                    <p className="text-sm text-gray-600 mb-3">{request.appointmentDate} at {request.appointmentTime}</p>
+                    <div className="flex space-x-2">
+                      <button 
+                        className="flex-1 px-3 py-1.5 border border-green-500 bg-green-50 text-green-700 rounded-md hover:bg-green-100 text-sm font-medium"
+                        onClick={() => handleAcceptRequest(request.requestId)}
+                      >
+                        Accept
+                      </button>
+                      <button 
+                        className="flex-1 px-3 py-1.5 border border-red-500 bg-red-50 text-red-700 rounded-md hover:bg-red-100 text-sm font-medium"
+                        onClick={() => handleRejectRequest(request.requestId)}
+                      >
+                        Reject
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))
+                ))
             ) : (
               <div className="col-span-full text-center py-8 text-gray-500">
                 No pending requests found
