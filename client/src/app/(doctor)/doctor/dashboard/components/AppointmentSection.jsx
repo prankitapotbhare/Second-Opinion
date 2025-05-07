@@ -216,23 +216,25 @@ const AppointmentSection = () => {
           {/* Left side: Filters */}
           <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
             {/* Date Range Dropdown - UPDATED */}
-            <div className="relative">
-              <select
-                value={activeFilter}
-                onChange={(e) => setActiveFilter(e.target.value)}
-                className="appearance-none px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              >
-                <option value="all">All Time</option>
-                <option value="today">Today</option>
-                <option value="past3months">Past 3 Months</option>
-                <option value="past6months">Past 6 Months</option>
-                <option value="pastyear">Past Year</option>
-                <option value="future3months">Next 3 Months</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                <FaChevronDown className="text-xs" />
+            {activeTab === 'appointments' && (
+              <div className="relative">
+                <select
+                  value={activeFilter}
+                  onChange={(e) => setActiveFilter(e.target.value)}
+                  className="appearance-none px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                >
+                  <option value="all">All Time</option>
+                  <option value="today">Today</option>
+                  <option value="past3months">Past 3 Months</option>
+                  <option value="past6months">Past 6 Months</option>
+                  <option value="pastyear">Past Year</option>
+                  <option value="future3months">Next 3 Months</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                  <FaChevronDown className="text-xs" />
+                </div>
               </div>
-            </div>
+            )}
             
             {/* Status Filter Dropdown */}
             {activeTab === 'appointments' && (
