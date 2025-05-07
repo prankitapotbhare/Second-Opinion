@@ -278,6 +278,9 @@ exports.getAvailableSlots = async (req, res, next) => {
       return next(createError('Date is required', 400));
     }
     
+    // Validate doctor ID
+    validationService.validateObjectId(doctorId, 'doctor');
+    
     // Validate date format
     const dateObj = new Date(date);
     if (isNaN(dateObj.getTime())) {
@@ -295,6 +298,12 @@ exports.getAvailableSlots = async (req, res, next) => {
     const availability = await Availability.findOne({ doctorId });
     if (!availability) {
       return next(createError('Doctor availability not found', 404));
+    }
+    
+    // If no time slots are generated yet, generate them
+    if (!availability.timeSlots || availability.timeSlots.length === 0) {
+      await availability.generateTimeSlots();
+      await availability.save();
     }
     
     // Get available slots
@@ -356,26 +365,31 @@ exports.requestAppointment = async (req, res, next) => {
     
     // Check if the selected slot is available
     const availability = await Availability.findOne({ doctorId: submission.doctorId });
+    
     if (!availability) {
       return next(createError('Doctor availability not found', 404));
     }
     
-    const isAvailable = await availability.isAvailable(new Date(date), time);
+    const isAvailable = await availability.isAvailable(date, time);
+    
     if (!isAvailable) {
-      return next(createError('The selected time slot is no longer available', 409));
+      return next(createError('The selected time slot is not available', 400));
+    }
+    
+    // Reserve the slot
+    const slotReserved = await availability.reserveSlot(date, time);
+    
+    if (!slotReserved) {
+      return next(createError('Failed to reserve the time slot', 500));
     }
     
     // Update submission with appointment details
     submission.appointmentDetails = {
       date: new Date(date),
-      time,
-      notes: notes || ''
+      time
     };
     
-    // Update status to under-review
     submission.status = 'under-review';
-    
-    // Save the updated submission
     await submission.save();
     
     // Reserve the slot temporarily (mark as unavailable for 24 hours)
@@ -422,14 +436,16 @@ exports.submitReview = async (req, res, next) => {
       return next(createError('Submission not found', 404));
     }
     
-    // Check if the submission status is approved or completed
-    if (submission.status !== 'approved' && submission.status !== 'completed') {
-      return next(createError('You can only review after your appointment has been approved or completed', 400));
+    // Check if the submission status is valid for review
+    // Now allowing reviews for 'opinion-not-needed' and 'rejected' as well
+    const validStatuses = ['approved', 'completed', 'opinion-not-needed', 'rejected'];
+    if (!validStatuses.includes(submission.status)) {
+      return next(createError('You can only review after your submission has been processed', 400));
     }
     
     // Check if the patient has already submitted a review for this submission
     if (submission.hasReview) {
-      return next(createError('You have already submitted a review for this appointment', 400));
+      return next(createError('You have already submitted a review for this submission', 400));
     }
     
     // Get the doctor ID from the submission
@@ -478,5 +494,3 @@ exports.submitReview = async (req, res, next) => {
     next(error);
   }
 };
-
-// Add this new function to the existing file

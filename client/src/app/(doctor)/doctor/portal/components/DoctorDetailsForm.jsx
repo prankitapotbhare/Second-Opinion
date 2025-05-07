@@ -58,10 +58,31 @@ export default function DoctorDetailsForm() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Validate numeric fields
+    if (['phone', 'emergencyContact'].includes(name)) {
+      // Only allow numeric input for phone numbers
+      if (value === '' || /^\d*$/.test(value)) {
+        setFormData(prev => ({
+          ...prev,
+          [name]: value
+        }));
+      }
+    } else if (name === 'consultationFee') {
+      // Only allow numeric input for consultation fee
+      if (value === '' || /^\d*$/.test(value)) {
+        setFormData(prev => ({
+          ...prev,
+          [name]: value
+        }));
+      }
+    } else {
+      // For other fields, no validation needed
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleFileChange = (e) => {
@@ -353,13 +374,15 @@ export default function DoctorDetailsForm() {
             Phone number:<span className="text-red-500">*</span>
           </label>
           <input
-            type="tel"
+            type="text" // Changed from tel to text for better control
             name="phone"
             value={formData.phone}
             onChange={handleInputChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="Eg. 9843XXXXXX"
             required
+            inputMode="numeric" // Helps show numeric keyboard on mobile
+            pattern="[0-9]*" // HTML5 validation for numbers only
           />
           {formErrors.phone && <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>}
         </div>
@@ -386,13 +409,15 @@ export default function DoctorDetailsForm() {
             Emergency Contact number:<span className="text-red-500">*</span>
           </label>
           <input
-            type="tel"
+            type="text" // Changed from tel to text
             name="emergencyContact"
             value={formData.emergencyContact}
             onChange={handleInputChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="Eg. 7843XXXXXX"
             required
+            inputMode="numeric"
+            pattern="[0-9]*"
           />
           {formErrors.emergencyContact && <p className="text-red-500 text-xs mt-1">{formErrors.emergencyContact}</p>}
         </div>
@@ -403,13 +428,15 @@ export default function DoctorDetailsForm() {
             Consultation Fee:<span className="text-red-500">*</span>
           </label>
           <input
-            type="number"
+            type="text" // Changed from number to text to maintain string type
             name="consultationFee"
             value={formData.consultationFee}
             onChange={handleInputChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="Eg. 500"
             required
+            inputMode="numeric"
+            pattern="[0-9]*"
           />
           {formErrors.consultationFee && <p className="text-red-500 text-xs mt-1">{formErrors.consultationFee}</p>}
         </div>
