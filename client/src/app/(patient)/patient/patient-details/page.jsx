@@ -54,6 +54,19 @@ export default function PatientDetailsPage() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Validate numeric inputs
+    if ((name === 'age' || name === 'contactNumber' || name === 'emergencyContact') && value !== '') {
+      // For age, only allow positive numbers
+      if (name === 'age' && (!/^\d+$/.test(value) || parseInt(value) <= 0)) {
+        return;
+      }
+      // For contact numbers, only allow digits
+      if ((name === 'contactNumber' || name === 'emergencyContact') && !/^\d*$/.test(value)) {
+        return;
+      }
+    }
+    
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -128,13 +141,15 @@ export default function PatientDetailsPage() {
           <div>
             <label className="block text-gray-700 font-medium mb-1">Age<span className="text-red-500">*</span></label>
             <input
-              type="number"
+              type="text"
               name="age"
               placeholder="Age"
               value={formData.age}
               onChange={handleChange}
               className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               required
+              pattern="^[1-9][0-9]*$"
+              title="Please enter a positive number"
             />
           </div>
 
@@ -156,13 +171,15 @@ export default function PatientDetailsPage() {
           <div>
             <label className="block text-gray-700 font-medium mb-1">Contact Number<span className="text-red-500">*</span></label>
             <input
-              type="tel"
+              type="text"
               name="contactNumber"
               placeholder="+91 1234567890"
               value={formData.contactNumber}
               onChange={handleChange}
               className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               required
+              pattern="^\d+$"
+              title="Please enter digits only"
             />
           </div>
 
@@ -184,13 +201,15 @@ export default function PatientDetailsPage() {
           <div>
             <label className="block text-gray-700 font-medium mb-1">Emergency Contact Number<span className="text-red-500">*</span></label>
             <input
-              type="tel"
+              type="text"
               name="emergencyContact"
               placeholder="+91 9876543210"
               value={formData.emergencyContact}
               onChange={handleChange}
               className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               required
+              pattern="^\d+$"
+              title="Please enter digits only"
             />
           </div>
 
