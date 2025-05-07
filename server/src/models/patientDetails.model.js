@@ -78,7 +78,6 @@ const patientDetailsSchema = new mongoose.Schema({
   appointmentDetails: {
     date: Date,
     time: String,
-    notes: String,
     isCompleted: {
       type: Boolean,
       default: false

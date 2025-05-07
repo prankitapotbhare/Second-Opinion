@@ -135,11 +135,11 @@ async function main() {
     const patientDetails = {
       patientId: patient._id,
       doctorId: doctor._id,
-      fullName,
+      fullName: patient.name,
       age,
       relation,
       contactNumber,
-      email,
+      email: patient.email,
       gender,
       phone,
       emergencyContact,
@@ -200,7 +200,6 @@ async function main() {
       patientDetails.appointmentDetails = {
         date: appointmentDate,
         time: randomFrom(TIME_SLOTS),
-        notes: faker.lorem.sentence(),
         isCompleted: status === 'completed',
         completedAt: status === 'completed' ? new Date(Math.min(appointmentDate.getTime() + 24 * 60 * 60 * 1000, now.getTime())) : null
       };

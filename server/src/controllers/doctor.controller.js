@@ -159,6 +159,23 @@ exports.setAvailability = async (req, res, next) => {
       return next(createError(`Missing required fields: ${missingFields.join(', ')}`, 400));
     }
     
+    // Validate time format
+    const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+    if (!timeRegex.test(req.body.startTime) || !timeRegex.test(req.body.endTime)) {
+      return next(createError('Time format should be HH:MM (24-hour format)', 400));
+    }
+    
+    // Validate that end time is after start time
+    const [startHour, startMinute] = req.body.startTime.split(':').map(Number);
+    const [endHour, endMinute] = req.body.endTime.split(':').map(Number);
+    
+    const startMinutes = startHour * 60 + startMinute;
+    const endMinutes = endHour * 60 + endMinute;
+    
+    if (endMinutes <= startMinutes) {
+      return next(createError('End time must be after start time', 400));
+    }
+    
     // Check if availability already exists
     let availability = await Availability.findOne({ doctorId });
     
@@ -176,6 +193,10 @@ exports.setAvailability = async (req, res, next) => {
         ...req.body
       });
     }
+    
+    // Generate time slots based on the availability settings
+    await availability.generateTimeSlots();
+    await availability.save();
     
     res.status(200).json({
       success: true,
@@ -584,10 +605,20 @@ exports.getPatientRequests = async (req, res, next) => {
     const { page = 1, limit = 10 } = req.query;
     const doctorId = req.user.id;
     
-    // Get requests with opinion-needed status
+    // Get current date to filter out past appointments
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+    
+    // Get requests with under-review status and approved status (future appointments only)
     const query = { 
       doctorId,
-      status: 'under-review'
+      $or: [
+        { status: 'under-review' },
+        { 
+          status: 'approved',
+          'appointmentDetails.date': { $gte: currentDate }
+        }
+      ]
     };
     
     // Get total count for pagination
@@ -595,7 +626,7 @@ exports.getPatientRequests = async (req, res, next) => {
     
     // Get requests with pagination
     const requests = await PatientDetails.find(query)
-      .select('_id fullName patientId doctorId appointmentDetails.date appointmentDetails.time')
+      .select('_id fullName patientId doctorId appointmentDetails.date appointmentDetails.time status')
       .sort({ submittedAt: -1 })
       .limit(Number(limit))
       .skip((Number(page) - 1) * Number(limit));
@@ -628,7 +659,8 @@ exports.getPatientRequests = async (req, res, next) => {
         fullName: req.fullName,
         doctorId: req.doctorId,
         appointmentDate, // e.g., "12 Jan 2024"
-        appointmentTime  // e.g., "10:30 AM"
+        appointmentTime,  // e.g., "10:30 AM"
+        status: req.status // Include status to differentiate between pending and approved
       };
     });
     

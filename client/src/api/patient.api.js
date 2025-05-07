@@ -402,7 +402,6 @@ export const getPatientResponse = async () => {
       appointmentDetails: data.data.appointmentDetails ? {
         date: data.data.appointmentDetails.date ? new Date(data.data.appointmentDetails.date) : null,
         time: data.data.appointmentDetails.time || null,
-        notes: data.data.appointmentDetails.notes || '',
         isCompleted: data.data.appointmentDetails.isCompleted || false,
         completedAt: data.data.appointmentDetails.completedAt ? new Date(data.data.appointmentDetails.completedAt) : null
       } : null
@@ -474,7 +473,6 @@ export const getAvailableTimeSlots = async (doctorId, date) => {
  * @param {Object} appointmentDetails - Appointment details
  * @param {string} appointmentDetails.date - Appointment date (YYYY-MM-DD)
  * @param {string} appointmentDetails.time - Appointment time
- * @param {string} appointmentDetails.notes - Additional notes (optional)
  * @returns {Promise<Object>} Updated appointment details
  */
 export const requestAppointment = async (submissionId, appointmentDetails) => {

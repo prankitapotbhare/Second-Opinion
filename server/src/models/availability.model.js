@@ -40,7 +40,8 @@ const availabilitySchema = new mongoose.Schema({
     slots: [{
       startTime: String,
       endTime: String,
-      isAvailable: { type: Boolean, default: true }
+      isAvailable: { type: Boolean, default: true },
+      reservedUntil: { type: Date, default: null }
     }]
   }],
   // Maximum appointments per day
@@ -86,51 +87,122 @@ availabilitySchema.methods.getAvailableSlots = async function(date) {
   const PatientDetails = mongoose.model('PatientDetails');
   const existingAppointments = await PatientDetails.find({
     doctorId: this.doctorId,
-    status: 'approved',
+    status: { $in: ['approved', 'under-review'] },
     'appointmentDetails.date': {
       $gte: new Date(date).setHours(0, 0, 0, 0),
       $lt: new Date(date).setHours(23, 59, 59, 999)
     }
   }).select('appointmentDetails.time');
   
-  // Generate all possible time slots
-  const slots = [];
-  const [startHour, startMinute] = this.startTime.split(':').map(Number);
-  const [endHour, endMinute] = this.endTime.split(':').map(Number);
+  // Check if we have pre-generated time slots for this day
+  const daySlots = this.timeSlots.find(day => day.day === dayOfWeek);
   
-  let currentHour = startHour;
-  let currentMinute = startMinute;
-  
-  while (
-    currentHour < endHour || 
-    (currentHour === endHour && currentMinute < endMinute)
-  ) {
-    const timeString = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+  if (daySlots && daySlots.slots.length > 0) {
+    // Use pre-generated slots
+    const availableSlots = [];
     
-    // Check if this slot is already booked
-    const isBooked = existingAppointments.some(
-      appt => appt.appointmentDetails.time === timeString
-    );
-    
-    if (!isBooked) {
-      slots.push(timeString);
+    for (const slot of daySlots.slots) {
+      // Check if slot is available and not booked
+      const isBooked = existingAppointments.some(
+        appt => appt.appointmentDetails.time === slot.startTime
+      );
+      
+      // Check if slot has a temporary reservation that hasn't expired
+      const hasValidReservation = slot.reservedUntil && new Date() < new Date(slot.reservedUntil);
+      
+      if (slot.isAvailable && !isBooked && !hasValidReservation) {
+        availableSlots.push(slot.startTime);
+      }
     }
     
-    // Move to next slot
-    currentMinute += this.appointmentDuration + this.bufferTime;
-    if (currentMinute >= 60) {
-      currentHour += Math.floor(currentMinute / 60);
-      currentMinute = currentMinute % 60;
+    return availableSlots;
+  } else {
+    // Fallback to generating slots on the fly
+    const slots = [];
+    const [startHour, startMinute] = this.startTime.split(':').map(Number);
+    const [endHour, endMinute] = this.endTime.split(':').map(Number);
+    
+    let currentHour = startHour;
+    let currentMinute = startMinute;
+    
+    while (
+      currentHour < endHour || 
+      (currentHour === endHour && currentMinute < endMinute)
+    ) {
+      const timeString = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+      
+      // Check if this slot is already booked
+      const isBooked = existingAppointments.some(
+        appt => appt.appointmentDetails.time === timeString
+      );
+      
+      if (!isBooked) {
+        slots.push(timeString);
+      }
+      
+      // Move to next slot
+      currentMinute += this.appointmentDuration + this.bufferTime;
+      if (currentMinute >= 60) {
+        currentHour += Math.floor(currentMinute / 60);
+        currentMinute = currentMinute % 60;
+      }
     }
+    
+    return slots;
   }
-  
-  return slots;
 };
 
 // Method to check if a doctor is available on a specific date and time
 availabilitySchema.methods.isAvailable = async function(date, time) {
-  const slots = await this.getAvailableSlots(date);
-  return slots.includes(time);
+  const dayOfWeek = new Date(date).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+  
+  // Check if doctor works on this day
+  if (!this.workingDays[dayOfWeek] || dayOfWeek === this.weeklyHoliday) {
+    return false;
+  }
+  
+  // Check if the time is within working hours
+  const [requestHour, requestMinute] = time.split(':').map(Number);
+  const [startHour, startMinute] = this.startTime.split(':').map(Number);
+  const [endHour, endMinute] = this.endTime.split(':').map(Number);
+  
+  const requestTime = requestHour * 60 + requestMinute;
+  const startTime = startHour * 60 + startMinute;
+  const endTime = endHour * 60 + endMinute;
+  
+  if (requestTime < startTime || requestTime >= endTime) {
+    return false;
+  }
+  
+  // Check if slot is reserved in timeSlots
+  const daySlots = this.timeSlots.find(day => day.day === dayOfWeek);
+  if (daySlots) {
+    const timeSlot = daySlots.slots.find(slot => slot.startTime === time);
+    if (timeSlot) {
+      // If slot has reservedUntil and it's in the past, consider it available again
+      if (timeSlot.reservedUntil && new Date() > new Date(timeSlot.reservedUntil)) {
+        timeSlot.isAvailable = true;
+        delete timeSlot.reservedUntil;
+        await this.save();
+        return true;
+      }
+      return timeSlot.isAvailable;
+    }
+  }
+  
+  // Get existing appointments for this date and time
+  const PatientDetails = mongoose.model('PatientDetails');
+  const existingAppointment = await PatientDetails.findOne({
+    doctorId: this.doctorId,
+    status: { $in: ['approved', 'under-review'] },
+    'appointmentDetails.date': {
+      $gte: new Date(date).setHours(0, 0, 0, 0),
+      $lt: new Date(date).setHours(23, 59, 59, 999)
+    },
+    'appointmentDetails.time': time
+  });
+  
+  return !existingAppointment;
 };
 
 // Method to get appointment statistics for dashboard
@@ -191,16 +263,30 @@ availabilitySchema.methods.getAppointmentStats = async function() {
 availabilitySchema.methods.reserveSlot = async function(date, time) {
   const dayOfWeek = new Date(date).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
   
+  // Check if doctor works on this day
+  if (!this.workingDays[dayOfWeek] || dayOfWeek === this.weeklyHoliday) {
+    return false;
+  }
+  
   // Find the day in timeSlots array
   let daySlots = this.timeSlots.find(day => day.day === dayOfWeek);
   
   // If day doesn't exist in timeSlots, create it
   if (!daySlots) {
-    daySlots = {
-      day: dayOfWeek,
-      slots: []
-    };
-    this.timeSlots.push(daySlots);
+    // Generate slots for this day if they don't exist
+    await this.generateTimeSlots();
+    
+    // Try to find the day again after generation
+    daySlots = this.timeSlots.find(day => day.day === dayOfWeek);
+    
+    // If still not found, create a basic entry
+    if (!daySlots) {
+      daySlots = {
+        day: dayOfWeek,
+        slots: []
+      };
+      this.timeSlots.push(daySlots);
+    }
   }
   
   // Find the specific time slot
@@ -229,6 +315,22 @@ availabilitySchema.methods.reserveSlot = async function(date, time) {
     
     daySlots.slots.push(timeSlot);
   } else {
+    // Check if the slot is already booked
+    const PatientDetails = mongoose.model('PatientDetails');
+    const existingAppointment = await PatientDetails.findOne({
+      doctorId: this.doctorId,
+      status: { $in: ['approved', 'under-review'] },
+      'appointmentDetails.date': {
+        $gte: new Date(date).setHours(0, 0, 0, 0),
+        $lt: new Date(date).setHours(23, 59, 59, 999)
+      },
+      'appointmentDetails.time': time
+    });
+    
+    if (existingAppointment) {
+      return false;
+    }
+    
     // Update existing slot
     timeSlot.isAvailable = false;
     timeSlot.reservedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
@@ -268,7 +370,7 @@ availabilitySchema.methods.isAvailable = async function(date, time) {
     const timeSlot = daySlots.slots.find(slot => slot.startTime === time);
     if (timeSlot) {
       // If slot has reservedUntil and it's in the past, consider it available again
-      if (timeSlot.reservedUntil && new Date() > timeSlot.reservedUntil) {
+      if (timeSlot.reservedUntil && new Date() > new Date(timeSlot.reservedUntil)) {
         timeSlot.isAvailable = true;
         delete timeSlot.reservedUntil;
         await this.save();
@@ -339,6 +441,74 @@ availabilitySchema.methods.releaseSlot = async function(date, time) {
   return true;
 };
 
+// Add this function after the schema definition but before creating the model
+availabilitySchema.methods.generateTimeSlots = async function() {
+  // Clear existing time slots
+  this.timeSlots = [];
+  
+  // Get working days
+  const workingDays = Object.entries(this.workingDays)
+    .filter(([day, isWorking]) => isWorking && day !== this.weeklyHoliday)
+    .map(([day]) => day);
+  
+  // Parse start and end times
+  const [startHour, startMinute] = this.startTime.split(':').map(Number);
+  const [endHour, endMinute] = this.endTime.split(':').map(Number);
+  
+  // For each working day, generate slots
+  for (const day of workingDays) {
+    const daySlots = {
+      day,
+      slots: []
+    };
+    
+    let currentHour = startHour;
+    let currentMinute = startMinute;
+    
+    while (
+      currentHour < endHour || 
+      (currentHour === endHour && currentMinute < endMinute)
+    ) {
+      // Format current time as HH:MM
+      const startTime = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+      
+      // Calculate end time for this slot
+      let endSlotHour = currentHour;
+      let endSlotMinute = currentMinute + this.appointmentDuration;
+      
+      if (endSlotMinute >= 60) {
+        endSlotHour += Math.floor(endSlotMinute / 60);
+        endSlotMinute = endSlotMinute % 60;
+      }
+      
+      const endTime = `${endSlotHour.toString().padStart(2, '0')}:${endSlotMinute.toString().padStart(2, '0')}`;
+      
+      // Add slot to day's slots
+      daySlots.slots.push({
+        startTime,
+        endTime,
+        isAvailable: true
+      });
+      
+      // Move to next slot (add appointment duration + buffer time)
+      currentMinute += this.appointmentDuration + this.bufferTime;
+      if (currentMinute >= 60) {
+        currentHour += Math.floor(currentMinute / 60);
+        currentMinute = currentMinute % 60;
+      }
+    }
+    
+    // Add day slots to timeSlots array
+    this.timeSlots.push(daySlots);
+  }
+  
+  // Save the updated availability
+  await this.save();
+  
+  return this.timeSlots;
+};
+
+// Add this to the setAvailability controller in doctor.controller.js to call the function
 const Availability = mongoose.model('Availability', availabilitySchema);
 
 module.exports = Availability;
