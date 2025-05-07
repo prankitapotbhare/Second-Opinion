@@ -436,14 +436,16 @@ exports.submitReview = async (req, res, next) => {
       return next(createError('Submission not found', 404));
     }
     
-    // Check if the submission status is approved or completed
-    if (submission.status !== 'approved' && submission.status !== 'completed') {
-      return next(createError('You can only review after your appointment has been approved or completed', 400));
+    // Check if the submission status is valid for review
+    // Now allowing reviews for 'opinion-not-needed' and 'rejected' as well
+    const validStatuses = ['approved', 'completed', 'opinion-not-needed', 'rejected'];
+    if (!validStatuses.includes(submission.status)) {
+      return next(createError('You can only review after your submission has been processed', 400));
     }
     
     // Check if the patient has already submitted a review for this submission
     if (submission.hasReview) {
-      return next(createError('You have already submitted a review for this appointment', 400));
+      return next(createError('You have already submitted a review for this submission', 400));
     }
     
     // Get the doctor ID from the submission
@@ -492,5 +494,3 @@ exports.submitReview = async (req, res, next) => {
     next(error);
   }
 };
-
-// Add this new function to the existing file

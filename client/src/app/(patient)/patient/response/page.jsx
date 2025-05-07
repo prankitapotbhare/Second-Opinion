@@ -301,7 +301,11 @@ export default function ResponsePage() {
           <div>
             <h3 className="text-xl font-medium mb-4">Rate Your Experience</h3>
             
-            {appointmentStatus === 'approved' || appointmentStatus === 'completed' ? (
+            {/* Updated condition to allow reviews for opinion-not-needed and rejected statuses */}
+            {appointmentStatus === 'approved' || 
+             appointmentStatus === 'completed' || 
+             appointmentStatus === 'opinion-not-needed' || 
+             appointmentStatus === 'rejected' ? (
               <form onSubmit={handleSubmitReview} className="bg-white border border-gray-200 rounded-lg p-6 mb-8 shadow-sm">
                 {reviewSubmitSuccess ? (
                   <div className="flex items-center text-green-600 mb-4">
@@ -369,7 +373,7 @@ export default function ResponsePage() {
             ) : (
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-8">
                 <p className="text-gray-600">
-                  You can submit a review after your appointment has been approved and completed.
+                  You can submit a review after your submission has been processed.
                 </p>
               </div>
             )}
