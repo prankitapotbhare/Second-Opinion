@@ -46,16 +46,12 @@ const DoctorTable = ({ doctors, onViewDocument, onViewInvoice, onSendInvoice }) 
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {doctor.hasDocuments ? (
                     <button 
                       onClick={() => onViewDocument(doctor.id)}
                       className="text-blue-500 hover:text-blue-700 flex items-center"
                     >
                       <FaEye className="mr-1" /> View
                     </button>
-                  ) : (
-                    <span className="text-gray-400">Not Available</span>
-                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <div className="flex space-x-2">
