@@ -66,11 +66,19 @@ const ProtectedRoute = ({
 
   // Show loading spinner while authentication is being checked
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="w-full flex justify-center items-center">
+        <LoadingSpinner />
+      </div>
+    );
   }
 
   // Render children only if authorized
-  return authorized ? children : <LoadingSpinner />;
+  return authorized ? children : (
+    <div className="w-full flex justify-center items-center">
+      <LoadingSpinner />
+    </div>
+  );
 };
 
 export default ProtectedRoute;

@@ -18,6 +18,7 @@ import DoctorTable from '../components/DoctorTable';
 import PatientTable from '../components/PatientTable';
 import Pagination from '../components/Pagination';
 import { useAdmin } from '@/contexts/AdminContext';
+import { LoadingSpinner } from '@/components'; // Import the common LoadingSpinner component
 
 const AdminDashboard = () => {
     // Use the admin context
@@ -141,7 +142,7 @@ const AdminDashboard = () => {
                 {/* Loading indicator */}
                 {loading && (
                   <div className="flex justify-center my-8">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                    <LoadingSpinner fullScreen={false} size="medium" color="blue" />
                   </div>
                 )}
                 
