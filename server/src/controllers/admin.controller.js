@@ -100,11 +100,6 @@ exports.getAllDoctors = async (req, res, next) => {
   }
 };
 
-// Get doctor by ID (admin function)
-exports.getDoctorById = async (req, res, next) => {
-  
-}
-
 // Get all patients (admin function)
 exports.getAllPatients = async (req, res, next) => {
   try {
@@ -113,19 +108,36 @@ exports.getAllPatients = async (req, res, next) => {
     const skip = (page - 1) * limit;
     const sort = '-createdAt';
     
+    // Get basic patient information
     const patients = await Patient.find({})
       .select('-password')
       .sort(sort)
       .skip(skip)
       .limit(limit);
     
+    // Get total count for pagination
     const total = await Patient.countDocuments({});
     const totalPages = Math.ceil(total / limit);
+    
+    // Format patient data to match the frontend requirements
+    const formattedPatients = patients.map(patient => {
+      return {
+        id: patient._id,
+        name: patient.name || `${patient.firstName || ''} ${patient.lastName || ''}`.trim(),
+        gender: patient.gender || 'Not specified',
+        contactNumber: patient.contactNumber || patient.phone || 'Not provided',
+        city: patient.city || patient.address?.city || 'Not specified',
+        // Include other fields that might be needed
+        email: patient.email,
+        photoURL: patient.photoURL,
+        createdAt: patient.createdAt
+      };
+    });
     
     res.status(200).json({
       success: true,
       message: 'Patients retrieved successfully',
-      data: patients,
+      data: formattedPatients,
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -139,8 +151,3 @@ exports.getAllPatients = async (req, res, next) => {
     next(error);
   }
 };
-
-// Get patient by ID (admin function)
-exports.getPatientById = async (req, res, next) => {
-  
-}

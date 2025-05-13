@@ -12,10 +12,8 @@ router.get('/stats', adminController.getStats);
 
 // User management routes - Doctors
 router.get('/doctors', adminController.getAllDoctors);
-router.get('/doctors/:id', adminController.getDoctorById);
 
 // User management routes - Patients
 router.get('/patients', adminController.getAllPatients);
-router.get('/patients/:id', adminController.getPatientById);
 
 module.exports = router;
