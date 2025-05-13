@@ -37,7 +37,15 @@ export default function UserLayout({ children }) {
   const hideNavbar = dashboardRoutes.includes(pathname);
 
   return (
-    <ProtectedRoute allowedRoles={["patient"]} redirectTo="/login/patient">
+    <ProtectedRoute 
+      allowedRoles={["patient"]} 
+      redirectTo="/login/patient" 
+      publicRoutes={[
+        '/patient/doctors',
+        '/patient/doctors/*',
+        '/patient/patient-details'
+      ]}
+    >
       <div className="min-h-screen bg-gray-50">
         {/* Conditionally render Navbar */}
         {!hideNavbar && (
