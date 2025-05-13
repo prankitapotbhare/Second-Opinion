@@ -7,25 +7,9 @@ import { usePathname } from 'next/navigation';
 const AdminContext = createContext();
 
 export const AdminProvider = ({ children }) => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const pathname = usePathname();
-
-  // Set active tab based on current path
-  useEffect(() => {
-    const pathSegments = pathname.split('/');
-    const section = pathSegments[pathSegments.length - 1];
-    
-    if (section && ['dashboard', 'doctors', 'patients', 'appointments', 'settings'].includes(section)) {
-      setActiveTab(section);
-    }
-  }, [pathname]);
-
+ 
   const value = {
-    isSidebarOpen,
-    setIsSidebarOpen,
-    activeTab,
-    setActiveTab
+
   };
 
   return (
