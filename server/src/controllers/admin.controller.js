@@ -1,11 +1,40 @@
 const Admin = require('../models/admin.model');
 const Patient = require('../models/patient.model');
 const Doctor = require('../models/doctor.model');
+const PatientDetails = require('../models/patientDetails.model');
 const validationService = require('../services/validation.service');
 const mongoose = require('mongoose');
 
 exports.getStats = async (req, res, next) => {
-}
+  try {
+    // Get counts from each model
+    const [
+      totalDoctors,
+      totalPatients,
+      completedAppointments,
+      pendingAppointments
+    ] = await Promise.all([
+      Doctor.countDocuments({}),
+      Patient.countDocuments({}),
+      PatientDetails.countDocuments({ status: 'completed' }),
+      PatientDetails.countDocuments({ status: 'pending' })
+    ]);
+
+    // Return the statistics
+    res.status(200).json({
+      success: true,
+      message: 'Admin statistics retrieved successfully',
+      data: {
+        totalDoctors,
+        totalPatients,
+        completedAppointments,
+        pendingAppointments
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 // Get all doctors (admin function)
 exports.getAllDoctors = async (req, res, next) => {
