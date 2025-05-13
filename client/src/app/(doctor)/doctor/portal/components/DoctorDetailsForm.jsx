@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDoctor } from '@/contexts/DoctorContext';
 import FileUpload from './FileUpload';
 import DropdownSelect from './DropdownSelect';
-import { FaCamera } from "react-icons/fa"; // Added import for camera icon
 
 export default function DoctorDetailsForm() {
   const router = useRouter();
@@ -26,21 +25,16 @@ export default function DoctorDetailsForm() {
     consultationFee: '',
     consultationAddress: '',
     location: '',
-    bio: '', // Added bio field
-    gender: '', // Added gender field
-    degree: '', // Added degree field
+    bio: '',
+    gender: '',
+    degree: '',
   });
   
   // Files state
   const [files, setFiles] = useState({
     registrationCertificate: null,
     governmentId: null,
-    profilePhoto: null, // Added profilePhoto
-  });
-  
-  // File preview state
-  const [filePreview, setFilePreview] = useState({
-    profilePhoto: null, // Added profilePhoto preview
+    profilePhoto: null,
   });
   
   // UI state
@@ -92,19 +86,14 @@ export default function DoctorDetailsForm() {
         ...prev,
         [name]: uploadedFiles[0]
       }));
-      
-      // Create preview for profile photo
-      if (name === 'profilePhoto') {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setFilePreview(prev => ({
-            ...prev,
-            profilePhoto: reader.result
-          }));
-        };
-        reader.readAsDataURL(uploadedFiles[0]);
-      }
     }
+  };
+
+  const handleDeleteFile = (fileType) => {
+    setFiles(prev => ({
+      ...prev,
+      [fileType]: null
+    }));
   };
 
   const toggleDay = (day) => {
@@ -197,27 +186,16 @@ export default function DoctorDetailsForm() {
       <h2 className="text-3xl font-semibold mb-6">Doctor's Details</h2>
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Profile Photo - New section */}
-        <div className="md:col-span-2 flex flex-col items-center mb-4">
-          <div className="relative">
-            <img
-              src={filePreview.profilePhoto || "https://public.readdy.ai/ai/img_res/fc4e928c7d3a4337c7173c0e07f786b5.jpg"}
-              alt="Doctor profile"
-              className="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover object-top"
-            />
-            <label htmlFor="profilePhoto" className="absolute bottom-0 right-0 bg-blue-500 text-white p-2 rounded-full shadow-md cursor-pointer">
-              <FaCamera />
-              <input 
-                type="file" 
-                id="profilePhoto" 
-                name="profilePhoto" 
-                className="hidden" 
-                accept="image/*"
-                onChange={handleFileChange}
-              />
-            </label>
-          </div>
-          <p className="text-sm text-gray-500 mt-2">Upload your profile photo</p>
+        {/* Profile Photo */}
+        <div className="md:col-span-2">
+          <FileUpload
+            isProfilePhoto={true}
+            name="profilePhoto"
+            accept="image/*"
+            onChange={handleFileChange}
+            onDelete={handleDeleteFile}
+            value={files.profilePhoto}
+          />
         </div>
 
         {/* Specialization */}
@@ -235,7 +213,7 @@ export default function DoctorDetailsForm() {
           {formErrors.specialization && <p className="text-red-500 text-xs mt-1">{formErrors.specialization}</p>}
         </div>
 
-        {/* Gender - New field */}
+        {/* Gender */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Gender:<span className="text-red-500">*</span>
@@ -267,7 +245,7 @@ export default function DoctorDetailsForm() {
           {formErrors.experience && <p className="text-red-500 text-xs mt-1">{formErrors.experience}</p>}
         </div>
 
-        {/* Degree - New field */}
+        {/* Degree */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Degree:<span className="text-red-500">*</span>
@@ -374,15 +352,15 @@ export default function DoctorDetailsForm() {
             Phone number:<span className="text-red-500">*</span>
           </label>
           <input
-            type="text" // Changed from tel to text for better control
+            type="text"
             name="phone"
             value={formData.phone}
             onChange={handleInputChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="Eg. 9843XXXXXX"
             required
-            inputMode="numeric" // Helps show numeric keyboard on mobile
-            pattern="[0-9]*" // HTML5 validation for numbers only
+            inputMode="numeric"
+            pattern="[0-9]*"
           />
           {formErrors.phone && <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>}
         </div>
@@ -409,7 +387,7 @@ export default function DoctorDetailsForm() {
             Emergency Contact number:<span className="text-red-500">*</span>
           </label>
           <input
-            type="text" // Changed from tel to text
+            type="text"
             name="emergencyContact"
             value={formData.emergencyContact}
             onChange={handleInputChange}
@@ -428,7 +406,7 @@ export default function DoctorDetailsForm() {
             Consultation Fee:<span className="text-red-500">*</span>
           </label>
           <input
-            type="text" // Changed from number to text to maintain string type
+            type="text"
             name="consultationFee"
             value={formData.consultationFee}
             onChange={handleInputChange}
@@ -475,16 +453,14 @@ export default function DoctorDetailsForm() {
         <div className="md:col-span-2">
           <FileUpload
             label="Registration Certificate"
+            name="registrationCertificate"
             accept=".pdf,.jpg,.jpeg,.png"
             required={true}
             isDragDrop={true}
             fileTypes="PDF, JPG, PNG (Max 5MB)"
-            onChange={(e) => handleFileChange({
-              target: {
-                name: 'registrationCertificate',
-                files: e.target.files
-              }
-            })}
+            onChange={handleFileChange}
+            onDelete={handleDeleteFile}
+            value={files.registrationCertificate}
           />
         </div>
 
@@ -492,20 +468,18 @@ export default function DoctorDetailsForm() {
         <div className="md:col-span-2">
           <FileUpload
             label="Government ID"
+            name="governmentId"
             accept=".pdf,.jpg,.jpeg,.png"
             required={true}
             isDragDrop={true}
             fileTypes="PDF, JPG, PNG (Max 5MB)"
-            onChange={(e) => handleFileChange({
-              target: {
-                name: 'governmentId',
-                files: e.target.files
-              }
-            })}
+            onChange={handleFileChange}
+            onDelete={handleDeleteFile}
+            value={files.governmentId}
           />
         </div>
 
-        {/* Bio - New section */}
+        {/* Bio */}
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Professional Bio:<span className="text-red-500">*</span>

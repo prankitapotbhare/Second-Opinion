@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FaUpload } from 'react-icons/fa';
+import { FaUpload, FaTrash } from 'react-icons/fa'; // Updated import to include FaTrash
 import { usePatient } from '@/contexts/PatientContext';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -85,6 +85,14 @@ export default function PatientDetailsPage() {
       }));
       setIsUploading(false);
     }, 1000);
+  };
+
+  // Add this function to handle file deletion
+  const handleDeleteFile = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      medicalFiles: prev.medicalFiles.filter((_, i) => i !== index)
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -277,7 +285,17 @@ export default function PatientDetailsPage() {
                 <p className="text-sm text-gray-600 mb-1">Uploaded files:</p>
                 <ul className="text-sm text-gray-800">
                   {formData.medicalFiles.map((file, index) => (
-                    <li key={index} className="mb-1">{file.name}</li>
+                    <li key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-md border border-gray-200 mb-2">
+                      <span>{file.name}</span>
+                      <button 
+                        type="button"
+                        onClick={() => handleDeleteFile(index)}
+                        className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-gray-200 transition-colors"
+                        title="Delete file"
+                      >
+                        <FaTrash size={14} />
+                      </button>
+                    </li>
                   ))}
                 </ul>
               </div>
