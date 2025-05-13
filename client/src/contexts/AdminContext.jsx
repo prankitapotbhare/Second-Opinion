@@ -8,7 +8,7 @@ import {
   getDoctorPatientsExcel,
   getDoctorInvoicePdf,
   sendDoctorInvoiceEmail
-} from '@/api/auth.api';
+} from '@/api/admin.api';
 import { showSuccessToast, showErrorToast } from '@/utils/toast';
 
 // Create the admin context

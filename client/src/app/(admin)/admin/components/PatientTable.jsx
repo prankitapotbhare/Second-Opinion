@@ -20,11 +20,11 @@ const PatientTable = ({ patients, onViewProfile }) => {
                 Contact Number
               </th>
               <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                City
+                Email
               </th>
-              <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              {/* <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
-              </th>
+              </th> */}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -37,15 +37,15 @@ const PatientTable = ({ patients, onViewProfile }) => {
                   <div className="text-sm text-gray-500">{patient.gender}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{patient.contactNumber}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{patient.city}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{patient.email}</td>
+                {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <button 
                     onClick={() => onViewProfile(patient.id)}
                     className="text-blue-500 hover:text-blue-700 flex items-center"
                   >
                     <FaEye className="mr-1" /> View Profile
                   </button>
-                </td>
+                </td> */}
               </tr>
             ))}
           </tbody>

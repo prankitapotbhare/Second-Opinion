@@ -123,20 +123,24 @@ exports.getAllPatients = async (req, res, next) => {
     const total = await Patient.countDocuments({});
     const totalPages = Math.ceil(total / limit);
     
-    // Format patient data to match the frontend requirements
-    const formattedPatients = patients.map(patient => {
+    // Enhance patient data with details from PatientDetails
+    const formattedPatients = await Promise.all(patients.map(async (patient) => {
+      // Get the most recent patient details for this patient
+      const patientDetail = await PatientDetails.findOne({ 
+        patientId: patient._id 
+      }).sort({ updatedAt: -1 });
+      
       return {
         id: patient._id,
         name: patient.name || `${patient.firstName || ''} ${patient.lastName || ''}`.trim(),
-        gender: patient.gender || 'Not specified',
-        contactNumber: patient.contactNumber || patient.phone || 'Not provided',
-        city: patient.city || patient.address?.city || 'Not specified',
+        gender: patientDetail?.gender || patient.gender || 'Not specified',
+        contactNumber: patientDetail?.contactNumber || patient.contactNumber || patient.phone || 'Not provided',
         // Include other fields that might be needed
         email: patient.email,
         photoURL: patient.photoURL,
         createdAt: patient.createdAt
       };
-    });
+    }));
     
     res.status(200).json({
       success: true,
