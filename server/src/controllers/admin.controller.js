@@ -44,19 +44,48 @@ exports.getAllDoctors = async (req, res, next) => {
     const skip = (page - 1) * limit;
     const sort = '-createdAt';
     
+    // Get basic doctor information
     const doctors = await Doctor.find({})
       .select('-password')
       .sort(sort)
       .skip(skip)
       .limit(limit);
     
+    // Get total count for pagination
     const total = await Doctor.countDocuments({});
     const totalPages = Math.ceil(total / limit);
+    
+    // Enhance doctor data with appointment statistics
+    const enhancedDoctors = await Promise.all(doctors.map(async (doctor) => {
+      // Get total appointments for this doctor
+      const totalAppointments = await PatientDetails.countDocuments({ 
+        doctorId: doctor._id 
+      });
+      
+      // Get accepted/completed appointments for this doctor
+      const acceptedAppointments = await PatientDetails.countDocuments({ 
+        doctorId: doctor._id,
+        status: 'completed'
+      });
+      
+      // Return formatted doctor data
+      return {
+        id: doctor._id,
+        name: doctor.name || `Dr. ${doctor.firstName || ''} ${doctor.lastName || ''}`.trim(),
+        specialty: doctor.specialization || doctor.specialty || 'General',
+        totalAppointments,
+        acceptedAppointments,
+        // Include other fields that might be needed
+        email: doctor.email,
+        photoURL: doctor.photoURL,
+        createdAt: doctor.createdAt
+      };
+    }));
     
     res.status(200).json({
       success: true,
       message: 'Doctors retrieved successfully',
-      data: doctors,
+      data: enhancedDoctors,
       pagination: {
         page: Number(page),
         limit: Number(limit),

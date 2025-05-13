@@ -41,40 +41,35 @@ const AdminDashboard = () => {
             name: 'Dr. Sarah Johnson',
             specialty: 'Cardiology',
             totalAppointments: 45,
-            acceptedAppointments: 34,
-            hasDocuments: true
+            acceptedAppointments: 34
         },
         {
             id: 'dr-james',
             name: 'Dr. James Williams',
             specialty: 'Dermatology',
             totalAppointments: 38,
-            acceptedAppointments: 30,
-            hasDocuments: false
+            acceptedAppointments: 30
         },
         {
             id: 'dr-emily',
             name: 'Dr. Emily Chen',
             specialty: 'Neurology',
             totalAppointments: 42,
-            acceptedAppointments: 34,
-            hasDocuments: true
+            acceptedAppointments: 34
         },
         {
             id: 'dr-michael',
             name: 'Dr. Michael Rodriguez',
             specialty: 'Orthopedics',
             totalAppointments: 50,
-            acceptedAppointments: 40,
-            hasDocuments: false
+            acceptedAppointments: 40
         },
         {
             id: 'dr-jessica',
             name: 'Dr. Jessica Thompson',
             specialty: 'Pediatrics',
             totalAppointments: 55,
-            acceptedAppointments: 34,
-            hasDocuments: true
+            acceptedAppointments: 34
         }
     ];
     
