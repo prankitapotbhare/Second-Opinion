@@ -65,9 +65,10 @@ const createTransporter = async () => {
  * @param {string} to - Recipient email
  * @param {string} subject - Email subject
  * @param {string} html - Email HTML content
+ * @param {Array} attachments - Optional email attachments
  * @returns {Promise} Nodemailer info
  */
-const sendEmail = async (to, subject, html) => {
+const sendEmail = async (to, subject, html, attachments = []) => {
   const transporter = await createTransporter();
   
   const mailOptions = {
@@ -76,6 +77,11 @@ const sendEmail = async (to, subject, html) => {
     subject,
     html
   };
+
+  // Add attachments if provided
+  if (attachments && attachments.length > 0) {
+    mailOptions.attachments = attachments;
+  }
 
   const info = await transporter.sendMail(mailOptions);
   
@@ -113,8 +119,44 @@ const sendPasswordResetEmail = async (to, name, token, userType = "patient") => 
   return await sendEmail(to, subject, html);
 };
 
+/**
+ * Send invoice email to doctor
+ * @param {string} email - Doctor's email
+ * @param {string} name - Doctor's name
+ * @param {string} invoicePath - Path to the invoice file
+ * @returns {Promise<Object>} Email sending result
+ */
+const sendInvoiceEmail = async (email, name, invoicePath) => {
+  try {
+    const subject = 'Your Invoice from Second Opinion';
+    
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Invoice from Second Opinion</h2>
+        <p>Hello Dr. ${name},</p>
+        <p>Please find attached your invoice from Second Opinion.</p>
+        <p>Thank you for your services.</p>
+        <p>Best regards,<br>Second Opinion Team</p>
+      </div>
+    `;
+    
+    const attachments = [
+      {
+        filename: 'invoice.pdf',
+        path: invoicePath
+      }
+    ];
+    
+    return await sendEmail(email, subject, htmlContent, attachments);
+  } catch (error) {
+    logger.error('Error sending invoice email:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   sendEmail,
   sendVerificationEmail,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  sendInvoiceEmail
 };

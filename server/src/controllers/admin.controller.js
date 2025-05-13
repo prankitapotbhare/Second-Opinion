@@ -3,7 +3,11 @@ const Patient = require('../models/patient.model');
 const Doctor = require('../models/doctor.model');
 const PatientDetails = require('../models/patientDetails.model');
 const validationService = require('../services/validation.service');
+const excelService = require('../services/excel.service');
+const pdfService = require('../services/pdf.service');
+const emailService = require('../services/email.service');
 const mongoose = require('mongoose');
+const path = require('path');
 
 exports.getStats = async (req, res, next) => {
   try {
@@ -100,11 +104,6 @@ exports.getAllDoctors = async (req, res, next) => {
   }
 };
 
-// Get doctor by ID (admin function)
-exports.getDoctorById = async (req, res, next) => {
-  
-}
-
 // Get all patients (admin function)
 exports.getAllPatients = async (req, res, next) => {
   try {
@@ -113,19 +112,36 @@ exports.getAllPatients = async (req, res, next) => {
     const skip = (page - 1) * limit;
     const sort = '-createdAt';
     
+    // Get basic patient information
     const patients = await Patient.find({})
       .select('-password')
       .sort(sort)
       .skip(skip)
       .limit(limit);
     
+    // Get total count for pagination
     const total = await Patient.countDocuments({});
     const totalPages = Math.ceil(total / limit);
+    
+    // Format patient data to match the frontend requirements
+    const formattedPatients = patients.map(patient => {
+      return {
+        id: patient._id,
+        name: patient.name || `${patient.firstName || ''} ${patient.lastName || ''}`.trim(),
+        gender: patient.gender || 'Not specified',
+        contactNumber: patient.contactNumber || patient.phone || 'Not provided',
+        city: patient.city || patient.address?.city || 'Not specified',
+        // Include other fields that might be needed
+        email: patient.email,
+        photoURL: patient.photoURL,
+        createdAt: patient.createdAt
+      };
+    });
     
     res.status(200).json({
       success: true,
       message: 'Patients retrieved successfully',
-      data: patients,
+      data: formattedPatients,
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -140,7 +156,186 @@ exports.getAllPatients = async (req, res, next) => {
   }
 };
 
-// Get patient by ID (admin function)
-exports.getPatientById = async (req, res, next) => {
-  
-}
+// Get doctor's patients in Excel format
+exports.getDoctorPatientsExcel = async (req, res, next) => {
+  try {
+    const { doctorId } = req.params;
+    
+    // Validate doctorId
+    if (!mongoose.Types.ObjectId.isValid(doctorId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid doctor ID'
+      });
+    }
+    
+    // Get doctor details
+    const doctor = await Doctor.findById(doctorId).select('-password');
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor not found'
+      });
+    }
+    
+    // Format doctor data
+    const formattedDoctor = {
+      id: doctor._id,
+      name: doctor.name || `Dr. ${doctor.firstName || ''} ${doctor.lastName || ''}`.trim(),
+      specialty: doctor.specialization || doctor.specialty || 'General',
+      email: doctor.email
+    };
+    
+    // Get all patient details for this doctor
+    const patientDetails = await PatientDetails.find({ doctorId });
+    
+    // Format patient data directly from patientDetails
+    const formattedPatients = patientDetails.map(detail => {
+      return {
+        id: detail.patientId,
+        name: detail.fullName,
+        gender: detail.gender || 'Not specified',
+        contactNumber: detail.contactNumber || detail.phone || 'Not provided',
+        email: detail.email || 'Not provided',
+        age: detail.age,
+        problem: detail.problem
+      };
+    });
+    
+    // Generate Excel file
+    const excelFilePath = await excelService.generateDoctorPatientsExcel(formattedPatients, formattedDoctor);
+    
+    // Send file as download
+    res.download(excelFilePath, `${formattedDoctor.name}_patients.xlsx`, (err) => {
+      if (err) {
+        next(err);
+      }
+    });
+    
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get doctor's invoice as PDF
+exports.getDoctorInvoicePdf = async (req, res, next) => {
+  try {
+    const { doctorId } = req.params;
+    
+    // Validate doctorId
+    if (!mongoose.Types.ObjectId.isValid(doctorId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid doctor ID'
+      });
+    }
+    
+    // Get doctor details
+    const doctor = await Doctor.findById(doctorId).select('-password');
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor not found'
+      });
+    }
+    
+    // Format doctor data
+    const formattedDoctor = {
+      id: doctor._id,
+      name: doctor.name || `Dr. ${doctor.firstName || ''} ${doctor.lastName || ''}`.trim(),
+      specialty: doctor.specialization || doctor.specialty || 'General',
+      email: doctor.email
+    };
+    
+    // Get all patient details for this doctor
+    const patientDetails = await PatientDetails.find({ doctorId });
+    
+    // Format patient data directly from patientDetails
+    const formattedPatients = patientDetails.map(detail => {
+      return {
+        id: detail.patientId,
+        name: detail.fullName,
+        gender: detail.gender || 'Not specified',
+        contactNumber: detail.contactNumber || detail.phone || 'Not provided',
+        email: detail.email || 'Not provided',
+        problem: detail.problem,
+        status: detail.status
+      };
+    });
+    
+    // Generate PDF file
+    const pdfFilePath = await pdfService.generateDoctorInvoicePdf(formattedPatients, formattedDoctor);
+    
+    // Send file as download
+    res.download(pdfFilePath, `${formattedDoctor.name}_invoice.pdf`, (err) => {
+      if (err) {
+        next(err);
+      }
+    });
+    
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Send invoice to doctor via email
+exports.sendDoctorInvoiceEmail = async (req, res, next) => {
+  try {
+    const { doctorId } = req.params;
+    
+    // Validate doctorId
+    if (!mongoose.Types.ObjectId.isValid(doctorId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid doctor ID'
+      });
+    }
+    
+    // Get doctor details
+    const doctor = await Doctor.findById(doctorId).select('-password');
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor not found'
+      });
+    }
+    
+    // Format doctor data
+    const formattedDoctor = {
+      id: doctor._id,
+      name: doctor.name || `Dr. ${doctor.firstName || ''} ${doctor.lastName || ''}`.trim(),
+      specialty: doctor.specialization || doctor.specialty || 'General',
+      email: doctor.email
+    };
+    
+    // Get all patient details for this doctor
+    const patientDetails = await PatientDetails.find({ doctorId });
+    
+    // Format patient data directly from patientDetails
+    const formattedPatients = patientDetails.map(detail => {
+      return {
+        id: detail.patientId,
+        name: detail.fullName,
+        gender: detail.gender || 'Not specified',
+        contactNumber: detail.contactNumber || detail.phone || 'Not provided',
+        email: detail.email || 'Not provided',
+        problem: detail.problem,
+        submittedAt: detail.submittedAt
+      };
+    });
+    
+    // Generate PDF file
+    const pdfFilePath = await pdfService.generateDoctorInvoicePdf(formattedPatients, formattedDoctor);
+    
+    // Send email with PDF attachment
+    await emailService.sendInvoiceEmail(formattedDoctor.email, formattedDoctor.name, pdfFilePath);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Invoice sent successfully to doctor\'s email'
+    });
+    
+  } catch (error) {
+    next(error);
+  }
+};

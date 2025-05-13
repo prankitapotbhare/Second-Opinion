@@ -12,10 +12,13 @@ router.get('/stats', adminController.getStats);
 
 // User management routes - Doctors
 router.get('/doctors', adminController.getAllDoctors);
-router.get('/doctors/:id', adminController.getDoctorById);
 
 // User management routes - Patients
 router.get('/patients', adminController.getAllPatients);
-router.get('/patients/:id', adminController.getPatientById);
+
+// New routes for doctor details and invoices
+router.get('/doctors/:doctorId/patients-excel', adminController.getDoctorPatientsExcel);
+router.get('/doctors/:doctorId/invoice', adminController.getDoctorInvoicePdf);
+router.post('/doctors/:doctorId/send-invoice', adminController.sendDoctorInvoiceEmail);
 
 module.exports = router;
