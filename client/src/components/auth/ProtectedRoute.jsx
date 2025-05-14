@@ -1,17 +1,20 @@
 "use client";
 
-import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoadingSpinner } from '@/components';
 
 const ProtectedRoute = ({ 
   children, 
   allowedRoles = [], 
-  redirectTo = '/login' 
+  redirectTo = '/login',
+  publicRoutes = []
 }) => {
   const { currentUser, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const [authorized, setAuthorized] = useState(false);
 
   // Helper function to check if user is authenticated
   const isAuthenticated = () => !!currentUser;
@@ -21,30 +24,61 @@ const ProtectedRoute = ({
     return currentUser && currentUser.role === role;
   };
 
-  useEffect(() => {
-    if (!loading) {
-      if (!isAuthenticated()) {
-        // If not authenticated, redirect to login with the current path as redirect parameter
-        const currentPath = window.location.pathname;
-        router.push(`${redirectTo}?redirect=${encodeURIComponent(currentPath)}`);
-      } else if (allowedRoles.length > 0 && !allowedRoles.some(role => hasRole(role))) {
-        // If authenticated but doesn't have the required role
-        router.push('/unauthorized');
+  // Helper function to check if current path is a public route
+  const isPublicRoute = (path) => {
+    return publicRoutes.some(route => {
+      // Check for exact match or if the route is a prefix pattern with wildcard
+      if (route.endsWith('/*')) {
+        const baseRoute = route.slice(0, -2); // Remove the /* part
+        return path === baseRoute || path.startsWith(baseRoute + '/');
       }
+      return path === route;
+    });
+  };
+
+  useEffect(() => {
+    // Don't do anything while still loading
+    if (loading) return;
+
+    // Check if the current path is a public route
+    const isPublic = isPublicRoute(pathname);
+    
+    if (isPublic) {
+      // Public routes are always authorized
+      setAuthorized(true);
+      return;
     }
-  }, [loading, router, redirectTo, allowedRoles, currentUser]);
+    
+    // For protected routes, check authentication and role
+    if (!isAuthenticated()) {
+      // Redirect to login with the current path as redirect parameter
+      router.push(`${redirectTo}?redirect=${encodeURIComponent(pathname)}`);
+      setAuthorized(false);
+    } else if (allowedRoles.length > 0 && !allowedRoles.some(role => hasRole(role))) {
+      // If authenticated but doesn't have the required role
+      router.push('/unauthorized');
+      setAuthorized(false);
+    } else {
+      // User is authenticated and has the required role
+      setAuthorized(true);
+    }
+  }, [loading, pathname, router, redirectTo, allowedRoles, currentUser, publicRoutes]);
 
+  // Show loading spinner while authentication is being checked
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="w-full h-screen flex justify-center items-center">
+        <LoadingSpinner fullScreen={false} color="blue" />
+      </div>
+    );
   }
 
-  // If authenticated and has the required role, render the children
-  if (isAuthenticated() && (allowedRoles.length === 0 || allowedRoles.some(role => hasRole(role)))) {
-    return children;
-  }
-
-  // Return null while redirecting
-  return null;
+  // Render children only if authorized
+  return authorized ? children : (
+    <div className="w-full h-screen flex justify-center items-center">
+      <LoadingSpinner fullScreen={false} color="blue" />
+    </div>
+  );
 };
 
 export default ProtectedRoute;

@@ -8,8 +8,15 @@ const fileService = require('./services/file.service');
 // Load environment variables
 require('dotenv').config();
 
+// CORS configuration
+const corsOptions = {
+  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -28,7 +35,8 @@ app.use('/uploads', express.static(UPLOADS_DIR, {
     res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
     
     // Set CORS headers to allow access from client
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:3000');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
   }
 }));
 

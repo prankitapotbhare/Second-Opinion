@@ -1,95 +1,38 @@
 const Admin = require('../models/admin.model');
 const Patient = require('../models/patient.model');
 const Doctor = require('../models/doctor.model');
+const PatientDetails = require('../models/patientDetails.model');
 const validationService = require('../services/validation.service');
+const excelService = require('../services/excel.service');
+const pdfService = require('../services/pdf.service');
+const emailService = require('../services/email.service');
 const mongoose = require('mongoose');
+const path = require('path');
 
-// Get admin profile (using authenticated user)
-exports.getAdminProfile = async (req, res, next) => {
+exports.getStats = async (req, res, next) => {
   try {
-    const admin = await Admin.findById(req.user.id).select('-password');
-    
-    if (!admin) {
-      return res.status(404).json({
-        success: false,
-        message: 'Admin not found'
-      });
-    }
-    
+    // Get counts from each model
+    const [
+      totalDoctors,
+      totalPatients,
+      completedAppointments,
+      pendingAppointments
+    ] = await Promise.all([
+      Doctor.countDocuments({}),
+      Patient.countDocuments({}),
+      PatientDetails.countDocuments({ status: 'completed' }),
+      PatientDetails.countDocuments({ status: 'pending' })
+    ]);
+
+    // Return the statistics
     res.status(200).json({
       success: true,
-      message: 'Admin profile retrieved successfully',
-      data: admin
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Update admin profile (using authenticated user)
-exports.updateAdminProfile = async (req, res, next) => {
-  try {
-    // Don't allow password updates through this function
-    if (req.body.password) {
-      delete req.body.password;
-    }
-    
-    // Don't allow role changes through this function
-    if (req.body.role) {
-      delete req.body.role;
-    }
-    
-    const admin = await Admin.findByIdAndUpdate(
-      req.user.id,
-      req.body,
-      { new: true, runValidators: true }
-    ).select('-password');
-    
-    if (!admin) {
-      return res.status(404).json({
-        success: false,
-        message: 'Admin not found'
-      });
-    }
-    
-    res.status(200).json({
-      success: true,
-      message: 'Admin profile updated successfully',
-      data: admin
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Get all patients (admin function)
-exports.getAllPatients = async (req, res, next) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-    const sort = '-createdAt';
-    
-    const patients = await Patient.find({})
-      .select('-password')
-      .sort(sort)
-      .skip(skip)
-      .limit(limit);
-    
-    const total = await Patient.countDocuments({});
-    const totalPages = Math.ceil(total / limit);
-    
-    res.status(200).json({
-      success: true,
-      message: 'Patients retrieved successfully',
-      data: patients,
-      pagination: {
-        page: Number(page),
-        limit: Number(limit),
-        total,
-        totalPages,
-        hasNext: page < totalPages,
-        hasPrev: page > 1
+      message: 'Admin statistics retrieved successfully',
+      data: {
+        totalDoctors,
+        totalPatients,
+        completedAppointments,
+        pendingAppointments
       }
     });
   } catch (error) {
@@ -105,19 +48,48 @@ exports.getAllDoctors = async (req, res, next) => {
     const skip = (page - 1) * limit;
     const sort = '-createdAt';
     
+    // Get basic doctor information
     const doctors = await Doctor.find({})
       .select('-password')
       .sort(sort)
       .skip(skip)
       .limit(limit);
     
+    // Get total count for pagination
     const total = await Doctor.countDocuments({});
     const totalPages = Math.ceil(total / limit);
+    
+    // Enhance doctor data with appointment statistics
+    const enhancedDoctors = await Promise.all(doctors.map(async (doctor) => {
+      // Get total appointments for this doctor
+      const totalAppointments = await PatientDetails.countDocuments({ 
+        doctorId: doctor._id 
+      });
+      
+      // Get accepted/completed appointments for this doctor
+      const acceptedAppointments = await PatientDetails.countDocuments({ 
+        doctorId: doctor._id,
+        status: 'completed'
+      });
+      
+      // Return formatted doctor data
+      return {
+        id: doctor._id,
+        name: doctor.name || `Dr. ${doctor.firstName || ''} ${doctor.lastName || ''}`.trim(),
+        specialty: doctor.specialization || doctor.specialty || 'General',
+        totalAppointments,
+        acceptedAppointments,
+        // Include other fields that might be needed
+        email: doctor.email,
+        photoURL: doctor.photoURL,
+        createdAt: doctor.createdAt
+      };
+    }));
     
     res.status(200).json({
       success: true,
       message: 'Doctors retrieved successfully',
-      data: doctors,
+      data: enhancedDoctors,
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -132,88 +104,77 @@ exports.getAllDoctors = async (req, res, next) => {
   }
 };
 
-// Create a new admin (only super admin can do this)
-exports.createAdmin = async (req, res, next) => {
+// Get all patients (admin function)
+exports.getAllPatients = async (req, res, next) => {
   try {
-    // Check if the requesting admin is a super admin
-    const requestingAdmin = await Admin.findById(req.user.id);
-    if (!requestingAdmin || requestingAdmin.role !== 'superadmin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only super admins can create new admins'
-      });
-    }
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const sort = '-createdAt';
     
-    // Validate required fields
-    validationService.validateRequiredFields(req.body, ['name', 'email', 'password']);
+    // Get basic patient information
+    const patients = await Patient.find({})
+      .select('-password')
+      .sort(sort)
+      .skip(skip)
+      .limit(limit);
     
-    // Validate email format
-    validationService.validateEmail(req.body.email);
+    // Get total count for pagination
+    const total = await Patient.countDocuments({});
+    const totalPages = Math.ceil(total / limit);
     
-    // Create new admin
-    const admin = new Admin(req.body);
-    await admin.save();
-    
-    // Remove password from response
-    const adminResponse = admin.toObject();
-    delete adminResponse.password;
-    
-    res.status(201).json({
-      success: true,
-      message: 'Admin created successfully',
-      data: adminResponse
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Delete patient (admin function)
-exports.deletePatient = async (req, res, next) => {
-  try {
-    validationService.validateObjectId(req.params.id, 'patient');
-    
-    // Validate MongoDB ObjectId
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid patient ID'
-      });
-    }
-    
-    const patient = await Patient.findByIdAndDelete(req.params.id);
-    
-    if (!patient) {
-      return res.status(404).json({
-        success: false,
-        message: 'Patient not found'
-      });
-    }
+    // Enhance patient data with details from PatientDetails
+    const formattedPatients = await Promise.all(patients.map(async (patient) => {
+      // Get the most recent patient details for this patient
+      const patientDetail = await PatientDetails.findOne({ 
+        patientId: patient._id 
+      }).sort({ updatedAt: -1 });
+      
+      return {
+        id: patient._id,
+        name: patient.name || `${patient.firstName || ''} ${patient.lastName || ''}`.trim(),
+        gender: patientDetail?.gender || patient.gender || 'Not specified',
+        contactNumber: patientDetail?.contactNumber || patient.contactNumber || patient.phone || 'Not provided',
+        // Include other fields that might be needed
+        email: patient.email,
+        photoURL: patient.photoURL,
+        createdAt: patient.createdAt
+      };
+    }));
     
     res.status(200).json({
       success: true,
-      message: 'Patient deleted successfully'
+      message: 'Patients retrieved successfully',
+      data: formattedPatients,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
     });
   } catch (error) {
     next(error);
   }
 };
 
-// Delete doctor (admin function)
-exports.deleteDoctor = async (req, res, next) => {
+// Get doctor's patients in Excel format
+exports.getDoctorPatientsExcel = async (req, res, next) => {
   try {
-    validationService.validateObjectId(req.params.id, 'doctor');
+    const { doctorId } = req.params;
     
-    // Validate MongoDB ObjectId
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    // Validate doctorId
+    if (!mongoose.Types.ObjectId.isValid(doctorId)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid doctor ID'
       });
     }
     
-    const doctor = await Doctor.findByIdAndDelete(req.params.id);
-    
+    // Get doctor details
+    const doctor = await Doctor.findById(doctorId).select('-password');
     if (!doctor) {
       return res.status(404).json({
         success: false,
@@ -221,102 +182,163 @@ exports.deleteDoctor = async (req, res, next) => {
       });
     }
     
-    res.status(200).json({
-      success: true,
-      message: 'Doctor deleted successfully'
+    // Format doctor data
+    const formattedDoctor = {
+      id: doctor._id,
+      name: doctor.name || `Dr. ${doctor.firstName || ''} ${doctor.lastName || ''}`.trim(),
+      specialty: doctor.specialization || doctor.specialty || 'General',
+      email: doctor.email
+    };
+    
+    // Get all patient details for this doctor
+    const patientDetails = await PatientDetails.find({ doctorId });
+    
+    // Format patient data directly from patientDetails
+    const formattedPatients = patientDetails.map(detail => {
+      return {
+        id: detail.patientId,
+        name: detail.fullName,
+        gender: detail.gender || 'Not specified',
+        contactNumber: detail.contactNumber || detail.phone || 'Not provided',
+        email: detail.email || 'Not provided',
+        age: detail.age,
+        problem: detail.problem
+      };
     });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Delete admin (super admin function)
-exports.deleteAdmin = async (req, res, next) => {
-  try {
-    // Check if the requesting admin is a super admin
-    const requestingAdmin = await Admin.findById(req.user.id);
-    if (!requestingAdmin || requestingAdmin.role !== 'superadmin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only super admins can delete admins'
-      });
-    }
     
-    // Prevent deleting yourself
-    if (req.params.id === req.user.id) {
-      return res.status(400).json({
-        success: false,
-        message: 'You cannot delete your own account'
-      });
-    }
+    // Generate Excel file
+    const excelFilePath = await excelService.generateDoctorPatientsExcel(formattedPatients, formattedDoctor);
     
-    validationService.validateObjectId(req.params.id, 'admin');
-    
-    // Validate MongoDB ObjectId
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid admin ID'
-      });
-    }
-    
-    const admin = await Admin.findByIdAndDelete(req.params.id);
-    
-    if (!admin) {
-      return res.status(404).json({
-        success: false,
-        message: 'Admin not found'
-      });
-    }
-    
-    res.status(200).json({
-      success: true,
-      message: 'Admin deleted successfully'
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Get all admins (super admin function)
-exports.getAllAdmins = async (req, res, next) => {
-  try {
-    // Check if the requesting admin is a super admin
-    const requestingAdmin = await Admin.findById(req.user.id);
-    if (!requestingAdmin || requestingAdmin.role !== 'superadmin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only super admins can view all admins'
-      });
-    }
-    
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-    const sort = '-createdAt';
-    
-    const admins = await Admin.find({})
-      .select('-password')
-      .sort(sort)
-      .skip(skip)
-      .limit(limit);
-    
-    const total = await Admin.countDocuments({});
-    const totalPages = Math.ceil(total / limit);
-    
-    res.status(200).json({
-      success: true,
-      message: 'Admins retrieved successfully',
-      data: admins,
-      pagination: {
-        page: Number(page),
-        limit: Number(limit),
-        total,
-        totalPages,
-        hasNext: page < totalPages,
-        hasPrev: page > 1
+    // Send file as download
+    res.download(excelFilePath, `${formattedDoctor.name}_patients.xlsx`, (err) => {
+      if (err) {
+        next(err);
       }
     });
+    
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get doctor's invoice as PDF
+exports.getDoctorInvoicePdf = async (req, res, next) => {
+  try {
+    const { doctorId } = req.params;
+    
+    // Validate doctorId
+    if (!mongoose.Types.ObjectId.isValid(doctorId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid doctor ID'
+      });
+    }
+    
+    // Get doctor details
+    const doctor = await Doctor.findById(doctorId).select('-password');
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor not found'
+      });
+    }
+    
+    // Format doctor data
+    const formattedDoctor = {
+      id: doctor._id,
+      name: doctor.name || `Dr. ${doctor.firstName || ''} ${doctor.lastName || ''}`.trim(),
+      specialty: doctor.specialization || doctor.specialty || 'General',
+      email: doctor.email
+    };
+    
+    // Get all patient details for this doctor
+    const patientDetails = await PatientDetails.find({ doctorId });
+    
+    // Format patient data directly from patientDetails
+    const formattedPatients = patientDetails.map(detail => {
+      return {
+        id: detail.patientId,
+        name: detail.fullName,
+        gender: detail.gender || 'Not specified',
+        contactNumber: detail.contactNumber || detail.phone || 'Not provided',
+        email: detail.email || 'Not provided',
+        problem: detail.problem,
+        status: detail.status
+      };
+    });
+    
+    // Generate PDF file
+    const pdfFilePath = await pdfService.generateDoctorInvoicePdf(formattedPatients, formattedDoctor);
+    
+    // Send file as download
+    res.download(pdfFilePath, `${formattedDoctor.name}_invoice.pdf`, (err) => {
+      if (err) {
+        next(err);
+      }
+    });
+    
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Send invoice to doctor via email
+exports.sendDoctorInvoiceEmail = async (req, res, next) => {
+  try {
+    const { doctorId } = req.params;
+    
+    // Validate doctorId
+    if (!mongoose.Types.ObjectId.isValid(doctorId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid doctor ID'
+      });
+    }
+    
+    // Get doctor details
+    const doctor = await Doctor.findById(doctorId).select('-password');
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Doctor not found'
+      });
+    }
+    
+    // Format doctor data
+    const formattedDoctor = {
+      id: doctor._id,
+      name: doctor.name || `Dr. ${doctor.firstName || ''} ${doctor.lastName || ''}`.trim(),
+      specialty: doctor.specialization || doctor.specialty || 'General',
+      email: doctor.email
+    };
+    
+    // Get all patient details for this doctor
+    const patientDetails = await PatientDetails.find({ doctorId });
+    
+    // Format patient data directly from patientDetails
+    const formattedPatients = patientDetails.map(detail => {
+      return {
+        id: detail.patientId,
+        name: detail.fullName,
+        gender: detail.gender || 'Not specified',
+        contactNumber: detail.contactNumber || detail.phone || 'Not provided',
+        email: detail.email || 'Not provided',
+        problem: detail.problem,
+        submittedAt: detail.submittedAt
+      };
+    });
+    
+    // Generate PDF file
+    const pdfFilePath = await pdfService.generateDoctorInvoicePdf(formattedPatients, formattedDoctor);
+    
+    // Send email with PDF attachment
+    await emailService.sendInvoiceEmail(formattedDoctor.email, formattedDoctor.name, pdfFilePath);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Invoice sent successfully to doctor\'s email'
+    });
+    
   } catch (error) {
     next(error);
   }

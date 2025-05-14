@@ -19,7 +19,7 @@ const AppointmentSection = () => {
   const [activeTab, setActiveTab] = useState("appointments");
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [statusFilter, setStatusFilter] = useState("pending");
+  const [statusFilter, setStatusFilter] = useState("all");
   
   // Get appointments and related functions from DoctorContext
   const { 
