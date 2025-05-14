@@ -70,10 +70,10 @@ const SignupForm = ({
       const result = await register(userData);
       
       if (result.success) {
-        // Redirect to verification page with email and redirect path
-        router.push(`/verify-email?email=${encodeURIComponent(email)}&type=${userType}&redirect=${encodeURIComponent(finalRedirectPath)}`);
+        // If registration is successful, redirect to the verification page
+        router.push(`/verify-email?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(finalRedirectPath)}&type=${userType}`);
       } else {
-        setError(result.error || 'Registration failed. Please try again.');
+        setError(result.error || 'Registration failed');
         setIsLoading(false);
       }
     } catch (err) {

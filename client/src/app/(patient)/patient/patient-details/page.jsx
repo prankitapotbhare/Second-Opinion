@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FaUpload, FaTrash } from 'react-icons/fa'; // Updated import to include FaTrash
+import { FaUpload, FaTrash } from 'react-icons/fa';
 import { usePatient } from '@/contexts/PatientContext';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -10,7 +10,7 @@ export default function PatientDetailsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const doctorId = searchParams.get('doctorId');
-  const { currentUser } = useAuth();
+  const { currentUser, loading: authLoading } = useAuth();
   const { 
     submitDetails, 
     patientDetailsLoading, 
@@ -31,6 +31,15 @@ export default function PatientDetailsPage() {
   });
 
   const [isUploading, setIsUploading] = useState(false);
+
+  // Check if user is authenticated
+  useEffect(() => {
+    if (!authLoading && !currentUser) {
+      // Store the current URL with doctorId to redirect back after login
+      const returnUrl = `/patient/patient-details?doctorId=${doctorId}`;
+      router.push(`/login/patient?redirect=${encodeURIComponent(returnUrl)}`);
+    }
+  }, [currentUser, authLoading, router, doctorId]);
 
   // Autofill form with user data when component mounts
   useEffect(() => {
@@ -98,25 +107,33 @@ export default function PatientDetailsPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Check if user is authenticated before submitting
+    if (!currentUser) {
+      const returnUrl = `/patient/patient-details?doctorId=${doctorId}`;
+      router.push(`/login/patient?redirect=${encodeURIComponent(returnUrl)}`);
+      return;
+    }
+    
+    // Continue with form submission
     if (!doctorId) {
-      alert("Doctor ID is required. Please select a doctor first.");
+      alert('Doctor ID is missing. Please try again.');
       return;
     }
 
-    const patientDetails = {
-      doctorId,
-      fullName: formData.fullName,
-      age: formData.age,
-      relation: formData.relation,
-      contactNumber: formData.contactNumber,
-      email: formData.email,
-      gender: formData.gender,
-      emergencyContact: formData.emergencyContact,
-      problem: formData.problem,
-      medicalFiles: formData.medicalFiles
-    };
+    // Validate required fields
+    const requiredFields = ['fullName', 'age', 'gender', 'problem'];
+    const missingFields = requiredFields.filter(field => !formData[field]);
+    
+    if (missingFields.length > 0) {
+      alert(`Please fill in the following required fields: ${missingFields.join(', ')}`);
+      return;
+    }
 
-    await submitDetails(patientDetails);
+    // Submit the form data
+    await submitDetails({
+      ...formData,
+      doctorId
+    });
   };
 
   return (

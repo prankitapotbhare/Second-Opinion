@@ -62,32 +62,65 @@ const LoginForm = ({
       }
       
       // Determine the redirect path
-      const finalRedirectPath = redirectPath || (userType === 'admin' ? '/admin/dashboard' : 
-                                                userType === 'doctor' ? '/doctor/dashboard' : '/');
+      const finalRedirectPath = getRedirectPath();
       
       const result = await login(email, password, rememberMe, expectedRole);
       
       if (result.success) {
-        // Redirect to the appropriate dashboard
-        router.push(finalRedirectPath);
-      } else {
-        // Check if email needs verification
+        // If login is successful, redirect to the appropriate page
         if (result.needsVerification) {
+          // If email verification is needed, show the verification form
           setNeedsVerification(true);
-          setVerificationEmail(result.email);
-        } else if (result.wrongRole && result.actualRole) {
-          // Handle wrong role error - redirect to correct login page
-          setError(`This account is registered as a ${result.actualRole}. Redirecting to the correct login page...`);
-          setTimeout(() => {
-            router.push(`/login/${result.actualRole}`);
-          }, 2000);
+          setVerificationEmail(email);
+          setIsLoading(false);
         } else {
-          setError(result.error || 'Login failed. Please check your credentials.');
+          // Otherwise, redirect to the appropriate page
+          router.push(finalRedirectPath);
+        }
+      } else if (result.error) {
+        // Handle specific error cases
+        if (result.error.includes('verification')) {
+          setError('Email not verified. Please verify your email to continue.');
+          setSuccessMessage('');
+          
+          // Offer to resend verification email
+          const resendButton = document.createElement('button');
+          resendButton.innerText = 'Resend verification email';
+          resendButton.className = 'text-blue-600 hover:text-blue-800 underline mt-2';
+          resendButton.onclick = async () => {
+            try {
+              const resendResult = await resendVerification(email);
+              if (resendResult.success) {
+                setSuccessMessage('Verification email sent! Please check your inbox.');
+                setError('');
+                
+                // Show verification form
+                setNeedsVerification(true);
+                setVerificationEmail(email);
+              } else {
+                setError(resendResult.error || 'Failed to send verification email');
+                setSuccessMessage('');
+              }
+            } catch (err) {
+              setError('Failed to send verification email');
+              setSuccessMessage('');
+            }
+          };
+          
+          // Append the button to the error message
+          const errorElement = document.getElementById('login-error');
+          if (errorElement) {
+            errorElement.appendChild(resendButton);
+          }
+        } else {
+          setError(result.error);
+          setSuccessMessage('');
         }
         setIsLoading(false);
       }
     } catch (err) {
       setError('An unexpected error occurred');
+      setSuccessMessage('');
       setIsLoading(false);
       console.error(err);
     }

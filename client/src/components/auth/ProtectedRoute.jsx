@@ -67,16 +67,16 @@ const ProtectedRoute = ({
   // Show loading spinner while authentication is being checked
   if (loading) {
     return (
-      <div className="w-full flex justify-center items-center">
-        <LoadingSpinner />
+      <div className="w-full h-screen flex justify-center items-center">
+        <LoadingSpinner fullScreen={false} color="blue" />
       </div>
     );
   }
 
   // Render children only if authorized
   return authorized ? children : (
-    <div className="w-full flex justify-center items-center">
-      <LoadingSpinner />
+    <div className="w-full h-screen flex justify-center items-center">
+      <LoadingSpinner fullScreen={false} color="blue" />
     </div>
   );
 };
