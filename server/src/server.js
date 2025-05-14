@@ -19,3 +19,9 @@ mongoose.connect(MONGODB_URI)
     console.error('MongoDB connection error:', err);
     process.exit(1);
   });
+
+// Add this near the top with other imports
+const appointmentStatusUpdater = require('./jobs/appointment-status-updater');
+
+// Add this after your server is initialized, before or after the server.listen() call
+appointmentStatusUpdater.initAppointmentStatusUpdater();

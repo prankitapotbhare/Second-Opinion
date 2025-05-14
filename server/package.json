@@ -13,7 +13,9 @@
     "generate-patients": "node src/scripts/generate-patients.js",
     "generate-patient-details": "node src/scripts/generate-patient-details.js",
     "generate-jwt": "node src/scripts/generate-jwt-secrets.js",
-    "test-email": "node src/scripts/test-email.js"
+    "migrateToCloudinary": "node src/scripts/migrateToCloudinary.js",
+    "test-email": "node src/scripts/test-email.js",
+    "test-twilio": "node src/scripts/test-twilio.js"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +23,7 @@
   "type": "commonjs",
   "dependencies": {
     "bcryptjs": "^3.0.2",
+    "cloudinary": "^2.6.1",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "exceljs": "^4.4.0",
@@ -29,8 +32,10 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.14.0",
     "multer": "^1.4.5-lts.2",
+    "node-cron": "^4.0.5",
     "nodemailer": "^6.10.1",
-    "pdfkit": "^0.17.1"
+    "pdfkit": "^0.17.1",
+    "twilio": "^5.6.1"
   },
   "devDependencies": {
     "faker": "^5.5.3",
