@@ -191,6 +191,8 @@ patientDetailsSchema.post('save', async function() {
 patientDetailsSchema.index({ doctorId: 1, status: 1 });
 patientDetailsSchema.index({ patientId: 1, submittedAt: -1 });
 patientDetailsSchema.index({ updatedAt: -1 });
+// Add new index for appointment status updater queries
+patientDetailsSchema.index({ status: 1, 'appointmentDetails.date': 1 });
 
 const PatientDetails = mongoose.model('PatientDetails', patientDetailsSchema);
 
