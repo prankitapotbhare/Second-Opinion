@@ -27,8 +27,8 @@ const updateAppointmentStatuses = async () => {
     const currentHours = now.getHours();
     const currentMinutes = now.getMinutes();
     
-    // Find and update appointments as needed
-    const appointmentsToUpdate = await PatientDetails.find({
+    // Find and update approved appointments that have passed
+    const approvedAppointmentsToUpdate = await PatientDetails.find({
       status: 'approved',
       $or: [
         // Past dates
@@ -44,9 +44,9 @@ const updateAppointmentStatuses = async () => {
       ]
     });
 
-    let updatedCount = 0;
+    let approvedUpdatedCount = 0;
 
-    for (const appointment of appointmentsToUpdate) {
+    for (const appointment of approvedAppointmentsToUpdate) {
       // For today's appointments, check if time has passed
       if (appointment.appointmentDetails.date.toDateString() === now.toDateString()) {
         const appointmentMinutes = timeToMinutes(appointment.appointmentDetails.time);
@@ -61,11 +61,30 @@ const updateAppointmentStatuses = async () => {
       appointment.appointmentDetails.isCompleted = true;
       appointment.appointmentDetails.completedAt = new Date();
       await appointment.save();
-      updatedCount++;
+      approvedUpdatedCount++;
     }
 
-    if (updatedCount > 0) {
-      logger.info(`Auto-updated ${updatedCount} appointments to 'completed' status`);
+    // Find and update under-review appointments that have passed
+    const underReviewAppointmentsToUpdate = await PatientDetails.find({
+      status: 'under-review',
+      'appointmentDetails.date': { $lt: new Date() }
+    });
+
+    let underReviewUpdatedCount = 0;
+
+    for (const appointment of underReviewAppointmentsToUpdate) {
+      // Update status to rejected
+      appointment.status = 'rejected';
+      await appointment.save();
+      underReviewUpdatedCount++;
+    }
+
+    if (approvedUpdatedCount > 0) {
+      logger.info(`Auto-updated ${approvedUpdatedCount} appointments to 'completed' status`);
+    }
+
+    if (underReviewUpdatedCount > 0) {
+      logger.info(`Auto-updated ${underReviewUpdatedCount} appointments from 'under-review' to 'rejected' status`);
     }
     
     // Example of how you might be using currentMinutes:

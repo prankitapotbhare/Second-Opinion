@@ -608,7 +608,10 @@ exports.getPatientRequests = async (req, res, next) => {
     const query = { 
       doctorId,
       $or: [
-        { status: 'under-review' },
+        { 
+          status: 'under-review',
+          'appointmentDetails.date': { $gte: currentDate } 
+        },
         { 
           status: 'approved',
           'appointmentDetails.date': { $gte: currentDate }
