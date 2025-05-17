@@ -99,10 +99,100 @@ patientDetailsSchema.virtual('patientAge').get(function() {
   return this.age;
 });
 
+// Track status changes
+patientDetailsSchema.pre('save', async function(next) {
+  try {
+    // Only proceed if status is being modified
+    if (this.isModified('status')) {
+      // Store the status change
+      this._oldStatus = this.isModified('status') ? this._previousStatus || 'pending' : this.status;
+      this._newStatus = this.status;
+      this._statusChanged = true;
+      
+      // Store previous status for reference
+      if (!this._previousStatus) {
+        this._previousStatus = this.isModified('status') ? 
+          this._oldStatus : this.status;
+      }
+
+      // Auto-update completedAt for completed status
+      if (this.status === 'completed' && this.appointmentDetails) {
+        this.appointmentDetails.isCompleted = true;
+        this.appointmentDetails.completedAt = new Date();
+      }
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Send notifications after status change
+patientDetailsSchema.post('save', async function() {
+  try {
+    // Only proceed if status was changed
+    if (!this._statusChanged) {
+      return;
+    }
+
+    const oldStatus = this._oldStatus;
+    const newStatus = this._newStatus;
+    
+    // Get logger for debugging
+    const logger = require('../utils/logger.util');
+    logger.info(`PatientDetails post-save hook: Status changed from ${oldStatus} to ${newStatus} for patient details ID: ${this._id}`);
+
+    // Import here to avoid circular dependency
+    const twilioService = require('../services/twilio.service');
+    
+    // Use mongoose.model to avoid circular dependencies
+    const Patient = mongoose.model('Patient');
+    const Doctor = mongoose.model('Doctor');
+
+    // Get patient and doctor details for the notification
+    const patient = await Patient.findById(this.patientId);
+    const doctor = await Doctor.findById(this.doctorId);
+    
+    if (!patient) {
+      logger.warn(`Could not find patient with ID: ${this.patientId}`);
+      return;
+    }
+    
+    if (!doctor) {
+      logger.warn(`Could not find doctor with ID: ${this.doctorId}`);
+      return;
+    }
+    
+    // Create properly formatted patient and doctor objects
+    const patientObj = {
+      ...patient.toObject(),
+      name: patient.name || `${patient.firstName || ''} ${patient.lastName || ''}`.trim()
+    };
+    
+    const doctorObj = {
+      ...doctor.toObject(),
+      name: doctor.name || `Dr. ${doctor.firstName || ''} ${doctor.lastName || ''}`.trim()
+    };
+    
+    logger.info(`Found patient: ${patientObj.name}, doctor: ${doctorObj.name}`);
+    
+    // Send notification with properly formatted objects
+    await twilioService.sendStatusChangeNotification(this, oldStatus, newStatus, patientObj, doctorObj);
+    logger.info('Notification sent successfully');
+  } catch (error) {
+    // Log error but don't throw - we don't want to interrupt the main flow
+    const logger = require('../utils/logger.util');
+    logger.error('Error in post-save notification hook:', error);
+    logger.error('Error stack:', error.stack);
+  }
+});
+
 // Index for faster queries
 patientDetailsSchema.index({ doctorId: 1, status: 1 });
 patientDetailsSchema.index({ patientId: 1, submittedAt: -1 });
 patientDetailsSchema.index({ updatedAt: -1 });
+// Add new index for appointment status updater queries
+patientDetailsSchema.index({ status: 1, 'appointmentDetails.date': 1 });
 
 const PatientDetails = mongoose.model('PatientDetails', patientDetailsSchema);
 

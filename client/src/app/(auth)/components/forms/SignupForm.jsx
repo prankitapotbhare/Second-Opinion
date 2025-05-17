@@ -23,6 +23,7 @@ const SignupForm = ({
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPromo, setShowPromo] = useState(true);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -159,7 +160,27 @@ const SignupForm = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Toast-style promotional message */}
+      {showPromo && (
+        <div className="fixed top-4 right-4 left-4 md:left-auto md:w-80 bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 rounded-md shadow-lg z-50 animate-fade-in-down">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="font-bold">Limited Time Offer!</p>
+              <p className="text-sm mt-1">This platform typically charges a monthly subscription fee of ₹10,000.</p>
+              <p className="text-sm font-medium mt-1">You can now register and use all features for free.</p>
+            </div>
+            <button 
+              onClick={() => setShowPromo(false)}
+              className="text-blue-500 hover:text-blue-700"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+      
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-md text-sm">
           {error}

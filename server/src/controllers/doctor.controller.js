@@ -551,7 +551,7 @@ exports.submitAppointmentResponse = async (req, res, next) => {
     });
     
     if (!appointment) {
-      return next(createError('Appointment not found or not in pending status', 404));
+      return next(createError('Appointment not found or not eligible for response', 404));
     }
     
     // Get message and secondOpinionRequired from form data
@@ -561,38 +561,33 @@ exports.submitAppointmentResponse = async (req, res, next) => {
       return next(createError('Message is required', 400));
     }
     
-    // Process response file if any
+    // Process uploaded response files if any
     let responseFiles = [];
-    if (req.file) {
-      // Process the file
-      responseFiles.push({
-        fileName: req.file.originalname,
-        fileType: req.file.mimetype,
-        fileSize: req.file.size,
-        uploadDate: new Date(),
-        filePath: req.file.path
-      });
+    if (req.files && req.files.length > 0) {
+      responseFiles = fileService.processUploadedFiles(req.files);
     }
     
     // Update appointment with doctor's response
-    const updatedAppointment = await PatientDetails.findByIdAndUpdate(
-      appointmentId,
-      {
-        status: secondOpinionRequired === 'true' ? 'opinion-needed' : 'opinion-not-needed',
-        doctorResponse: {
-          message,
-          responseDate: new Date(),
-          secondOpinionRequired: secondOpinionRequired === 'true',
-          responseFiles
-        }
-      },
-      { new: true }
-    );
+    appointment.doctorResponse = {
+      message: message || '',
+      responseDate: new Date(),
+      secondOpinionRequired: secondOpinionRequired === 'true',
+      responseFiles
+    };
+    
+    // Update status based on response type
+    appointment.status = secondOpinionRequired === 'true' ? 'opinion-needed' : 'opinion-not-needed';
+    
+    // Save the appointment to trigger the post-save hook
+    await appointment.save();
     
     res.status(200).json({
       success: true,
       message: 'Response submitted successfully',
-      data: updatedAppointment
+      data: {
+        status: appointment.status,
+        doctorResponse: appointment.doctorResponse
+      }
     });
   } catch (error) {
     next(error);
@@ -613,7 +608,10 @@ exports.getPatientRequests = async (req, res, next) => {
     const query = { 
       doctorId,
       $or: [
-        { status: 'under-review' },
+        { 
+          status: 'under-review',
+          'appointmentDetails.date': { $gte: currentDate } 
+        },
         { 
           status: 'approved',
           'appointmentDetails.date': { $gte: currentDate }
