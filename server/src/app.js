@@ -11,6 +11,13 @@ const allowedOrigins = [
   // Add other frontend domains if needed (e.g., staging/production URLs)
 ];
 
+// Add this after your middleware setup
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  next();
+});
+
+// Or add it to your corsOptions
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (server-to-server) or from allowed origins
@@ -24,7 +31,8 @@ const corsOptions = {
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  exposedHeaders: ['Cross-Origin-Opener-Policy'],
 };
 
 // Middleware

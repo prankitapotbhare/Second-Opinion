@@ -20,7 +20,7 @@ const doctorSchema = new mongoose.Schema({
     required: [true, 'Password is required'],
     minlength: [6, 'Password must be at least 6 characters']
   },
-  googleId: {
+  firebaseUid: {
     type: String,
     sparse: true,
     index: true

@@ -7,6 +7,8 @@ import PasswordInput from '../common/PasswordInput';
 import SocialLoginButton from '../common/SocialLoginButton';
 import AuthDivider from '../common/AuthDivider';
 import { useAuth } from '@/contexts/AuthContext';
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { auth } from "../../../../config/firebase";
 
 const SignupForm = ({ 
   userType = "patient", // "patient" or 'doctor'
@@ -23,6 +25,7 @@ const SignupForm = ({
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPromo, setShowPromo] = useState(true);
 
   const handleChange = (e) => {
@@ -86,79 +89,34 @@ const SignupForm = ({
 
   // Handle Google Sign In
   const handleGoogleSignIn = async () => {
-    setError('');
-    setIsLoading(true);
-    
+    setIsGoogleLoading(true);
     try {
-      // Determine the redirect path
-      const defaultRedirect = userType === 'doctor' ? '/doctor/portal' : '/';
-      const finalRedirectPath = redirectPath || defaultRedirect;
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const result = await signInWithPopup(auth, provider);
       
-      // Initialize Google Sign-In
-      if (!window.google) {
-        setError('Google authentication is not available');
-        setIsLoading(false);
-        return;
-      }
+      // Get the ID token
+      const idToken = await result.user.getIdToken();
       
-      // Get Google Identity Services
-      const googleIdentity = window.google.accounts.id;
+      // Call the googleAuth function from AuthContext
+      const authResult = await googleAuth(idToken, userType);
       
-      // Promise to handle the callback
-      const googleAuthPromise = new Promise((resolve, reject) => {
-        const handleCredentialResponse = async (response) => {
-          try {
-            // Call the googleAuth function with the ID token
-            const result = await googleAuth(
-              response.credential,
-              userType,
-              finalRedirectPath
-            );
-            
-            resolve(result);
-          } catch (error) {
-            reject(error);
-          }
-        };
-        
-        // Configure Google Sign-In
-        googleIdentity.initialize({
-          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-          callback: handleCredentialResponse,
-          auto_select: false
-        });
-        
-        // Prompt the user
-        googleIdentity.prompt((notification) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            reject(new Error('Google sign-in prompt was not displayed or was skipped'));
-          }
-        });
-      });
-      
-      // Wait for the Google authentication to complete
-      const result = await googleAuthPromise;
-      
-      if (result.success) {
-        // If this is a new user, we might want to collect additional information
-        if (result.isNewUser) {
-          // For now, just redirect to the dashboard
-          router.push(finalRedirectPath);
-        } else {
-          // Existing user, redirect to dashboard
-          router.push(finalRedirectPath);
-        }
+      if (authResult.success) {
+        // Redirect based on user type after successful authentication
+        const defaultRedirect = userType === 'doctor' ? '/doctor/portal' : '/';
+        router.push(redirectPath || defaultRedirect);
       } else {
-        setError(result.error || 'Google authentication failed');
-        setIsLoading(false);
+        setError(authResult.error || "Failed to authenticate with Google");
       }
-    } catch (err) {
-      setError('An unexpected error occurred during Google authentication');
-      setIsLoading(false);
-      console.error(err);
+    } catch (error) {
+      console.error("Google sign-in error:", error);
+      setError(error.message || "Failed to sign in with Google");
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
+  // Replace the useEffect for Google Sign-In with a button click handler
   return (
     <div className="space-y-6 relative">
       {/* Toast-style promotional message */}
@@ -270,9 +228,9 @@ const SignupForm = ({
       <AuthDivider text="or continue with" />
       
       <SocialLoginButton 
-        provider="google"
+        provider="google" 
         onClick={handleGoogleSignIn}
-        disabled={isLoading}
+        isLoading={isGoogleLoading}
       />
       
       <div className="text-center mt-4">
