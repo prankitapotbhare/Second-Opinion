@@ -1,9 +1,182 @@
 const Doctor = require('../models/doctor.model');
 const Availability = require('../models/availability.model');
 const PatientDetails = require('../models/patientDetails.model');
-const fileService = require('../services/file.service');
+const { processMedicalFiles } = require('../services/file.service');
 const validationService = require('../services/validation.service');
 const { createError } = require('../utils/error.util');
+const File = require('../models/file.model');
+
+
+exports.createPatientDetails = async (req, res) => {
+  try {
+    const patientId = req.user.id;
+
+    const {
+      doctorId,
+      fullName,
+      age,
+      relation,
+      contactNumber,
+      email,
+      gender,
+      phone,
+      emergencyContact,
+      problem,
+      appointmentDetails
+    } = req.body;
+
+    if (!doctorId || !fullName || !age || !gender || !problem) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    const newPatientData = {
+      patientId,
+      doctorId,
+      fullName,
+      age,
+      relation,
+      contactNumber,
+      email,
+      gender,
+      phone,
+      emergencyContact,
+      problem,
+      appointmentDetails
+    };
+
+    // Attach uploaded medical files
+    if (req.filesData && Array.isArray(req.filesData.medicalFiles)) {
+      newPatientData.medicalFiles = req.filesData.medicalFiles.map(file => ({
+        fileName: file.fileName,
+        filePath: file.url,
+        fileType: file.fileType,
+        fileSize: file.fileSize,
+        uploadDate: new Date()
+      }));
+    }
+
+    const newPatientDetails = await PatientDetails.create(newPatientData);
+
+    console.log('✅ Patient details saved:', newPatientDetails);
+
+      res.status(201).json({
+      success: true,
+      message: 'Form submitted successfully',
+      data: {
+        formSubmission: newPatientData
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error submitting patient details:', error);
+
+    // Improve error message
+    const message = error?.message || 'Internal server error';
+    return res.status(500).json({ message });
+  }
+};
+
+
+
+
+// --- Get medical files (Updated for Cloudinary) ---
+// exports.getMedicalFiles = async (req, res, next) => {
+//   try {
+//     const patientDetails = await PatientDetails.findOne({ patientId: req.user.id })
+//       .populate({
+//         path: 'medicalFiles',
+//         match: { deletedAt: null },
+//         select: 'url secure_url format originalName uploadedAt category'
+//       });
+
+//     if (!patientDetails) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Patient details not found'
+//       });
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       data: patientDetails.medicalFiles || []
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
+
+exports.getMedicalFiles = async (req, res, next) => {
+  try {
+    const patientDetails = await PatientDetails.findOne({ patientId: req.user.id });
+
+    if (!patientDetails) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient details not found'
+      });
+    }
+
+    // Get inline medicalFiles array (no population needed)
+    const medicalFiles = patientDetails.medicalFiles || [];
+
+    res.status(200).json({
+      success: true,
+      data: medicalFiles
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+// --- Delete medical file (Updated for Cloudinary) ---
+exports.deleteMedicalFile = async (req, res, next) => {
+  try {
+    const { fileId } = req.params;
+    const patientId = req.user.id;
+
+    // Verify the file belongs to the patient
+    const patientDetails = await PatientDetails.findOne({ patientId });
+    if (!patientDetails) {
+      return next(createError('Patient details not found', 404));
+    }
+
+    const fileIndex = patientDetails.medicalFiles.indexOf(fileId);
+    if (fileIndex === -1) {
+      return next(createError('File not found in patient records', 404));
+    }
+
+    // Soft delete the file
+    const file = await File.findById(fileId);
+    if (!file) {
+      return next(createError('File not found', 404));
+    }
+
+    file.deletedAt = new Date();
+    await file.save();
+
+    // Remove from patient's medicalFiles array
+    patientDetails.medicalFiles.splice(fileIndex, 1);
+    await patientDetails.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'File deleted successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+
+
+
+
+
+
+
 
 // --- PUBLIC: Get doctors with filters ---
 exports.getDoctorsPublic = async (req, res, next) => {
@@ -45,38 +218,38 @@ exports.getDoctorsPublic = async (req, res, next) => {
 exports.getDoctorByIdPublic = async (req, res, next) => {
   try {
     const { doctorId } = req.params;
-    
+
     // Validate doctor ID
     validationService.validateObjectId(doctorId, 'doctor');
-    
+
     // Find doctor with completed profile and populate availability in a single query
-    const doctor = await Doctor.findOne({ 
+    const doctor = await Doctor.findOne({
       _id: doctorId,
-      isProfileComplete: true 
+      isProfileComplete: true
     })
-    .select(
-      '_id name email specialization experience degree hospitalAffiliation ' +
-      'hospitalAddress licenseNumber issuingMedicalCouncil consultationFee ' + 
-      'languages location photoURL gender bio timezone'
-    )
-    .populate({
-      path: 'availability',
-      select: 'workingDays startTime endTime weeklyHoliday timeSlots'
-    })
-    .lean();
-    
+      .select(
+        '_id name email specialization experience degree hospitalAffiliation ' +
+        'hospitalAddress licenseNumber issuingMedicalCouncil consultationFee ' +
+        'languages location photoURL gender bio timezone'
+      )
+      .populate({
+        path: 'availability',
+        select: 'workingDays startTime endTime weeklyHoliday timeSlots'
+      })
+      .lean();
+
     if (!doctor) {
       return res.status(404).json({
         success: false,
         message: 'Doctor not found or profile not complete'
       });
     }
-    
+
     // If availability isn't found through populate, try to find it directly
     // This is a fallback for doctors created before the schema update
     if (!doctor.availability) {
       const availability = await Availability.findOne({ doctorId: doctor._id }).lean();
-      
+
       if (availability) {
         doctor.availability = {
           workingDays: availability.workingDays,
@@ -87,7 +260,7 @@ exports.getDoctorByIdPublic = async (req, res, next) => {
         };
       }
     }
-    
+
     res.status(200).json({
       success: true,
       data: doctor
@@ -102,28 +275,28 @@ exports.getDoctorReviewsPublic = async (req, res, next) => {
   try {
     const { doctorId } = req.params;
     const { page = 1, limit = 10 } = req.query;
-    
+
     // Validate doctor ID
     validationService.validateObjectId(doctorId, 'doctor');
-    
+
     // Find doctor with completed profile
-    const doctor = await Doctor.findOne({ 
+    const doctor = await Doctor.findOne({
       _id: doctorId,
-      isProfileComplete: true 
+      isProfileComplete: true
     })
-    .select('reviews averageRating')
-    .populate({
-      path: 'reviews.patientId',
-      select: 'name photoURL'
-    });
-    
+      .select('reviews averageRating')
+      .populate({
+        path: 'reviews.patientId',
+        select: 'name photoURL'
+      });
+
     if (!doctor) {
       return res.status(404).json({
         success: false,
         message: 'Doctor not found or profile not complete'
       });
     }
-    
+
     // Helper to format "dayAgo"
     function getDayAgo(date) {
       const now = new Date();
@@ -137,12 +310,12 @@ exports.getDoctorReviewsPublic = async (req, res, next) => {
     // Sort reviews by date (newest first)
     const sortedReviews = doctor.reviews
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    
+
     // Apply pagination
     const startIndex = (Number(page) - 1) * Number(limit);
     const endIndex = startIndex + Number(limit);
     const paginatedReviews = sortedReviews.slice(startIndex, endIndex);
-    
+
     // Format reviews for response
     const formattedReviews = paginatedReviews.map(review => ({
       id: review._id,
@@ -152,7 +325,7 @@ exports.getDoctorReviewsPublic = async (req, res, next) => {
       comment: review.comment,
       dayAgo: getDayAgo(review.createdAt)
     }));
-    
+
     res.status(200).json({
       success: true,
       data: {
@@ -169,71 +342,12 @@ exports.getDoctorReviewsPublic = async (req, res, next) => {
   }
 };
 
-// --- Create patient details ---
-exports.createPatientDetails = async (req, res, next) => {
-  try {
-    const patientId = req.user.id;
-    const { 
-      doctorId, 
-      fullName, 
-      age, 
-      relation, 
-      contactNumber, 
-      email, 
-      gender, 
-      emergencyContact, 
-      problem 
-    } = req.body;
-
-    // Validate required fields
-    if (!doctorId || !fullName || !age || !relation || !contactNumber || !email || !gender || !emergencyContact || !problem) {
-      return next(createError('Missing required fields', 400));
-    }
-
-    // Validate doctor exists
-    const doctorExists = await Doctor.exists({ _id: doctorId, isProfileComplete: true });
-    if (!doctorExists) {
-      return next(createError('Doctor not found or profile not complete', 404));
-    }
-
-    // Process uploaded files
-    const medicalFiles = fileService.processUploadedFiles(req.files);
-
-    // Create patient details
-    const patientDetails = await PatientDetails.create({
-      patientId,
-      doctorId: req.body.doctorId,
-      fullName: req.body.fullName,
-      age: req.body.age,
-      relation: req.body.relation,
-      contactNumber: req.body.contactNumber,
-      email: req.body.email,
-      gender: req.body.gender,
-      phone: req.body.contactNumber,
-      emergencyContact: req.body.emergencyContact,
-      problem: req.body.problem,
-      medicalFiles: medicalFiles
-    });
-
-    await patientDetails.save();
-
-    res.status(201).json({
-      success: true,
-      message: 'Form submitted successfully',
-      data: {
-        formSubmission: patientDetails
-      }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
 
 // --- Get response status ---
 exports.getResponse = async (req, res, next) => {
   try {
     const patientId = req.user.id;
-    
+
     // Find the latest submission for this patient
     const submission = await PatientDetails.findOne({ patientId })
       .sort({ createdAt: -1 });
@@ -247,7 +361,7 @@ exports.getResponse = async (req, res, next) => {
         }
       });
     }
-    
+
     res.status(200).json({
       success: true,
       data: {
@@ -268,64 +382,64 @@ exports.getAvailableSlots = async (req, res, next) => {
   try {
     const { doctorId } = req.params;
     const { date } = req.query;
-    
+
     // Validate required parameters
     if (!doctorId) {
       return next(createError('Doctor ID is required', 400));
     }
-    
+
     if (!date) {
       return next(createError('Date is required', 400));
     }
-    
+
     // Validate doctor ID
     validationService.validateObjectId(doctorId, 'doctor');
-    
+
     // Validate date format
     const dateObj = new Date(date);
     if (isNaN(dateObj.getTime())) {
       return next(createError('Invalid date format. Use YYYY-MM-DD', 400));
     }
-    
+
     // Check if date is in the past
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (dateObj < today) {
       return next(createError('Cannot check availability for past dates', 400));
     }
-    
+
     // Find doctor's availability
     const availability = await Availability.findOne({ doctorId });
     if (!availability) {
       return next(createError('Doctor availability not found', 404));
     }
-    
+
     // If no time slots are generated yet, generate them
     if (!availability.timeSlots || availability.timeSlots.length === 0) {
       await availability.generateTimeSlots();
       await availability.save();
     }
-    
+
     // Get available slots
     const availableSlots = await availability.getAvailableSlots(date);
-    
+
     // If the requested date is today, filter out slots that have already passed
     const isToday = dateObj.toDateString() === new Date().toDateString();
     let filteredSlots = availableSlots;
-    
+
     if (isToday) {
       const now = new Date();
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
-      
+
       filteredSlots = availableSlots.filter(slot => {
         const [slotHour, slotMinute] = slot.split(':').map(Number);
         // Compare slot time with current time
-        return (slotHour > currentHour) || 
-               (slotHour === currentHour && slotMinute > currentMinute);
+        return (slotHour > currentHour) ||
+          (slotHour === currentHour && slotMinute > currentMinute);
       });
     }
-    
+
     res.status(200).json({
       success: true,
       data: {
@@ -344,57 +458,57 @@ exports.requestAppointment = async (req, res, next) => {
     const patientId = req.user.id;
     const { responseId } = req.params;
     const { date, time, notes } = req.body;
-    
+
     // Validate submission ID
     validationService.validateObjectId(responseId, 'submission');
-    
+
     // Validate required fields
     if (!date || !time) {
       return next(createError('Date and time are required', 400));
     }
-    
+
     const submission = await PatientDetails.findOne({
       _id: responseId,
       patientId,
       status: { $in: ['opinion-needed', 'rejected'] }
     });
-    
+
     if (!submission) {
       return next(createError('Submission not found or not eligible for appointment', 404));
     }
-    
+
     // Check if the selected slot is available
     const availability = await Availability.findOne({ doctorId: submission.doctorId });
-    
+
     if (!availability) {
       return next(createError('Doctor availability not found', 404));
     }
-    
+
     const isAvailable = await availability.isAvailable(date, time);
-    
+
     if (!isAvailable) {
       return next(createError('The selected time slot is not available', 400));
     }
-    
+
     // Reserve the slot
     const slotReserved = await availability.reserveSlot(date, time);
-    
+
     if (!slotReserved) {
       return next(createError('Failed to reserve the time slot', 500));
     }
-    
+
     // Update submission with appointment details
     submission.appointmentDetails = {
       date: new Date(date),
       time
     };
-    
+
     submission.status = 'under-review';
     await submission.save();
-    
+
     // Reserve the slot temporarily (mark as unavailable for 24 hours)
     await availability.reserveSlot(new Date(date), time);
-    
+
     res.status(200).json({
       success: true,
       message: 'Appointment requested successfully',
@@ -415,49 +529,49 @@ exports.submitReview = async (req, res, next) => {
     const { submissionId } = req.params;
     const patientId = req.user.id;
     const { rating, comment } = req.body;
-    
+
     // Validate required fields
     if (!rating) {
       return next(createError('Rating is required', 400));
     }
-    
+
     // Validate rating is between 1 and 5
     if (rating < 1 || rating > 5) {
       return next(createError('Rating must be between 1 and 5', 400));
     }
-    
+
     // Find the submission
-    const submission = await PatientDetails.findOne({ 
+    const submission = await PatientDetails.findOne({
       _id: submissionId,
       patientId
     });
-    
+
     if (!submission) {
       return next(createError('Submission not found', 404));
     }
-    
+
     // Check if the submission status is valid for review
     // Now allowing reviews for 'opinion-not-needed' and 'rejected' as well
     const validStatuses = ['approved', 'completed', 'opinion-not-needed', 'rejected'];
     if (!validStatuses.includes(submission.status)) {
       return next(createError('You can only review after your submission has been processed', 400));
     }
-    
+
     // Check if the patient has already submitted a review for this submission
     if (submission.hasReview) {
       return next(createError('You have already submitted a review for this submission', 400));
     }
-    
+
     // Get the doctor ID from the submission
     const doctorId = submission.doctorId;
-    
+
     // Add review to the doctor's reviews array
     const doctor = await Doctor.findById(doctorId);
-    
+
     if (!doctor) {
       return next(createError('Doctor not found', 404));
     }
-    
+
     // Add the review
     doctor.reviews.push({
       patientId,
@@ -465,23 +579,23 @@ exports.submitReview = async (req, res, next) => {
       comment: comment || '',
       createdAt: new Date()
     });
-    
+
     // Calculate new average rating
     const totalRating = doctor.reviews.reduce((sum, review) => sum + review.rating, 0);
     doctor.averageRating = totalRating / doctor.reviews.length;
-    
+
     // Save the doctor with the new review
     await doctor.save();
-    
+
     // Mark the submission as having a review
     submission.hasReview = true;
     submission.review = {
       rating,
       comment: comment || ''
     };
-    
+
     await submission.save();
-    
+
     res.status(200).json({
       success: true,
       message: 'Review submitted successfully',

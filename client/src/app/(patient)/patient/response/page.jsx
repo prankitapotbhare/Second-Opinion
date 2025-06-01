@@ -6,10 +6,10 @@ import { usePatient } from '@/contexts/PatientContext';
 import DateTimePicker from './components/DateTimePicker';
 
 export default function ResponsePage() {
-  const { 
-    patientResponse, 
-    responseLoading, 
-    responseError, 
+  const {
+    patientResponse,
+    responseLoading,
+    responseError,
     fetchPatientResponse,
     requestDoctorAppointment,
     submitDoctorReview,
@@ -35,13 +35,13 @@ export default function ResponsePage() {
       alert('No submission found');
       return;
     }
-    
+
     try {
       await submitDoctorReview(patientResponse.id, {
         rating,
         comment
       });
-      
+
       if (reviewSubmitSuccess) {
         setComment('');
         setRating(3);
@@ -64,7 +64,7 @@ export default function ResponsePage() {
 
   const handleDateTimeSelect = async (dateTimeData) => {
     setSubmitting(true);
-    
+
     try {
       if (patientResponse && patientResponse.id) {
         await requestDoctorAppointment(patientResponse.id, {
@@ -72,7 +72,7 @@ export default function ResponsePage() {
           time: dateTimeData.time,
           notes: ''
         });
-        
+
         // Refresh the response data
         await fetchPatientResponse();
         setShowDateTimePicker(false);
@@ -102,12 +102,12 @@ export default function ResponsePage() {
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
         <div className="text-red-600 mb-4 text-xl">Error: {responseError}</div>
         <p className="text-gray-600 mb-6">
-          {responseError === 'No submissions found' 
-            ? 'You have not submitted any requests for a second opinion yet.' 
+          {responseError === 'No submissions found'
+            ? 'You have not submitted any requests for a second opinion yet.'
             : 'There was an error loading your response. Please try again later.'}
         </p>
-        <Link 
-          href="/patient/doctors" 
+        <Link
+          href="/patient/doctors"
           className="bg-teal-600 text-white px-6 py-2 rounded-md hover:bg-teal-700 transition-colors"
         >
           Find a Doctor
@@ -121,8 +121,8 @@ export default function ResponsePage() {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
         <div className="text-gray-600 mb-6 text-xl">No response available</div>
-        <Link 
-          href="/patient/doctors" 
+        <Link
+          href="/patient/doctors"
           className="bg-teal-600 text-white px-6 py-2 rounded-md hover:bg-teal-700 transition-colors"
         >
           Find a Doctor
@@ -132,16 +132,16 @@ export default function ResponsePage() {
   }
 
   // Determine appointment status
-  const appointmentRequested = patientResponse.status === 'approved' || 
-                               patientResponse.status === 'rejected' || 
-                               patientResponse.status === 'under-review';
+  const appointmentRequested = patientResponse.status === 'approved' ||
+    patientResponse.status === 'rejected' ||
+    patientResponse.status === 'under-review';
   const appointmentStatus = patientResponse.status;
 
   return (
     <div className="min-h-screen bg-white">
       {/* Date Time Picker Modal */}
       {showDateTimePicker && (
-        <DateTimePicker 
+        <DateTimePicker
           onSelect={handleDateTimeSelect}
           onClose={() => setShowDateTimePicker(false)}
           doctorId={patientResponse.doctorId}
@@ -151,13 +151,13 @@ export default function ResponsePage() {
       <main className="container mx-auto px-4 py-8">
         {/* Tab Navigation */}
         <div className="flex justify-between border-b border-gray-200 mb-8">
-          <button 
+          <button
             className={`pb-4 px-4 text-lg font-medium ${activeTab === 'response' ? 'text-black border-b-2 border-teal-600' : 'text-gray-500'} cursor-pointer whitespace-nowrap`}
             onClick={() => setActiveTab('response')}
           >
             Response(1)
           </button>
-          <button 
+          <button
             className={`pb-4 px-4 text-lg font-medium ${activeTab === 'comments' ? 'text-black border-b-2 border-teal-600' : 'text-gray-500'} cursor-pointer whitespace-nowrap`}
             onClick={() => setActiveTab('comments')}
           >
@@ -187,7 +187,7 @@ export default function ResponsePage() {
                       <p className="text-red-600">
                         Your appointment request for {patientResponse.formattedDate} at {patientResponse.formattedTime} was not approved.
                       </p>
-                      <button 
+                      <button
                         onClick={handleRequestAppointment}
                         className="mt-4 bg-teal-600 text-white px-6 py-2 rounded-md hover:bg-teal-700 transition-colors flex items-center"
                       >
@@ -243,7 +243,7 @@ export default function ResponsePage() {
               </div>
               {patientResponse.status === 'opinion-needed' && !appointmentRequested && (
                 <div className="flex justify-end mb-4">
-                  <button 
+                  <button
                     onClick={handleRequestAppointment}
                     className="bg-teal-600 text-white px-6 py-2 rounded-md hover:bg-teal-700 transition-colors flex items-center"
                     disabled={submitting}
@@ -278,8 +278,8 @@ export default function ResponsePage() {
                         <FaFileAlt className="text-xl" />
                       </div>
                       <span className="text-gray-800 font-medium text-sm text-center mb-2">{file.fileName}</span>
-                      <a 
-                        href={file.filePath} 
+                      <a
+                        href={file.filePath}
                         download={file.fileName}
                         className="text-teal-600 text-sm flex items-center hover:underline"
                       >
@@ -300,12 +300,12 @@ export default function ResponsePage() {
         {activeTab === 'comments' && (
           <div>
             <h3 className="text-xl font-medium mb-4">Rate Your Experience</h3>
-            
+
             {/* Updated condition to allow reviews for opinion-not-needed and rejected statuses */}
-            {appointmentStatus === 'approved' || 
-             appointmentStatus === 'completed' || 
-             appointmentStatus === 'opinion-not-needed' || 
-             appointmentStatus === 'rejected' ? (
+            {appointmentStatus === 'approved' ||
+              appointmentStatus === 'completed' ||
+              appointmentStatus === 'opinion-not-needed' ||
+              appointmentStatus === 'rejected' ? (
               <form onSubmit={handleSubmitReview} className="bg-white border border-gray-200 rounded-lg p-6 mb-8 shadow-sm">
                 {reviewSubmitSuccess ? (
                   <div className="flex items-center text-green-600 mb-4">
@@ -341,7 +341,7 @@ export default function ResponsePage() {
                         <span className="ml-2 text-gray-600">{rating}/5</span>
                       </div>
                     </div>
-                    
+
                     <div className="mb-4">
                       <label className="block text-gray-700 mb-2">Comment</label>
                       <textarea
@@ -352,7 +352,7 @@ export default function ResponsePage() {
                         onChange={(e) => setComment(e.target.value)}
                       ></textarea>
                     </div>
-                    
+
                     <button
                       type="submit"
                       className="bg-teal-600 text-white px-6 py-2 rounded-md hover:bg-teal-700 transition-colors flex items-center"

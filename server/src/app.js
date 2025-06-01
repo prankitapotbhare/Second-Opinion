@@ -2,16 +2,28 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const { errorHandler } = require('./middleware/error.middleware');
-const { UPLOADS_DIR, MEDICAL_FILES_DIR, DOCTOR_FILES_DIR } = require('./utils/constants');
-const fileService = require('./services/file.service');
 
 // Load environment variables
 require('dotenv').config();
 
-// CORS configuration
+const allowedOrigins = [
+  process.env.CLIENT_URL || 'http://localhost:3000',
+  // Add other frontend domains if needed (e.g., staging/production URLs)
+];
+
 const corsOptions = {
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (server-to-server) or from allowed origins
+    if (!origin || allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+      callback(null, true);
+    } else {
+      console.error('Blocked by CORS:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   optionsSuccessStatus: 200
 };
 
@@ -19,26 +31,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Ensure upload directories exist
-fileService.ensureDirectoryExists(UPLOADS_DIR);
-fileService.ensureDirectoryExists(MEDICAL_FILES_DIR);
-fileService.ensureDirectoryExists(DOCTOR_FILES_DIR);
-
-// Serve static files from uploads directory with proper MIME types
-app.use('/uploads', express.static(UPLOADS_DIR, {
-  setHeaders: (res, path) => {
-    // Set appropriate content type for different file types
-    res.setHeader('Content-Type', fileService.getContentType(path));
-    
-    // Set cache control for better performance
-    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
-    
-    // Set CORS headers to allow access from client
-    res.setHeader('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:3000');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  }
-}));
 
 // Import routes
 const authRoutes = require('./routes/auth.routes');

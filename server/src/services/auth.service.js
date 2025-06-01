@@ -67,7 +67,7 @@ const registerUser = async (userData) => {
     // Validate password strength
     if (!validationUtil.isStrongPassword(password)) {
       throw errorUtil.createError(
-        'Password must be at least 6 characters long and include a mix of letters and numbers',
+        'Password must be at least 8 characters long and include uppercase, lowercase, a number, and a special character',
         400
       );
     }
@@ -543,7 +543,7 @@ const googleAuth = async (idToken, userType = 'patient') => {
       id: user._id,
       name: user.name,
       email: user.email,
-      role: userRole,
+      role: userType,
       photoURL: user.photoURL,
       isEmailVerified: user.isEmailVerified,
       termsAccepted: user.termsAccepted,

@@ -8,7 +8,7 @@ const ResponseModal = ({ isOpen, onClose, patientId, onSendResponse, appointment
     "As a precaution, please avoid heavy activities and ensure proper rest. Let's do a detailed evaluation soon. In the meantime, maintain a healthy diet and stay hydrated. If symptoms worsen suddenly, don't hesitate to seek immediate medical attention. Keep a daily log of your symptoms to help us understand any patterns. Avoid screen time and loud environments if they trigger discomfort."
   );
   const [selectedFile, setSelectedFile] = useState(null);
-  
+
   // No need to fetch appointment status here, we'll use the prop passed from PatientDetailModal
 
   const handleFileUploadClick = () => {
@@ -36,13 +36,13 @@ const ResponseModal = ({ isOpen, onClose, patientId, onSendResponse, appointment
       onClose();
       return;
     }
-    
+
     // Validate required fields
     if (!secondOpinionRequired) {
       // You could show an error message here
       return;
     }
-    
+
     // Prepare response data
     const responseData = {
       patientId,
@@ -50,10 +50,10 @@ const ResponseModal = ({ isOpen, onClose, patientId, onSendResponse, appointment
       message,
       file: selectedFile
     };
-    
+
     // Show success toast
     showSuccessToast("Response sent successfully!");
-    
+
     // Call the parent handler
     onSendResponse(responseData);
     onClose();
@@ -67,18 +67,18 @@ const ResponseModal = ({ isOpen, onClose, patientId, onSendResponse, appointment
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-800">Send Response</h2>
-          <button 
+          <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100"
           >
             <FaTimes />
           </button>
         </div>
-        
+
         {/* Body */}
         <div className="p-6">
           {/* Required Second Opinion */}
-          <div className="mb-6">
+        <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Required Second opinion
             </label>
@@ -104,7 +104,7 @@ const ResponseModal = ({ isOpen, onClose, patientId, onSendResponse, appointment
                 No
               </button>
             </div>
-          </div>
+          </div> 
 
           {/* Message */}
           <div className="mb-6">
@@ -125,11 +125,11 @@ const ResponseModal = ({ isOpen, onClose, patientId, onSendResponse, appointment
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Upload Document <span className="text-gray-500">(optional)</span>
             </label>
-            <input 
-              type="file" 
-              id="fileUploadInput" 
-              className="hidden" 
-              onChange={handleFileChange} 
+            <input
+              type="file"
+              id="fileUploadInput"
+              className="hidden"
+              onChange={handleFileChange}
             />
             <div className="flex flex-col space-y-2">
               <button
@@ -139,7 +139,7 @@ const ResponseModal = ({ isOpen, onClose, patientId, onSendResponse, appointment
                 <FaUpload className="mr-2" />
                 Upload Document
               </button>
-              
+
               {/* Display selected file name with delete option */}
               {selectedFile && (
                 <div className="flex items-center justify-between text-sm text-gray-600 mt-2 p-2 bg-gray-50 rounded-md border border-gray-200">
@@ -147,7 +147,7 @@ const ResponseModal = ({ isOpen, onClose, patientId, onSendResponse, appointment
                     <FaFile className="mr-2 text-blue-500" />
                     <span>{selectedFile.name}</span>
                   </div>
-                  <button 
+                  <button
                     onClick={handleDeleteFile}
                     className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-gray-200 transition-colors"
                     title="Delete file"
@@ -159,7 +159,7 @@ const ResponseModal = ({ isOpen, onClose, patientId, onSendResponse, appointment
             </div>
           </div>
         </div>
-        
+
         {/* Footer */}
         <div className="flex justify-end p-4 border-t border-gray-200">
           <button

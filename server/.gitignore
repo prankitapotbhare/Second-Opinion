@@ -26,3 +26,5 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 */uploads
+
+client_secret_211241858211-5l3hhhcr8lc0aajttep5a1mdbnq4jvbh.apps.googleusercontent.com.json

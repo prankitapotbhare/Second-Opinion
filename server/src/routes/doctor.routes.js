@@ -3,7 +3,7 @@ const router = express.Router();
 const doctorController = require('../controllers/doctor.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { checkRole } = require('../middleware/role.middleware');
-const { doctorFileUpload, handleUploadError, processFilePaths } = require('../middleware/upload.middleware');
+const { doctorFileUpload, handleUploadError, processFileUploads} = require('../middleware/upload.middleware');
 
 // Apply authentication to all doctor routes
 router.use(authenticate);
@@ -17,7 +17,7 @@ router.post('/profile/complete',
     { name: 'profilePhoto', maxCount: 1 }
   ]),
   handleUploadError,
-  processFilePaths,
+  processFileUploads,
   doctorController.completeProfile
 );
 
@@ -30,7 +30,7 @@ router.put('/profile',
     { name: 'profilePhoto', maxCount: 1 }
   ]),
   handleUploadError,
-  processFilePaths,
+  processFileUploads,
   doctorController.updateDoctorProfile
 );
 
@@ -53,8 +53,8 @@ router.get('/appointments', doctorController.getAppointments);
 router.get('/appointments/:appointmentId', doctorController.getAppointmentDetails);
 router.post('/appointments/:appointmentId/response', 
   doctorFileUpload.single('responseFile'),
+  processFileUploads,
   handleUploadError,
-  processFilePaths,
   doctorController.submitAppointmentResponse
 );
 
