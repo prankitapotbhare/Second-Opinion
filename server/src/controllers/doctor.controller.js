@@ -563,7 +563,11 @@ exports.submitAppointmentResponse = async (req, res, next) => {
     
     // Process uploaded response files if any
     let responseFiles = [];
-    if (req.files && req.files.length > 0) {
+    if (req.file) {
+      // For single file upload, create an array with just this file
+      responseFiles = fileService.processUploadedFiles([req.file]);
+    } else if (req.files && req.files.length > 0) {
+      // Keep this for backward compatibility or if you switch to multiple files later
       responseFiles = fileService.processUploadedFiles(req.files);
     }
     

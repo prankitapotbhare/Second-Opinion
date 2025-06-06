@@ -4,53 +4,14 @@
 const multer = require('multer');
 const path = require('path');
 const { 
-  MEDICAL_FILES_DIR, 
-  DOCTOR_FILES_DIR, 
   ALLOWED_FILE_TYPES, 
   ALLOWED_DOCUMENT_TYPES, 
   FILE_SIZE_LIMITS 
 } = require('../utils/constants');
-const fileService = require('../services/file.service');
+const cloudinaryService = require('../services/cloudinary.service');
 
-/**
- * Configure storage for patient medical files
- */
-const patientStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    // Create patient-specific directory using authenticated user ID
-    // Convert ObjectId to string before using it in path.join
-    const patientId = req.user.id.toString();
-    const patientDir = path.join(MEDICAL_FILES_DIR, patientId);
-    fileService.ensureDirectoryExists(patientDir);
-    cb(null, patientDir);
-  },
-  filename: function (req, file, cb) {
-    // Add a timestamp and sanitize the filename
-    const sanitizedName = file.originalname.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9.-]/g, '');
-    const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1E9)}-${sanitizedName}`;
-    cb(null, uniqueName);
-  }
-});
-
-/**
- * Configure storage for doctor documents
- */
-// For doctor document uploads
-const doctorStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    // Convert ObjectId to string before using it in path.join
-    const doctorId = req.user.id.toString();
-    const doctorDir = path.join(DOCTOR_FILES_DIR, doctorId);
-    fileService.ensureDirectoryExists(doctorDir);
-    cb(null, doctorDir);
-  },
-  filename: function (req, file, cb) {
-    // Generate unique filename
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
-  }
-});
+// Configure multer to use memory storage instead of disk storage
+const storage = multer.memoryStorage();
 
 /**
  * File filter for medical files
@@ -78,7 +39,7 @@ const doctorDocumentFilter = (req, file, cb) => {
  * Multer configuration for patient medical files
  */
 exports.patientFileUpload = multer({
-  storage: patientStorage,
+  storage: storage,
   limits: {
     fileSize: FILE_SIZE_LIMITS.MEDICAL_FILE
   },
@@ -89,7 +50,7 @@ exports.patientFileUpload = multer({
  * Multer configuration for doctor documents
  */
 exports.doctorFileUpload = multer({
-  storage: doctorStorage,
+  storage: storage,
   limits: {
     fileSize: FILE_SIZE_LIMITS.DOCTOR_DOCUMENT
   },
@@ -123,32 +84,103 @@ exports.handleUploadError = (err, req, res, next) => {
   next();
 };
 
-// Add file path processing middleware
-exports.processFilePaths = (req, res, next) => {
-  if (!req.files && !req.file) return next();
-  
-  // Process single file
-  if (req.file) {
-    req.file.urlPath = fileService.getUrlPath(req.file.path);
-  }
-  
-  // Process multiple files
-  if (req.files) {
-    // Handle array of files
-    if (Array.isArray(req.files)) {
-      req.files.forEach(file => {
-        file.urlPath = fileService.getUrlPath(file.path);
+/**
+ * Upload files to Cloudinary middleware
+ */
+exports.uploadToCloudinary = async (req, res, next) => {
+  try {
+    if (!req.files && !req.file) return next();
+    
+    // Process single file
+    if (req.file) {
+      const fileBuffer = req.file.buffer;
+      const fileType = req.file.mimetype;
+      const originalName = req.file.originalname;
+
+      // Create a data URI from the buffer
+      const dataUri = `data:${fileType};base64,${fileBuffer.toString('base64')}`;
+
+      // Determine folder based on user role
+      const folder = req.user.role === 'doctor' 
+        ? `second-opinion/doctor_files/${req.user.id}/responseFile`
+        : `second-opinion/medical_files/${req.user.id}`;
+
+      // Upload to Cloudinary with original filename
+      const result = await cloudinaryService.uploadFile(dataUri, {
+        folder,
+        resource_type: 'auto',
+        public_id: path.parse(originalName).name // Use original filename without extension
       });
-    } 
-    // Handle files object (for fields)
-    else {
-      Object.keys(req.files).forEach(fieldname => {
-        req.files[fieldname].forEach(file => {
-          file.urlPath = fileService.getUrlPath(file.path);
-        });
-      });
+      
+      // Replace file properties with Cloudinary data
+      req.file.path = result.secure_url;
+      req.file.cloudinaryId = result.public_id;
+      req.file.urlPath = result.secure_url;
     }
+    
+    // Process multiple files
+    if (req.files) {
+      // Handle array of files
+      if (Array.isArray(req.files)) {
+        for (const file of req.files) {
+          const fileBuffer = file.buffer;
+          const fileType = file.mimetype;
+          const originalName = file.originalname;
+
+          const dataUri = `data:${fileType};base64,${fileBuffer.toString('base64')}`;
+          const folder = req.user.role === 'doctor' 
+            ? `second-opinion/doctor_files/${req.user.id}`
+            : `second-opinion/medical_files/${req.user.id}`;
+
+          const result = await cloudinaryService.uploadFile(dataUri, {
+            folder,
+            resource_type: 'auto',
+            public_id: path.parse(originalName).name
+          });
+
+          file.path = result.secure_url;
+          file.cloudinaryId = result.public_id;
+          file.urlPath = result.secure_url;
+        }
+      } 
+      // Handle files object (for fields)
+      else {
+        for (const fieldname of Object.keys(req.files)) {
+          for (const file of req.files[fieldname]) {
+            const fileBuffer = file.buffer;
+            const fileType = file.mimetype;
+            const originalName = file.originalname;
+
+            const dataUri = `data:${fileType};base64,${fileBuffer.toString('base64')}`;
+            
+            let folder = req.user.role === 'doctor' 
+              ? `second-opinion/doctor_files/${req.user.id}`
+              : `second-opinion/medical_files/${req.user.id}`;
+
+            if (fieldname === 'registrationCertificate') {
+              folder += '/certificates';
+            } else if (fieldname === 'governmentId') {
+              folder += '/ids';
+            } else if (fieldname === 'profilePhoto') {
+              folder += '/profile';
+            }
+
+            const result = await cloudinaryService.uploadFile(dataUri, {
+              folder,
+              resource_type: 'auto',
+              public_id: path.parse(originalName).name
+            });
+
+            file.path = result.secure_url;
+            file.cloudinaryId = result.public_id;
+            file.urlPath = result.secure_url;
+          }
+        }
+      }
+    }
+    
+    next();
+  } catch (error) {
+    next(error);
   }
-  
-  next();
 };

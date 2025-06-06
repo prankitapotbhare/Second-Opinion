@@ -3,7 +3,7 @@ const router = express.Router();
 const patientController = require('../controllers/patient.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { checkRole } = require('../middleware/role.middleware');
-const { patientFileUpload, handleUploadError, processFilePaths } = require('../middleware/upload.middleware');
+const { patientFileUpload, handleUploadError, uploadToCloudinary } = require('../middleware/upload.middleware');
 
 // --- PUBLIC: Get doctors with filters ---
 router.get(
@@ -31,7 +31,7 @@ router.use(checkRole(['patient']));
 router.post('/patient-details', 
   patientFileUpload.array('medicalFiles', 5),
   handleUploadError,
-  processFilePaths, // Add this middleware
+  uploadToCloudinary, // Add this middleware
   patientController.createPatientDetails
 );
 

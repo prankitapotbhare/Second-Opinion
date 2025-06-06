@@ -152,7 +152,7 @@ export const PatientProvider = ({ children }) => {
     try {
       const result = await submitPatientDetails(patientDetails);
       setCurrentSubmission(result.data.formSubmission);
-      return result.data.formSubmission;
+      return result;
     } catch (err) {
       const errorMessage = err.data?.message || err.message || "Failed to submit patient details";
       setPatientDetailsError(errorMessage);

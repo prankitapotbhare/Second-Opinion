@@ -3,7 +3,7 @@ const router = express.Router();
 const doctorController = require('../controllers/doctor.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { checkRole } = require('../middleware/role.middleware');
-const { doctorFileUpload, handleUploadError, processFilePaths } = require('../middleware/upload.middleware');
+const { doctorFileUpload, handleUploadError, uploadToCloudinary } = require('../middleware/upload.middleware');
 
 // Apply authentication to all doctor routes
 router.use(authenticate);
@@ -17,7 +17,7 @@ router.post('/profile/complete',
     { name: 'profilePhoto', maxCount: 1 }
   ]),
   handleUploadError,
-  processFilePaths,
+  uploadToCloudinary, // Add this middleware
   doctorController.completeProfile
 );
 
@@ -30,7 +30,7 @@ router.put('/profile',
     { name: 'profilePhoto', maxCount: 1 }
   ]),
   handleUploadError,
-  processFilePaths,
+  uploadToCloudinary, // Add this middleware
   doctorController.updateDoctorProfile
 );
 
@@ -54,7 +54,7 @@ router.get('/appointments/:appointmentId', doctorController.getAppointmentDetail
 router.post('/appointments/:appointmentId/response', 
   doctorFileUpload.single('responseFile'),
   handleUploadError,
-  processFilePaths,
+  uploadToCloudinary, // Add this middleware
   doctorController.submitAppointmentResponse
 );
 

@@ -5,18 +5,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { FaUpload, FaTrash } from 'react-icons/fa';
 import { usePatient } from '@/contexts/PatientContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { showSuccessToast, showErrorToast } from '@/utils/toast';
 
 export default function PatientDetailsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const doctorId = searchParams.get('doctorId');
   const { currentUser, loading: authLoading } = useAuth();
-  const { 
-    submitDetails, 
-    patientDetailsLoading, 
-    patientDetailsError, 
-    currentSubmission 
-  } = usePatient();
+  const { submitDetails, patientDetailsLoading, patientDetailsError, currentSubmission } = usePatient();
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -32,29 +28,31 @@ export default function PatientDetailsPage() {
 
   const [isUploading, setIsUploading] = useState(false);
 
-  // Check if user is authenticated
+  const TOAST_MESSAGES = {
+    MISSING_DOCTOR_ID: 'Doctor information is missing. Please refresh the page or try again.',
+    REQUIRED_FIELDS: (fields) => `Please complete all required fields: ${fields.join(', ')}`,
+    SUBMIT_SUCCESS: 'Your details have been submitted successfully.',
+    SUBMIT_ERROR: 'Something went wrong. Please try again.',
+  };
+
   useEffect(() => {
     if (!authLoading && !currentUser) {
-      // Store the current URL with doctorId to redirect back after login
       const returnUrl = `/patient/patient-details?doctorId=${doctorId}`;
       router.push(`/login/patient?redirect=${encodeURIComponent(returnUrl)}`);
     }
   }, [currentUser, authLoading, router, doctorId]);
 
-  // Autofill form with user data when component mounts
   useEffect(() => {
     if (currentUser) {
       setFormData(prevData => ({
         ...prevData,
         fullName: currentUser.displayName || '',
         email: currentUser.email || '',
-        // Set relation to "Self" if the user is filling out their own details
         relation: 'Self'
       }));
     }
   }, [currentUser]);
 
-  // Redirect to response page if submission is successful
   useEffect(() => {
     if (currentSubmission) {
       router.push(`/patient/response?submissionId=${currentSubmission._id}`);
@@ -63,19 +61,12 @@ export default function PatientDetailsPage() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
-    // Validate numeric inputs
+
     if ((name === 'age' || name === 'contactNumber' || name === 'emergencyContact') && value !== '') {
-      // For age, only allow positive numbers
-      if (name === 'age' && (!/^\d+$/.test(value) || parseInt(value) <= 0)) {
-        return;
-      }
-      // For contact numbers, only allow digits
-      if ((name === 'contactNumber' || name === 'emergencyContact') && !/^\d*$/.test(value)) {
-        return;
-      }
+      if (name === 'age' && (!/^\d+$/.test(value) || parseInt(value) <= 0)) return;
+      if ((name === 'contactNumber' || name === 'emergencyContact') && !/^\d*$/.test(value)) return;
     }
-    
+
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -96,7 +87,6 @@ export default function PatientDetailsPage() {
     }, 1000);
   };
 
-  // Add this function to handle file deletion
   const handleDeleteFile = (index) => {
     setFormData(prev => ({
       ...prev,
@@ -106,34 +96,34 @@ export default function PatientDetailsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Check if user is authenticated before submitting
+
     if (!currentUser) {
       const returnUrl = `/patient/patient-details?doctorId=${doctorId}`;
       router.push(`/login/patient?redirect=${encodeURIComponent(returnUrl)}`);
       return;
     }
-    
-    // Continue with form submission
+
     if (!doctorId) {
-      alert('Doctor ID is missing. Please try again.');
+      showErrorToast(TOAST_MESSAGES.MISSING_DOCTOR_ID);
       return;
     }
 
-    // Validate required fields
     const requiredFields = ['fullName', 'age', 'gender', 'problem'];
     const missingFields = requiredFields.filter(field => !formData[field]);
-    
+
     if (missingFields.length > 0) {
-      alert(`Please fill in the following required fields: ${missingFields.join(', ')}`);
+      showErrorToast(TOAST_MESSAGES.REQUIRED_FIELDS(missingFields));
       return;
     }
 
-    // Submit the form data
-    await submitDetails({
-      ...formData,
-      doctorId
-    });
+    const result = await submitDetails({ ...formData, doctorId });
+    console.log(result);
+
+    if (result.success) {
+      showSuccessToast(TOAST_MESSAGES.SUBMIT_SUCCESS);
+    } else {
+      showErrorToast(result.error || TOAST_MESSAGES.SUBMIT_ERROR);
+    }
   };
 
   return (
@@ -150,14 +140,16 @@ export default function PatientDetailsPage() {
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Full Name */}
           <div>
-            <label className="block text-gray-700 font-medium mb-1">Full Name<span className="text-red-500">*</span></label>
+            <label className="block text-gray-700 font-medium mb-1">
+              Full Name<span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
               name="fullName"
               placeholder="Full Name"
               value={formData.fullName}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500"
               required
             />
           </div>
@@ -171,7 +163,7 @@ export default function PatientDetailsPage() {
               placeholder="Age"
               value={formData.age}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500"
               required
               pattern="^[1-9][0-9]*$"
               title="Please enter a positive number"
@@ -187,7 +179,7 @@ export default function PatientDetailsPage() {
               placeholder="Your relation with patient"
               value={formData.relation}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500"
               required
             />
           </div>
@@ -201,7 +193,7 @@ export default function PatientDetailsPage() {
               placeholder="+91 1234567890"
               value={formData.contactNumber}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500"
               required
               pattern="^\d+$"
               title="Please enter digits only"
@@ -217,7 +209,7 @@ export default function PatientDetailsPage() {
               placeholder="example@gmail.com"
               value={formData.email}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500"
               required
             />
           </div>
@@ -231,7 +223,7 @@ export default function PatientDetailsPage() {
               placeholder="+91 9876543210"
               value={formData.emergencyContact}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500"
               required
               pattern="^\d+$"
               title="Please enter digits only"
@@ -242,28 +234,20 @@ export default function PatientDetailsPage() {
           <div className="col-span-1 md:col-span-2">
             <label className="block text-gray-700 font-medium mb-1">Gender<span className="text-red-500">*</span></label>
             <div className="grid grid-cols-2 gap-4">
-              <button
-                type="button"
-                onClick={() => handleGenderSelect('Male')}
-                className={`px-4 py-3 border rounded-md text-center ${
-                  formData.gender === 'Male'
-                    ? 'border-teal-500 bg-teal-50 text-teal-700'
-                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                Male
-              </button>
-              <button
-                type="button"
-                onClick={() => handleGenderSelect('Female')}
-                className={`px-4 py-3 border rounded-md text-center ${
-                  formData.gender === 'Female'
-                    ? 'border-teal-500 bg-teal-50 text-teal-700'
-                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                Female
-              </button>
+              {['Male', 'Female'].map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => handleGenderSelect(g)}
+                  className={`px-4 py-3 border rounded-md text-center ${
+                    formData.gender === g
+                      ? 'border-teal-500 bg-teal-50 text-teal-700'
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {g}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -276,7 +260,7 @@ export default function PatientDetailsPage() {
               value={formData.problem}
               onChange={handleChange}
               rows={6}
-              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 resize-none"
               required
             ></textarea>
           </div>
@@ -288,41 +272,29 @@ export default function PatientDetailsPage() {
               <div className="flex items-center justify-center w-full px-4 py-6 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
                 <FaUpload className="mr-2 text-teal-600" />
                 <span>Upload Your Documents</span>
-                <input
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={handleFileUpload}
-                />
+                <input type="file" multiple className="hidden" onChange={handleFileUpload} />
               </div>
             </label>
 
             {formData.medicalFiles.length > 0 && (
-              <div className="mt-2">
-                <p className="text-sm text-gray-600 mb-1">Uploaded files:</p>
-                <ul className="text-sm text-gray-800">
-                  {formData.medicalFiles.map((file, index) => (
-                    <li key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-md border border-gray-200 mb-2">
-                      <span>{file.name}</span>
-                      <button 
-                        type="button"
-                        onClick={() => handleDeleteFile(index)}
-                        className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-gray-200 transition-colors"
-                        title="Delete file"
-                      >
-                        <FaTrash size={14} />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <ul className="mt-2 text-sm text-gray-800 space-y-2">
+                {formData.medicalFiles.map((file, index) => (
+                  <li key={index} className="flex justify-between items-center p-2 bg-gray-50 border border-gray-200 rounded-md">
+                    <span>{file.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteFile(index)}
+                      className="text-red-500 hover:text-red-700"
+                      title="Delete file"
+                    >
+                      <FaTrash size={14} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
             )}
 
-            {isUploading && (
-              <div className="mt-2">
-                <p className="text-sm text-teal-600">Uploading...</p>
-              </div>
-            )}
+            {isUploading && <p className="mt-2 text-sm text-teal-600">Uploading...</p>}
           </div>
 
           {/* Submit Button */}
@@ -330,7 +302,9 @@ export default function PatientDetailsPage() {
             <button
               type="submit"
               disabled={patientDetailsLoading}
-              className={`px-8 py-3 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors ${patientDetailsLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+              className={`px-8 py-3 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors ${
+                patientDetailsLoading ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
             >
               {patientDetailsLoading ? 'Submitting...' : 'Submit Documents'}
             </button>
