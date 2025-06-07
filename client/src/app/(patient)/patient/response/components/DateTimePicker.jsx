@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { FaCalendarAlt, FaSpinner } from 'react-icons/fa';
+import { FaSpinner } from 'react-icons/fa';
 import { usePatient } from '@/contexts/PatientContext';
 
 const DateTimePicker = ({ onSelect, onClose, doctorId }) => {
@@ -99,13 +99,12 @@ const DateTimePicker = ({ onSelect, onClose, doctorId }) => {
               min={today}
               required
             />
-            <FaCalendarAlt className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
           </div>
         </div>
         
         {/* Time Picker */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2 flex justify-between items-center">
+          <label className="flex text-sm font-medium text-gray-700 mb-2 justify-between items-center">
             <span>
               Available Time Slots
               {slotsLoading && <FaSpinner className="inline-block ml-2 animate-spin text-teal-600" />}

@@ -190,13 +190,15 @@ export default function PatientDetailsPage() {
             <input
               type="text"
               name="contactNumber"
-              placeholder="+91 1234567890"
+              placeholder="Eg. 9843XXXXXX"
               value={formData.contactNumber}
               onChange={handleChange}
               className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500"
               required
-              pattern="^\d+$"
               title="Please enter digits only"
+              maxLength={10}
+              pattern="[0-9]{10}"
+              inputMode="numeric"
             />
           </div>
 
@@ -220,12 +222,14 @@ export default function PatientDetailsPage() {
             <input
               type="text"
               name="emergencyContact"
-              placeholder="+91 9876543210"
+              placeholder="Eg. 9843XXXXXX"
               value={formData.emergencyContact}
               onChange={handleChange}
               className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500"
               required
-              pattern="^\d+$"
+              maxLength={10}
+              pattern="[0-9]{10}"
+              inputMode="numeric"
               title="Please enter digits only"
             />
           </div>

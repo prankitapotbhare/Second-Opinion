@@ -21,6 +21,10 @@ export const AdminProvider = ({ children }) => {
   const [doctorsPagination, setDoctorsPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 });
   const [patientsPagination, setPatientsPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 });
   const [loading, setLoading] = useState(false);
+  // Add per-action loading states
+  const [loadingViewDocument, setLoadingViewDocument] = useState(null); // doctorId or null
+  const [loadingViewInvoice, setLoadingViewInvoice] = useState(null); // doctorId or null
+  const [loadingSendInvoice, setLoadingSendInvoice] = useState(null); // doctorId or null
   
   // Fetch admin statistics
   const fetchStats = async () => {
@@ -72,7 +76,7 @@ export const AdminProvider = ({ children }) => {
   // Download doctor patients Excel
   const downloadDoctorPatientsExcel = async (doctorId, doctorName) => {
     try {
-      setLoading(true);
+      setLoadingViewDocument(doctorId);
       const blob = await getDoctorPatientsExcel(doctorId);
       
       // Create a download link and trigger download
@@ -89,14 +93,14 @@ export const AdminProvider = ({ children }) => {
     } catch (error) {
       showErrorToast(error.message || "Failed to download patients Excel");
     } finally {
-      setLoading(false);
+      setLoadingViewDocument(null);
     }
   };
   
   // Download doctor invoice PDF
   const downloadDoctorInvoicePdf = async (doctorId, doctorName) => {
     try {
-      setLoading(true);
+      setLoadingViewInvoice(doctorId);
       const blob = await getDoctorInvoicePdf(doctorId);
       
       // Create a download link and trigger download
@@ -113,14 +117,14 @@ export const AdminProvider = ({ children }) => {
     } catch (error) {
       showErrorToast(error.message || "Failed to download invoice PDF");
     } finally {
-      setLoading(false);
+      setLoadingViewInvoice(null);
     }
   };
   
   // Send doctor invoice email
   const sendInvoiceEmail = async (doctorId) => {
     try {
-      setLoading(true);
+      setLoadingSendInvoice(doctorId);
       const response = await sendDoctorInvoiceEmail(doctorId);
       if (response.success) {
         showSuccessToast("Invoice sent successfully to doctor's email");
@@ -128,7 +132,7 @@ export const AdminProvider = ({ children }) => {
     } catch (error) {
       showErrorToast(error.message || "Failed to send invoice email");
     } finally {
-      setLoading(false);
+      setLoadingSendInvoice(null);
     }
   };
  
@@ -139,6 +143,9 @@ export const AdminProvider = ({ children }) => {
     doctorsPagination,
     patientsPagination,
     loading,
+    loadingViewDocument,
+    loadingViewInvoice,
+    loadingSendInvoice,
     fetchStats,
     fetchDoctors,
     fetchPatients,

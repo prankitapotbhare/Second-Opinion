@@ -20,13 +20,13 @@ export default function LoginSelector() {
       href: "/login/doctor",
       color: "green"
     },
-    {
-      title: "Admin Login",
-      description: "Access the administration panel",
-      icon: <FaUserCog className="h-5 w-5 text-purple-600" />,
-      href: "/login/admin",
-      color: "purple"
-    }
+    // {
+    //   title: "Admin Login",
+    //   description: "Access the administration panel",
+    //   icon: <FaUserCog className="h-5 w-5 text-purple-600" />,
+    //   href: "/login/admin",
+    //   color: "purple"
+    // }
   ];
 
   return (

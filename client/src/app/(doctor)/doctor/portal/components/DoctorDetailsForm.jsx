@@ -234,13 +234,17 @@ export default function DoctorDetailsForm() {
             Years of Experience:<span className="text-red-500">*</span>
           </label>
           <input
-            type="text"
+            type="number"
             name="experience"
             value={formData.experience}
             onChange={handleInputChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="Eg. 5 (in years)"
             required
+            min="0"
+            step="1"
+            pattern="[0-9]*"
+            inputMode="numeric"
           />
           {formErrors.experience && <p className="text-red-500 text-xs mt-1">{formErrors.experience}</p>}
         </div>
@@ -360,7 +364,8 @@ export default function DoctorDetailsForm() {
             placeholder="Eg. 9843XXXXXX"
             required
             inputMode="numeric"
-            pattern="[0-9]*"
+            pattern="[0-9]{10}"
+            maxLength={10}
           />
           {formErrors.phone && <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>}
         </div>
@@ -395,7 +400,8 @@ export default function DoctorDetailsForm() {
             placeholder="Eg. 7843XXXXXX"
             required
             inputMode="numeric"
-            pattern="[0-9]*"
+            pattern="[0-9]{10}"
+            maxLength={10}
           />
           {formErrors.emergencyContact && <p className="text-red-500 text-xs mt-1">{formErrors.emergencyContact}</p>}
         </div>

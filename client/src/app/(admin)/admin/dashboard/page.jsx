@@ -18,7 +18,6 @@ import DoctorTable from '../components/DoctorTable';
 import PatientTable from '../components/PatientTable';
 import Pagination from '../components/Pagination';
 import { useAdmin } from '@/contexts/AdminContext';
-import { LoadingSpinner } from '@/components'; // Import the common LoadingSpinner component
 
 const AdminDashboard = () => {
     // Use the admin context
@@ -29,6 +28,9 @@ const AdminDashboard = () => {
       doctorsPagination, 
       patientsPagination, 
       loading,
+      loadingViewDocument,
+      loadingViewInvoice,
+      loadingSendInvoice,
       fetchStats,
       fetchDoctors,
       fetchPatients,
@@ -139,13 +141,6 @@ const AdminDashboard = () => {
                 {/* Header */}
                 <Header title="Admin Dashboard" />
                 
-                {/* Loading indicator */}
-                {loading && (
-                  <div className="flex justify-center my-8">
-                    <LoadingSpinner fullScreen={false} size="medium" color="blue" />
-                  </div>
-                )}
-                
                 {/* Stats Cards */}
                 {stats && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
@@ -173,6 +168,9 @@ const AdminDashboard = () => {
                             onViewDocument={handleViewDocument}
                             onViewInvoice={handleViewInvoice}
                             onSendInvoice={handleSendInvoice}
+                            loadingViewDocument={loadingViewDocument}
+                            loadingViewInvoice={loadingViewInvoice}
+                            loadingSendInvoice={loadingSendInvoice}
                         />
                         <Pagination 
                             currentPage={doctorsPagination.page}
@@ -184,7 +182,7 @@ const AdminDashboard = () => {
                             colorScheme="blue"
                         />
                       </>
-                    ) : !loading && (
+                    ) : (
                       <div className="bg-white rounded-xl shadow-md p-6 text-center">
                         <p className="text-gray-500">No doctors found</p>
                       </div>
@@ -210,7 +208,7 @@ const AdminDashboard = () => {
                             colorScheme="green"
                         />
                       </>
-                    ) : !loading && (
+                    ) : (
                       <div className="bg-white rounded-xl shadow-md p-6 text-center">
                         <p className="text-gray-500">No patients found</p>
                       </div>

@@ -2,8 +2,9 @@
 
 import React from 'react';
 import { FaEye, FaFileInvoice, FaPaperPlane } from 'react-icons/fa';
+import { LoadingSpinner } from '@/components';
 
-const DoctorTable = ({ doctors, onViewDocument, onViewInvoice, onSendInvoice }) => {
+const DoctorTable = ({ doctors, onViewDocument, onViewInvoice, onSendInvoice, loadingViewDocument, loadingViewInvoice, loadingSendInvoice }) => {
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden">
       <div className="overflow-x-auto">
@@ -46,26 +47,41 @@ const DoctorTable = ({ doctors, onViewDocument, onViewInvoice, onSendInvoice }) 
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <button 
-                      onClick={() => onViewDocument(doctor.id)}
-                      className="text-blue-500 hover:text-blue-700 flex items-center"
-                    >
-                      <FaEye className="mr-1" /> View
-                    </button>
+                  <button 
+                    onClick={() => onViewDocument(doctor.id)}
+                    className={`text-blue-500 hover:text-blue-700 flex items-center ${loadingViewDocument === doctor.id ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    disabled={loadingViewDocument === doctor.id}
+                  >
+                    {loadingViewDocument === doctor.id ? (
+                      <LoadingSpinner fullScreen={false} size="small" color="blue" />
+                    ) : (
+                      <><FaEye className="mr-1" /> View</>
+                    )}
+                  </button>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <div className="flex space-x-2">
                     <button 
                       onClick={() => onViewInvoice(doctor.id)}
-                      className="text-green-500 hover:text-green-700 flex items-center"
+                      className={`text-green-500 hover:text-green-700 flex items-center ${loadingViewInvoice === doctor.id ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      disabled={loadingViewInvoice === doctor.id}
                     >
-                      <FaFileInvoice className="mr-1" /> View Invoice
+                      {loadingViewInvoice === doctor.id ? (
+                        <LoadingSpinner fullScreen={false} size="small" color="green" />
+                      ) : (
+                        <><FaFileInvoice className="mr-1" /> Save Invoice</>
+                      )}
                     </button>
                     <button 
                       onClick={() => onSendInvoice(doctor.id)}
-                      className="text-blue-500 hover:text-blue-700 flex items-center"
+                      className={`text-blue-500 hover:text-blue-700 flex items-center ${loadingSendInvoice === doctor.id ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      disabled={loadingSendInvoice === doctor.id}
                     >
-                      <FaPaperPlane className="mr-1" /> Send Invoice
+                      {loadingSendInvoice === doctor.id ? (
+                        <LoadingSpinner fullScreen={false} size="small" color="blue" />
+                      ) : (
+                        <><FaPaperPlane className="mr-1" /> Send Invoice</>
+                      )}
                     </button>
                   </div>
                 </td>
