@@ -199,39 +199,29 @@ exports.resetPassword = async (req, res, next) => {
 // Google Authentication
 exports.googleAuth = async (req, res, next) => {
   try {
-    const { idToken, userType = 'patient' } = req.body;
+    const { idToken, userType } = req.body;
 
     if (!idToken) {
-      const { response, statusCode } = responseUtil.errorResponse(
-        'Google ID token is required', 
-        400
-      );
-      return res.status(statusCode).json(response);
+      return res.status(400).json({ message: 'ID token is required' });
     }
 
-    // Validate userType to prevent security issues
+    // Validate user type
     if (userType && !['patient', 'doctor'].includes(userType)) {
-      const { response, statusCode } = responseUtil.errorResponse(
-        'Invalid user type', 
-        400
-      );
-      return res.status(statusCode).json(response);
+      return res.status(400).json({ message: 'Invalid user type' });
     }
 
-    const { user, tokens, isNewUser } = await authService.googleAuth(idToken, userType);
+    const result = await authService.googleAuth(idToken, userType || 'patient');
 
-    const { response, statusCode } = responseUtil.successResponse(
-      isNewUser ? 'Google signup successful' : 'Google login successful',
-      {
-        user,
-        tokens,
-        isNewUser
+    res.status(200).json({
+      success: true,
+      message: 'Google SignIn successful',
+      data: {
+        user: result.user,
+        tokens: result.tokens,
+        isNewUser: result.isNewUser
       }
-    );
-
-    res.status(statusCode).json(response);
+    });
   } catch (error) {
-    logger.error('Google auth error:', error);
     next(error);
   }
 };

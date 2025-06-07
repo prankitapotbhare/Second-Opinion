@@ -67,7 +67,7 @@ const registerUser = async (userData) => {
     // Validate password strength
     if (!validationUtil.isStrongPassword(password)) {
       throw errorUtil.createError(
-        'Password must be at least 6 characters long and include a mix of letters and numbers',
+        'Password must be at least 8 characters long and include uppercase, lowercase, a number, and a special character',
         400
       );
     }
@@ -485,30 +485,47 @@ const resetPassword = async (token, password) => {
  * @param {string} userType - User type (patient, doctor)
  * @returns {Object} User data and tokens
  */
+const admin = require('../config/firebase-admin');
+
+// Replace the existing googleAuth function
 const googleAuth = async (idToken, userType = 'patient') => {
   try {
-    // Verify the Google ID token
-    const ticket = await googleClient.verifyIdToken({
-      idToken,
-      audience: GOOGLE_CLIENT_ID
-    });
+    // Verify the Firebase ID token
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
     
-    const payload = ticket.getPayload();
+    // Extract user info from decoded token
+    const { email, name, picture, email_verified } = decodedToken;
     
-    // Extract user info from Google payload
-    const { email, name, picture, email_verified } = payload;
+    // Check if user exists in any model
+    let user = null;
+    let actualUserRole = null;
     
-    // Determine which model to use
-    const UserModel = getModelByRole(userType);
+    // Try each model in sequence to find the user
+    user = await Patient.findOne({ email });
+    if (user) actualUserRole = 'patient';
     
-    // Check if user exists
-    let user = await UserModel.findOne({ email });
+    if (!user) {
+      user = await Doctor.findOne({ email });
+      if (user) actualUserRole = 'doctor';
+    }
+    
+    if (!user) {
+      user = await Admin.findOne({ email });
+      if (user) actualUserRole = 'admin';
+    }
+    
+    // If user exists, verify that the requested role matches the actual role
+    if (user && actualUserRole !== userType) {
+      throw errorUtil.authError(`This email is registered as a ${actualUserRole}. Please sign in with the correct account type.`);
+    }
+    
+    // If user doesn't exist, create a new one with the specified role
     let isNewUser = false;
     
     if (user) {
-      // If user exists but doesn't have Google as auth provider, update the user
-      if (!user.googleId) {
-        user.googleId = payload.sub;
+      // If user exists but doesn't have Firebase as auth provider, update the user
+      if (!user.firebaseUid) {
+        user.firebaseUid = decodedToken.uid;
         user.photoURL = picture || user.photoURL;
         await user.save();
       }
@@ -521,29 +538,34 @@ const googleAuth = async (idToken, userType = 'patient') => {
         throw errorUtil.validationError('Invalid user type');
       }
       
-      // Create user with Google data
+      // Determine which model to use for new user
+      const UserModel = getModelByRole(userType);
+      
+      // Create user with Firebase data
       user = await UserModel.create({
         name,
         email,
-        googleId: payload.sub,
-        password: crypto.randomBytes(20).toString('hex'), // Random password for Google users
+        firebaseUid: decodedToken.uid,
+        password: crypto.randomBytes(20).toString('hex'), // Random password for Firebase users
         photoURL: picture,
         isEmailVerified: email_verified,
         emailVerifiedAt: new Date(),
         termsAccepted: true,
         termsAcceptedAt: new Date()
       });
+      
+      actualUserRole = userType;
     }
     
     // Generate tokens
-    const tokens = await generateTokens(user._id, userType);
+    const tokens = await generateTokens(user._id, actualUserRole);
     
     // Format user data for response
     const userData = {
       id: user._id,
       name: user.name,
       email: user.email,
-      role: userRole,
+      role: actualUserRole,
       photoURL: user.photoURL,
       isEmailVerified: user.isEmailVerified,
       termsAccepted: user.termsAccepted,
@@ -552,13 +574,13 @@ const googleAuth = async (idToken, userType = 'patient') => {
     
     return { user: userData, tokens, isNewUser };
   } catch (error) {
-    logger.error('Google authentication error:', error);
+    logger.error('Firebase authentication error:', error);
     
-    if (error.message.includes('Token used too late')) {
-      throw errorUtil.authError('Google token expired. Please try again.');
+    if (error.message.includes('auth/id-token-expired')) {
+      throw errorUtil.authError('Firebase token expired. Please try again.');
     }
     
-    throw errorUtil.authError('Google authentication failed. Please try again.');
+    throw error; // Pass through custom errors like role mismatch
   }
 };
 

@@ -8,6 +8,8 @@ import SocialLoginButton from '../common/SocialLoginButton';
 import AuthDivider from '../common/AuthDivider';
 import { useAuth } from '@/contexts/AuthContext';
 import OtpVerificationForm from './OtpVerificationForm';
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { auth } from "../../../../config/firebase";
 
 const LoginForm = ({ 
   userType = "patient", // "patient", 'doctor', or 'admin'
@@ -24,6 +26,7 @@ const LoginForm = ({
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [needsVerification, setNeedsVerification] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
 
@@ -128,98 +131,34 @@ const LoginForm = ({
 
   // Handle Google Sign In
   const handleGoogleSignIn = async () => {
-    setError('');
-    setIsLoading(true);
-    
+    setIsGoogleLoading(true);
     try {
-      // Map userType to expected role for backend
-      const backendUserType = userType === "patient" ? 'patient' : userType;
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const result = await signInWithPopup(auth, provider);
       
-      // Determine the redirect path
-      const finalRedirectPath = redirectPath || (userType === 'admin' ? '/admin/dashboard' : 
-                                                userType === 'doctor' ? '/doctor/dashboard' : '/');
+      // Get the ID token
+      const idToken = await result.user.getIdToken();
       
-      // Initialize Google Sign-In
-      if (!window.google) {
-        setError('Google authentication is not available');
-        setIsLoading(false);
-        return;
-      }
+      // Call the googleAuth function from AuthContext
+      const authResult = await googleAuth(idToken, userType);
       
-      // Get Google Identity Services
-      const googleIdentity = window.google.accounts.id;
-      
-      // Promise to handle the callback
-      const googleAuthPromise = new Promise((resolve, reject) => {
-        const handleCredentialResponse = async (response) => {
-          try {
-            // Call the googleAuth function with the ID token
-            const result = await googleAuth(
-              response.credential,
-              backendUserType,
-              finalRedirectPath
-            );
-            
-            resolve(result);
-          } catch (error) {
-            reject(error);
-          }
-        };
-        
-        // Configure Google Sign-In
-        googleIdentity.initialize({
-          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-          callback: handleCredentialResponse,
-          auto_select: false
-        });
-        
-        // Prompt the user
-        googleIdentity.prompt((notification) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            reject(new Error('Google sign-in prompt was not displayed or was skipped'));
-          }
-        });
-      });
-      
-      // Wait for the Google authentication to complete
-      const result = await googleAuthPromise;
-      
-      if (result.success) {
-        // Redirect to the appropriate dashboard
-        router.push(finalRedirectPath);
+      if (authResult.success) {
+        // Redirect based on user type after successful authentication
+        const defaultRedirect = userType === 'doctor' ? '/doctor/dashboard' : '/';
+        router.push(redirectPath || defaultRedirect);
       } else {
-        setError(result.error || 'Google authentication failed');
-        setIsLoading(false);
+        setError(authResult.error || "Failed to authenticate with Google");
       }
-    } catch (err) {
-      setError('An unexpected error occurred during Google authentication');
-      setIsLoading(false);
-      console.error(err);
+    } catch (error) {
+      console.error("Google sign-in error:", error);
+      setError(error.message || "Failed to sign in with Google");
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
-  // Handle verification success
-  const handleVerificationSuccess = (result) => {
-    // Determine the redirect path
-    const finalRedirectPath = redirectPath || (userType === 'admin' ? '/admin/dashboard' : 
-                                              userType === 'doctor' ? '/doctor/dashboard' : '/');
-    
-    // Redirect to the appropriate dashboard
-    router.push(finalRedirectPath);
-  };
-
-  // If email needs verification, show the OTP verification form
-  if (needsVerification) {
-    return (
-      <OtpVerificationForm 
-        email={verificationEmail}
-        redirectPath={redirectPath || (userType === 'admin' ? '/admin/dashboard' : 
-                                      userType === 'doctor' ? '/doctor/dashboard' : '/')}
-        onSuccess={handleVerificationSuccess}
-      />
-    );
-  }
-
+  // Replace the useEffect for Google Sign-In with a button click handler
   return (
     <div className="space-y-6">
       {successMessage && (
@@ -296,9 +235,9 @@ const LoginForm = ({
           <AuthDivider text="or continue with" />
           
           <SocialLoginButton 
-            provider="google"
+            provider="google" 
             onClick={handleGoogleSignIn}
-            disabled={isLoading}
+            isLoading={isGoogleLoading}
           />
           
           <div className="text-center mt-4">

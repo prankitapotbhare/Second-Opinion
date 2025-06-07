@@ -4,61 +4,55 @@
 const fs = require('fs');
 const path = require('path');
 const { createError } = require('../utils/error.util');
+const cloudinaryService = require('./cloudinary.service');
 
 /**
- * Ensure directory exists
- * @param {string} dirPath - Directory path
- */
-exports.ensureDirectoryExists = (dirPath) => {
-  try {
-    if (!fs.existsSync(dirPath)) {
-      fs.mkdirSync(dirPath, { recursive: true });
-    }
-  } catch (error) {
-    throw createError(`Failed to create directory: ${error.message}`, 500);
-  }
-};
-
-/**
- * Delete file if exists
- * @param {string} filePath - File path
+ * Delete file from Cloudinary
+ * @param {string} fileUrl - Cloudinary URL
  * @returns {boolean} True if file was deleted, false if it didn't exist
  */
-exports.deleteFileIfExists = (filePath) => {
+exports.deleteFileIfExists = async (fileUrl) => {
   try {
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      return true;
-    }
-    return false;
+    if (!fileUrl) return false;
+    
+    const publicId = cloudinaryService.getPublicIdFromUrl(fileUrl);
+    if (!publicId) return false;
+    
+    const result = await cloudinaryService.deleteFile(publicId);
+    return result.result === 'ok';
   } catch (error) {
     throw createError(`Failed to delete file: ${error.message}`, 500);
   }
 };
 
 /**
- * Delete multiple files
+ * Delete multiple files from Cloudinary
  * @param {Array} files - Array of file objects with path property
  * @returns {number} Number of files deleted
  */
-exports.deleteFiles = (files) => {
+exports.deleteFiles = async (files) => {
   if (!files || !Array.isArray(files) || files.length === 0) {
     return 0;
   }
   
   let deletedCount = 0;
   
-  files.forEach(file => {
+  for (const file of files) {
     try {
-      if (file && file.path && fs.existsSync(file.path)) {
-        fs.unlinkSync(file.path);
-        deletedCount++;
+      if (file && file.path) {
+        const publicId = cloudinaryService.getPublicIdFromUrl(file.path);
+        if (publicId) {
+          const result = await cloudinaryService.deleteFile(publicId);
+          if (result.result === 'ok') {
+            deletedCount++;
+          }
+        }
       }
     } catch (error) {
       console.error(`Error deleting file ${file.path}: ${error.message}`);
       // Continue with other files even if one fails
     }
-  });
+  }
   
   return deletedCount;
 };
@@ -90,39 +84,27 @@ exports.getContentType = (filePath) => {
 };
 
 /**
- * Stream file to response
+ * Stream file to response from Cloudinary URL
  * @param {Object} res - Express response object
- * @param {string} filePath - File path
+ * @param {string} fileUrl - Cloudinary URL
  * @param {string} fileName - Original file name
  * @param {boolean} asAttachment - Whether to serve as attachment or inline
  */
-exports.streamFileToResponse = (res, filePath, fileName, asAttachment = false) => {
-  // Check if file exists
-  if (!fs.existsSync(filePath)) {
-    throw createError('File not found on server', 404);
+exports.streamFileToResponse = (res, fileUrl, fileName, asAttachment = false) => {
+  if (!fileUrl) {
+    throw createError('File URL not provided', 400);
   }
   
   // Determine content type
-  const contentType = this.getContentType(filePath);
+  const contentType = this.getContentType(fileName);
   
   // Set headers
   res.setHeader('Content-Type', contentType);
   const disposition = asAttachment ? 'attachment' : 'inline';
   res.setHeader('Content-Disposition', `${disposition}; filename="${encodeURIComponent(fileName)}"`);
   
-  // Stream the file
-  const fileStream = fs.createReadStream(filePath);
-  fileStream.on('error', (error) => {
-    console.error(`Error streaming file: ${error.message}`);
-    if (!res.headersSent) {
-      res.status(500).json({
-        success: false,
-        message: 'Error streaming file'
-      });
-    }
-  });
-  
-  fileStream.pipe(res);
+  // Redirect to Cloudinary URL
+  res.redirect(fileUrl);
 };
 
 /**
@@ -142,9 +124,10 @@ exports.processDocuments = (files) => {
     const file = files.registrationCertificate[0];
     documents.registrationCertificate = {
       fileName: file.originalname,
-      filePath: file.urlPath || this.getUrlPath(file.path), // Use URL path instead of file system path
+      filePath: file.urlPath, // Cloudinary URL
       fileType: file.mimetype,
       fileSize: file.size,
+      cloudinaryId: file.cloudinaryId, // Store Cloudinary ID
       uploadDate: new Date()
     };
   }
@@ -154,9 +137,10 @@ exports.processDocuments = (files) => {
     const file = files.governmentId[0];
     documents.governmentId = {
       fileName: file.originalname,
-      filePath: file.urlPath || this.getUrlPath(file.path), // Use URL path instead of file system path
+      filePath: file.urlPath, // Cloudinary URL
       fileType: file.mimetype,
       fileSize: file.size,
+      cloudinaryId: file.cloudinaryId, // Store Cloudinary ID
       uploadDate: new Date()
     };
   }
@@ -164,7 +148,7 @@ exports.processDocuments = (files) => {
   // Handle profile photo
   if (files.profilePhoto && files.profilePhoto.length > 0) {
     const file = files.profilePhoto[0];
-    documents.profilePhoto = file.urlPath || this.getUrlPath(file.path); // Use URL path instead of file system path
+    documents.profilePhoto = file.urlPath; // Cloudinary URL
   }
   
   return documents;
@@ -188,108 +172,29 @@ exports.processUploadedFiles = (files) => {
       fileType: file.mimetype,
       fileSize: file.size,
       uploadDate: new Date(),
-      filePath: file.urlPath || this.getUrlPath(file.path) // Use URL path instead of file system path
+      filePath: file.urlPath, // Cloudinary URL
+      cloudinaryId: file.cloudinaryId // Store Cloudinary ID
     });
   });
   
   return medicalFiles;
 };
 
-/**
- * Get file stats
- * @param {string} filePath - File path
- * @returns {Object} File stats
- */
-exports.getFileStats = (filePath) => {
-  try {
-    if (!fs.existsSync(filePath)) {
-      return null;
-    }
-    
-    const stats = fs.statSync(filePath);
-    return {
-      size: stats.size,
-      createdAt: stats.birthtime,
-      modifiedAt: stats.mtime,
-      isDirectory: stats.isDirectory(),
-      isFile: stats.isFile()
-    };
-  } catch (error) {
-    throw createError(`Failed to get file stats: ${error.message}`, 500);
-  }
-};
-
-/**
- * Copy file
- * @param {string} sourcePath - Source file path
- * @param {string} destinationPath - Destination file path
- * @returns {boolean} True if successful
- */
-exports.copyFile = (sourcePath, destinationPath) => {
-  try {
-    if (!fs.existsSync(sourcePath)) {
-      throw createError('Source file does not exist', 404);
-    }
-    
-    // Ensure destination directory exists
-    const destinationDir = path.dirname(destinationPath);
-    this.ensureDirectoryExists(destinationDir);
-    
-    fs.copyFileSync(sourcePath, destinationPath);
-    return true;
-  } catch (error) {
-    throw createError(`Failed to copy file: ${error.message}`, 500);
-  }
-};
-
-/**
- * Move file
- * @param {string} sourcePath - Source file path
- * @param {string} destinationPath - Destination file path
- * @returns {boolean} True if successful
- */
-exports.moveFile = (sourcePath, destinationPath) => {
-  try {
-    if (!fs.existsSync(sourcePath)) {
-      throw createError('Source file does not exist', 404);
-    }
-    
-    // Ensure destination directory exists
-    const destinationDir = path.dirname(destinationPath);
-    this.ensureDirectoryExists(destinationDir);
-    
-    fs.renameSync(sourcePath, destinationPath);
-    return true;
-  } catch (error) {
-    throw createError(`Failed to move file: ${error.message}`, 500);
-  }
-};
-
-/**
- * Read file contents
- * @param {string} filePath - File path
- * @param {string} encoding - File encoding (default: utf8)
- * @returns {string} File contents
- */
-exports.readFileContents = (filePath, encoding = 'utf8') => {
-  try {
-    if (!fs.existsSync(filePath)) {
-      throw createError('File does not exist', 404);
-    }
-    
-    return fs.readFileSync(filePath, { encoding });
-  } catch (error) {
-    throw createError(`Failed to read file: ${error.message}`, 500);
-  }
-};
-
+// Remove unused local file system functions
+// Keep getUrlPath for backward compatibility but modify it
 /**
  * Converts a file system path to a URL path for client access
- * @param {string} filePath - The full file system path
+ * @param {string} filePath - The full file system path or Cloudinary URL
  * @returns {string} URL path for client access
  */
 exports.getUrlPath = function(filePath) {
-  // Get the base URL from environment variables or use default
+  // If it's already a URL (Cloudinary), return it
+  if (filePath && (filePath.startsWith('http://') || filePath.startsWith('https://'))) {
+    return filePath;
+  }
+  
+  // For backward compatibility, construct a URL from local path
+  // This should not be used in new code
   const BASE_URL = process.env.SERVER_URL || 'http://localhost:5000';
   
   // Extract the part of the path after 'uploads'
