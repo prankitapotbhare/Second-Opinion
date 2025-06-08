@@ -14,10 +14,6 @@ const { getModelByRole } = require('../middleware/auth.middleware');
 
 // Environment variables
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key';
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-
-// Initialize Google OAuth client
-const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 /**
  * Generate access and refresh tokens for a user

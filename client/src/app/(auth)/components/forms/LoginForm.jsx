@@ -144,9 +144,12 @@ const LoginForm = ({
       const authResult = await googleAuth(idToken, userType);
       
       if (authResult.success) {
-        // Redirect based on user type after successful authentication
-        const defaultRedirect = userType === 'doctor' ? '/doctor/dashboard' : '/';
-        router.push(redirectPath || defaultRedirect);
+        const redirectPath =
+          authResult.data.isNewUser && userType === 'doctor'
+            ? '/doctor/portal'
+            : getRedirectPath();
+
+        router.push(redirectPath);
       } else {
         setError(authResult.error || "Failed to authenticate with Google");
       }
