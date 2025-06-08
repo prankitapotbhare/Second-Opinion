@@ -145,7 +145,7 @@ const LoginForm = ({
       
       if (authResult.success) {
         const redirectPath =
-          authResult.data.isNewUser && userType === 'doctor'
+          authResult.isNewUser && userType === 'doctor'
             ? '/doctor/portal'
             : getRedirectPath();
 
