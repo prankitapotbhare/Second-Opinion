@@ -21,12 +21,6 @@ function DoctorAccessGuard({ children }) {
     }
   }, [doctor, loading, pathname, router]);
 
-  // if (loading || !doctor) {
-  //   return <LoadingSpinner fullScreen={false} color="blue" />;
-  // }
-  // if (doctor.isProfileComplete === false && !pathname.startsWith('/doctor/portal')) {
-  //   return null;
-  // }
   return children;
 }
 
