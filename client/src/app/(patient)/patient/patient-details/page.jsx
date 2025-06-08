@@ -53,11 +53,6 @@ export default function PatientDetailsPage() {
     }
   }, [currentUser]);
 
-  useEffect(() => {
-    if (currentSubmission) {
-      router.push(`/patient/response?submissionId=${currentSubmission._id}`);
-    }
-  }, [currentSubmission, router]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -117,10 +112,10 @@ export default function PatientDetailsPage() {
     }
 
     const result = await submitDetails({ ...formData, doctorId });
-    console.log(result);
 
     if (result.success) {
       showSuccessToast(TOAST_MESSAGES.SUBMIT_SUCCESS);
+      router.push(`/patient/response?submissionId=${result.data._id}`);
     } else {
       showErrorToast(result.error || TOAST_MESSAGES.SUBMIT_ERROR);
     }
