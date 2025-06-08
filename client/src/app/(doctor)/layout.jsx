@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { DoctorProvider, useDoctor } from '@/contexts/DoctorContext';
 import { usePathname, useRouter } from 'next/navigation';
+import { LoadingSpinner } from '@/components';
 
 function DoctorAccessGuard({ children }) {
   const { doctor, loading } = useDoctor();
@@ -20,12 +21,12 @@ function DoctorAccessGuard({ children }) {
     }
   }, [doctor, loading, pathname, router]);
 
-  if (loading || !doctor) {
-    return <div>Loading...</div>;
-  }
-  if (doctor.isProfileComplete === false && !pathname.startsWith('/doctor/portal')) {
-    return null;
-  }
+  // if (loading || !doctor) {
+  //   return <LoadingSpinner fullScreen={false} color="blue" />;
+  // }
+  // if (doctor.isProfileComplete === false && !pathname.startsWith('/doctor/portal')) {
+  //   return null;
+  // }
   return children;
 }
 
