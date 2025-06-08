@@ -90,7 +90,7 @@ const Navbar = ({ scrollToFAQs, simplifiedNav = false }) => {
                 >
                   FAQs
                 </button>
-                <Link href="/contact" className="hover:text-teal-200 transition-colors">
+                <Link href="mailto:secop@gmail.com" className="hover:text-teal-200 transition-colors">
                   Contact
                 </Link>
                 
@@ -195,7 +195,7 @@ const Navbar = ({ scrollToFAQs, simplifiedNav = false }) => {
                     FAQs
                   </button>
                   <Link 
-                    href="/contact" 
+                    href="mailto:secop@gmail.com" 
                     className="hover:text-teal-200 transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
