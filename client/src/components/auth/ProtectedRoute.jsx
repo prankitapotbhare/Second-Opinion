@@ -44,7 +44,13 @@ const ProtectedRoute = ({
     const isPublic = isPublicRoute(pathname);
     
     if (isPublic) {
-      // Public routes are always authorized
+      // If user is logged in and does not have an allowed role, redirect to unauthorized
+      if (isAuthenticated() && allowedRoles.length > 0 && !allowedRoles.some(role => hasRole(role))) {
+        router.push('/unauthorized');
+        setAuthorized(false);
+        return;
+      }
+      // Public routes are authorized for unauthenticated users and users with allowed role
       setAuthorized(true);
       return;
     }

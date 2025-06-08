@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 const SearchBar = ({ searchTerm, setSearchTerm, initialLocation, initialSpecialization }) => {
   const [location, setLocation] = useState(initialLocation || '');
   const [specialization, setSpecialization] = useState(initialSpecialization || '');
+  const [inputValue, setInputValue] = useState(searchTerm);
   const router = useRouter();
 
   // Update local state when props change
@@ -14,6 +15,14 @@ const SearchBar = ({ searchTerm, setSearchTerm, initialLocation, initialSpeciali
     setLocation(initialLocation || '');
     setSpecialization(initialSpecialization || '');
   }, [initialLocation, initialSpecialization]);
+
+  // Debounce search input
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchTerm(inputValue);
+    }, 350);
+    return () => clearTimeout(handler);
+  }, [inputValue, setSearchTerm]);
 
   // Handle filter submission
   const handleFilterSubmit = (e) => {
@@ -36,8 +45,8 @@ const SearchBar = ({ searchTerm, setSearchTerm, initialLocation, initialSpeciali
           type="text"
           className="w-full p-4 pl-12 text-gray-900 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
           placeholder="Search by doctor name or specialization"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
         />
         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
           <FaSearch className="text-gray-400" />

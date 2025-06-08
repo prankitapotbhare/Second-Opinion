@@ -8,22 +8,19 @@ const { createError } = require('../utils/error.util');
 // --- PUBLIC: Get doctors with filters ---
 exports.getDoctorsPublic = async (req, res, next) => {
   try {
-    const { location, department, limit = 10, page = 1 } = req.query;
-    const query = {};
+    const { location, department, search, limit = 10, page = 1 } = req.query;
+    const query = { isProfileComplete: true };
 
-    if (location) {
-      query.location = { $regex: new RegExp(location, 'i') };
+    if (location) query.location = { $regex: new RegExp(location, 'i') };
+    if (department) query.specialization = { $regex: new RegExp(department, 'i') };
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { specialization: { $regex: search, $options: 'i' } }
+      ];
     }
-    if (department) {
-      query.specialization = { $regex: new RegExp(department, 'i') };
-    }
 
-    // Only show doctors with completed profiles
-    query.isProfileComplete = true;
-
-    // Get total count for pagination
     const total = await Doctor.countDocuments(query);
-
     const doctors = await Doctor.find(query)
       .select('name photoURL specialization degree experience')
       .limit(Number(limit))

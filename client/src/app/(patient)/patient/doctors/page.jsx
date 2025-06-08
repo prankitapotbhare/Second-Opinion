@@ -28,54 +28,28 @@ export default function DoctorsSearchPage() {
   const specializationFilter = searchParams.get('department') || searchParams.get('specialization') || '';
   const pageParam = searchParams.get('page') ? parseInt(searchParams.get('page')) : 1;
 
-  // Fetch doctors on initial load and when filters or page changes
+  // Fetch doctors on initial load and when filters, searchTerm, or page changes
   useEffect(() => {
     const params = {};
-
-    if (locationFilter) {
-      params.location = locationFilter;
-    }
-
-    if (specializationFilter) {
-      params.department = specializationFilter;
-    }
-
-    // Add pagination params
+    if (locationFilter) params.location = locationFilter;
+    if (specializationFilter) params.department = specializationFilter;
+    if (searchTerm && searchTerm.trim()) params.search = searchTerm.trim();
     params.page = pageParam;
-    params.limit = pagination.limit || 8; // Ensure we have a default limit
-
+    params.limit = pagination.limit || 8;
     setIsChangingPage(true);
-
     fetchDoctors(params).finally(() => {
       setIsChangingPage(false);
     });
-    // Only depend on filters and pageParam, not pagination.currentPage
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchDoctors, locationFilter, specializationFilter, pageParam, pagination.limit]);
-
-  // Filter doctors based on search term
-  const filteredDoctors = doctors.filter(doctor => {
-    if (!searchTerm.trim()) return true;
-
-    const matchesSearch =
-      (doctor.name && doctor.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (doctor.specialization && doctor.specialization.toLowerCase().includes(searchTerm.toLowerCase()));
-
-    return matchesSearch;
-  });
+  }, [fetchDoctors, locationFilter, specializationFilter, searchTerm, pageParam, pagination.limit]);
 
   // Handle page change
   const handlePageChange = (newPage) => {
-    // Scroll to top of grid when changing pages
     if (gridRef.current) {
       gridRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-
-    // Update URL with new page parameter
     const params = new URLSearchParams(searchParams);
     params.set('page', newPage);
-
-    // Update the URL without refreshing the page
     router.push(`/patient/doctors?${params.toString()}`);
   };
 
@@ -91,7 +65,6 @@ export default function DoctorsSearchPage() {
           initialSpecialization={specializationFilter}
         />
       </div>
-
       {/* Doctors Grid */}
       <div ref={gridRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 my-8">
         {doctorsError ? (
@@ -101,7 +74,7 @@ export default function DoctorsSearchPage() {
           </div>
         ) : (
           <DoctorGrid
-            doctors={filteredDoctors}
+            doctors={doctors}
             pagination={pagination}
             onPageChange={handlePageChange}
             loading={doctorsLoading}

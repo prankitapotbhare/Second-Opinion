@@ -329,6 +329,8 @@ doctorSchema.methods.getDashboardStats = async function() {
   };
 };
 
+doctorSchema.index({ name: 'text', specialization: 'text', location: 'text' });
+
 const Doctor = mongoose.model('Doctor', doctorSchema);
 
 module.exports = Doctor;
