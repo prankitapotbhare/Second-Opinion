@@ -13,6 +13,16 @@ import {
 import { useDoctor } from "@/contexts/DoctorContext";
 import { format, subMonths, addMonths, isWithinInterval } from "date-fns";
 
+const STATUS_LABELS = {
+  pending: 'Pending',
+  'opinion-needed': 'Opinion Needed',
+  'opinion-not-needed': 'Opinion Not Needed',
+  'under-review': 'Under Review',
+  approved: 'Approved',
+  rejected: 'Rejected',
+  completed: 'Completed',
+};
+
 const AppointmentSection = () => {
   const [showPatientDetail, setShowPatientDetail] = useState(null);
   const [activeFilter, setActiveFilter] = useState("all"); // Changed default to "all"
@@ -245,9 +255,12 @@ const AppointmentSection = () => {
                   className="appearance-none px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                 >
                   <option value="pending">Pending</option>
+                  <option value="opinion-needed">Opinion Needed</option>
+                  <option value="opinion-not-needed">Opinion Not Needed</option>
+                  <option value="under-review">Under Review</option>
                   <option value="approved">Approved</option>
-                  <option value="completed">Completed</option>
                   <option value="rejected">Rejected</option>
+                  <option value="completed">Completed</option>
                   <option value="all">All Status</option>
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
@@ -360,7 +373,7 @@ const AppointmentSection = () => {
                                 : "bg-yellow-100 text-yellow-800"
                             }`}
                           >
-                            {appointment.status ? appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1) : "Pending"}
+                            {appointment.status ? STATUS_LABELS[appointment.status] || appointment.status : "Pending"}
                           </span>
                         </td>
                         <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
