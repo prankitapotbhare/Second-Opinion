@@ -17,8 +17,8 @@ mongoose.connect(MONGODB_URI)
     
     // Start the server
     const PORT = process.env.PORT || 5000;
-    const server = app.listen(PORT, () => {
-      logger.info(`Server running on port ${PORT}`);
+    const server = app.listen(PORT, '0.0.0.0', () => {
+      logger.info(`Server running on port http://0.0.0.0:${PORT}`);
       
       // Initialize the appointment status updater after server is running
       statusUpdaterInterval = appointmentStatusUpdater.initAppointmentStatusUpdater();
